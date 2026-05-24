@@ -47,4 +47,10 @@ impl CodewarsApi {
         let rank = self.client.get(&url).send()?.json::<Rank>()?;
         Ok(rank)
     }
+
+    pub fn skills(&self, username: &str) -> Result<Vec<String>> {
+        let url = format!("{}/{}/skills", self.base_url, username);
+        let skills = self.client.get(&url).send()?.json::<Vec<String>>()?;
+        Ok(skills)
+    }
 }
