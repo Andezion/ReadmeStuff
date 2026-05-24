@@ -15,5 +15,9 @@ impl LeetcodeApi {
         
     }
 
-    pub fn badges(&self, username: &str) -> Option<Vec<BadgeStorage>> {}
+    pub fn badges(&self, username: &str) -> Option<Vec<BadgeStorage>> {
+
+    }
+
+    
 }
