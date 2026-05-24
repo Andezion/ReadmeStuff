@@ -37,7 +37,22 @@ impl LeetcodeApi {
     }
 
     pub fn languages(&self, username: &str) -> Option<Vec<Language>> { // ok    
+        // https://alfa-leetcode-api.onrender.com/Andezion/language
 
+        let languages: Vec<Language> = Vec::new();
+        let url = format!("https://alfa-leetcode-api.onrender.com/{}/language", username);
+
+        let response = reqwest::blocking::get(&url).unwrap().text().unwrap();
+        let json: serde_json::Value = serde_json::from_str(&response).unwrap();
+        let language_array = json.as_array().unwrap();
+
+        for language in language_array {
+            let name = language["name"].as_str().unwrap().to_string();
+            let solved_amount = language["solved_amount"].as_u64().unwrap() as u32;
+            languages.push(Language { name, solved_amount });
+        }
+        
+        Some(languages)
     }
 
     pub fn skills(&self, username: &str) -> Option<Vec<Skill>> { // ok
@@ -55,7 +70,7 @@ impl LeetcodeApi {
             let amount = skill["amount"].as_u64().unwrap() as u32;
             skills.push(Skill { name, amount });
         }
-        
+
         Some(skills)
     }
 }
