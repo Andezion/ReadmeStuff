@@ -8,6 +8,23 @@ pub struct CodeChallenge {
     pub total_completed: u32,
 }
 
+pub struct Language {
+    pub name: String,
+    pub rank: u32,
+    pub rank_name: String,
+    pub color: String,
+    pub score: u32,
+}
+
+pub struct Rank {
+    pub name: String,
+    pub rank: u32,
+    pub rank_name: String,
+    pub color: String,
+    pub score: u32,
+    pub languages: Vec<Language>
+}
+
 impl CodewarsApi {
     pub fn new(base_url: impl Into<String>) -> Self {
         CodewarsApi {
@@ -23,6 +40,7 @@ impl CodewarsApi {
         let url = format!("{}/{}", self.base_url, username);
         let challenge = self.client.get(&url).send()?.json::<CodeChallenge>()?;
         Ok(challenge)
-
     }
+
+
 }
