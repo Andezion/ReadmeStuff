@@ -10,6 +10,11 @@ struct BadgeStorage {
     badges: Vec<Badge>
 }
 
+struct Language {
+    name: String, 
+    solved_amount: u32
+}
+
 impl LeetcodeApi {
     pub fn amount_of_solved_problems(&self, username: &str) -> Option<u32> {
         
@@ -19,5 +24,7 @@ impl LeetcodeApi {
 
     }
 
-    
+    pub fn languages(&self, username: &str) -> Option<Vec<Language>> {
+
+    }
 }
