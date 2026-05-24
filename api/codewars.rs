@@ -42,5 +42,9 @@ impl CodewarsApi {
         Ok(challenge)
     }
 
-
+    pub fn rank(&self, username: &str) -> Result<Rank> {
+        let url = format!("{}/{}", self.base_url, username);
+        let rank = self.client.get(&url).send()?.json::<Rank>()?;
+        Ok(rank)
+    }
 }
