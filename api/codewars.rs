@@ -37,13 +37,13 @@ impl CodewarsApi {
     }
 
     pub fn amount_of_completed_challenges(&self, username: &str) -> Result<CodeChallenge> {
-        let url = format!("{}/{}", self.base_url, username);
+        let url = format!("{}/{}/codeChallenges", self.base_url, username);
         let challenge = self.client.get(&url).send()?.json::<CodeChallenge>()?;
         Ok(challenge)
     }
 
     pub fn rank(&self, username: &str) -> Result<Rank> {
-        let url = format!("{}/{}", self.base_url, username);
+        let url = format!("{}/{}/ranks", self.base_url, username);
         let rank = self.client.get(&url).send()?.json::<Rank>()?;
         Ok(rank)
     }
