@@ -22,6 +22,11 @@ struct Solved {
     hard_amount: u32
 }
 
+struct Skill {
+    name: String, 
+    amount: u32
+}
+
 impl LeetcodeApi {
     pub fn amount_of_solved_problems(&self, username: &str) -> Option<Solved> { // ok
         
@@ -32,6 +37,10 @@ impl LeetcodeApi {
     }
 
     pub fn languages(&self, username: &str) -> Option<Vec<Language>> { // ok    
+
+    }
+
+    pub fn skills(&self, username: &str) -> Option<Vec<Skill>> { // ok
 
     }
 }
