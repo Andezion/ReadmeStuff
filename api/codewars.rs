@@ -53,4 +53,16 @@ impl CodewarsApi {
         let skills = self.client.get(&url).send()?.json::<Vec<String>>()?;
         Ok(skills)
     }
+
+    pub fn honor(&self, username: &str) -> Result<u32> {
+        let url = format!("{}/{}/honor", self.base_url, username);
+        let honor = self.client.get(&url).send()?.json::<u32>()?;
+        Ok(honor)
+    }
+
+    pub fn leaderboard_position(&self, username: &str) -> Result<u32> {
+        let url = format!("{}/{}/leaderboardPosition", self.base_url, username);
+        let position = self.client.get(&url).send()?.json::<u32>()?;
+        Ok(position)
+    }
 }
