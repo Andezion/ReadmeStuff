@@ -15,16 +15,23 @@ struct Language {
     solved_amount: u32
 }
 
+struct Solved {
+    full_amount: u32, 
+    easy_amount: u32,
+    medium_amount: u32,
+    hard_amount: u32
+}
+
 impl LeetcodeApi {
     pub fn amount_of_solved_problems(&self, username: &str) -> Option<u32> {
         
     }
 
-    pub fn badges(&self, username: &str) -> Option<Vec<BadgeStorage>> {
+    pub fn badges(&self, username: &str) -> Option<Vec<BadgeStorage>> { // ok
 
     }
 
-    pub fn languages(&self, username: &str) -> Option<Vec<Language>> {
+    pub fn languages(&self, username: &str) -> Option<Vec<Language>> { // ok    
 
     }
 }
