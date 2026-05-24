@@ -29,7 +29,18 @@ struct Skill {
 
 impl LeetcodeApi {
     pub fn amount_of_solved_problems(&self, username: &str) -> Option<Solved> { // ok
+        // https://alfa-leetcode-api.onrender.com/Andezion/solved
+
+        let url = format!("https://alfa-leetcode-api.onrender.com/{}/solved", username);
+        let response = reqwest::blocking::get(&url).unwrap().text().unwrap();
+        let json: serde_json::Value = serde_json::from_str(&response).unwrap();
+
+        let full_amount = json["full_amount"].as_u64().unwrap() as u32;
+        let easy_amount = json["easy_amount"].as_u64().unwrap() as u32;
+        let medium_amount = json["medium_amount"].as_u64().unwrap() as u32;
+        let hard_amount = json["hard_amount"].as_u64().unwrap() as u32;
         
+        Some(Solved { full_amount, easy_amount, medium_amount, hard_amount })
     }
 
     pub fn badges(&self, username: &str) -> Option<Vec<BadgeStorage>> { // ok
