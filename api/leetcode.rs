@@ -49,12 +49,13 @@ impl LeetcodeApi {
         let response = reqwest::blocking::get(&url).unwrap().text().unwrap();
         let json: serde_json::Value = serde_json::from_str(&response).unwrap();
         let skill_array = json.as_array().unwrap();
-        
+
         for skill in skill_array {
             let name = skill["name"].as_str().unwrap().to_string();
             let amount = skill["amount"].as_u64().unwrap() as u32;
             skills.push(Skill { name, amount });
         }
+        
         Some(skills)
     }
 }
