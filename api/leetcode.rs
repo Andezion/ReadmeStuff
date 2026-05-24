@@ -33,7 +33,32 @@ impl LeetcodeApi {
     }
 
     pub fn badges(&self, username: &str) -> Option<Vec<BadgeStorage>> { // ok
+        // https://alfa-leetcode-api.onrender.com/Andezion/badge
 
+        let badges: Vec<BadgeStorage> = Vec::new();
+        let url = format!("https://alfa-leetcode-api.onrender.com/{}/badge", username);
+
+        let response = reqwest::blocking::get(&url).unwrap().text().unwrap();
+        let json: serde_json::Value = serde_json::from_str(&response).unwrap();
+        let badge_array = json.as_array().unwrap();
+
+        for badge in badge_array {
+            let counter = badge["counter"].as_u64().unwrap() as u32;
+            let mut badge_storage = BadgeStorage { counter, badges: Vec::new() };
+
+            let inner_badge_array = badge["badges"].as_array().unwrap();
+            for inner_badge in inner_badge_array {
+                let id = inner_badge["id"].as_u64().unwrap() as u32;
+                let name = inner_badge["name"].as_str().unwrap().to_string();
+                let icon_url = inner_badge["icon_url"].as_str().unwrap().to_string();
+                let date = inner_badge["date"].as_str().unwrap().to_string();
+                badge_storage.badges.push(Badge { id, name, icon_url, date });
+            }
+
+            badges.push(badge_storage);
+        }
+
+        Some(badges)
     }
 
     pub fn languages(&self, username: &str) -> Option<Vec<Language>> { // ok    
@@ -51,7 +76,7 @@ impl LeetcodeApi {
             let solved_amount = language["solved_amount"].as_u64().unwrap() as u32;
             languages.push(Language { name, solved_amount });
         }
-        
+
         Some(languages)
     }
 
