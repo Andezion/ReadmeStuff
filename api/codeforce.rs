@@ -47,7 +47,7 @@ pub struct Problem {
 }
 
 pub struct Party { 
-    
+
 }
 
 pub struct Submission {
@@ -56,14 +56,14 @@ pub struct Submission {
     pub creationTimeSeconds: i64, 	
     pub relativeTimeSeconds: i64, 	
     pub problem: Problem,
-    author 	Party object.
-    programmingLanguage 	String.
-    verdict 	Enum: FAILED, OK, PARTIAL, COMPILATION_ERROR, RUNTIME_ERROR, WRONG_ANSWER, WRONG_ANSWER, TIME_LIMIT_EXCEEDED, MEMORY_LIMIT_EXCEEDED, IDLENESS_LIMIT_EXCEEDED, SECURITY_VIOLATED, CRASHED, INPUT_PREPARATION_CRASHED, CHALLENGED, SKIPPED, TESTING, REJECTED, SUBMITTED. Can be absent.
-    testset 	Enum: SAMPLES, PRETESTS, TESTS, CHALLENGES, TESTS1, ..., TESTS10. Testset used for judging the submission.
-    passedTestCount 	Integer. Number of passed tests.
-    timeConsumedMillis 	Integer. Maximum time in milliseconds, consumed by solution for one test.
-    memoryConsumedBytes 	Integer. Maximum memory in bytes, consumed by solution for one test.
-    points 	Floating point number. Can be absent. Number of scored points for IOI-like contests.
+    pub author: Party,
+    pub programmingLanguage: String,
+    pub verdict: Option<Verdict>,
+    pub testset: Testset,
+    pub passedTestCount 	Integer. Number of passed tests.
+    pub timeConsumedMillis 	Integer. Maximum time in milliseconds, consumed by solution for one test.
+    pub memoryConsumedBytes 	Integer. Maximum memory in bytes, consumed by solution for one test.
+    pub points 	Floating point number. Can be absent. Number of scored points for IOI-like contests.
 }
 
 #[derive(Debug, Deserialize)]
