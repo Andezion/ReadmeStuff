@@ -83,3 +83,59 @@ mod tests {
         assert_eq!(user.username, "Andezion");
     }
 }
+
+
+/*
+
+User {
+    username: "Andezion",
+    name: Some(
+        "Andezion",
+    ),
+    honor: 1263,
+    clan: None,
+    leaderboard_position: Some(
+        23835,
+    ),
+    skills: None,
+    ranks: Ranks {
+        overall: RankEntry {
+            rank: -4,
+            name: "4 kyu",
+            color: "blue",
+            score: 1729,
+        },
+        languages: {
+            "cpp": RankEntry {
+                rank: -4,
+                name: "4 kyu",
+                color: "blue",
+                score: 1342,
+            },
+            "c": RankEntry {
+                rank: -5,
+                name: "5 kyu",
+                color: "yellow",
+                score: 321,
+            },
+            "csharp": RankEntry {
+                rank: -5,
+                name: "5 kyu",
+                color: "yellow",
+                score: 319,
+            },
+            "rust": RankEntry {
+                rank: -6,
+                name: "6 kyu",
+                color: "yellow",
+                score: 87,
+            },
+        },
+    },
+    code_challenges: CodeChallenges {
+        total_authored: 0,
+        total_completed: 319,
+    },
+}
+
+*/
