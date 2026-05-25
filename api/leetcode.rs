@@ -93,8 +93,6 @@ impl Default for LeetcodeApi {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use httpmock::prelude::*;
-    use serde_json::json;
 
     #[test]
     fn test_leetcode() -> Result<()> {
