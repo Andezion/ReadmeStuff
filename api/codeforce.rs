@@ -56,9 +56,9 @@ pub struct Problem {
     pub index: String,
     pub name: String,
     pub type_of: Type,
-    pub points: Option<f64>, Floating point number. Can be absent. Maximum amount of points for the problem.
-    pub rating: Option<i32>,Integer. Can be absent. Problem rating (difficulty).
-    pub tags: Vec<String>String list. Problem tags.
+    pub points: Option<f64>, 
+    pub rating: Option<i32>,
+    pub tags: Vec<String>
 }
 
 #[derive(Debug, Deserialize)]
