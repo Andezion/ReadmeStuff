@@ -8,48 +8,49 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Verdict {
-    FAILED,
-    OK,
-    PARTIAL,
-    COMPILATIONERROR,
-    RUNTIMEERROR,
-    WRONGANSWER,
-    TIMELIMITEXCEEDED,
-    MEMORYLIMITEXCEEDED,
-    IDLENESSLIMITEXCEEDED,
-    SECURITYVIOLATED,
-    CRASHED,
-    INPUTPREPARATIONCRASHED,
-    CHALLENGED,
-    SKIPPED,
-    TESTING,
-    REJECTED,
-    SUBMITTED,
+    Failed,
+    Ok,
+    Partial,
+    CompilationError,
+    RuntimeError,
+    WrongAnswer,
+    TimeLimitExceeded,
+    MemoryLimitExceeded,
+    IdlenessLimitExceeded,
+    SecurityViolated,
+    Crashed,
+    InputPreparationCrashed,
+    Challenged,
+    Skipped,
+    Testing,
+    Rejected,
+    Submitted,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Testset {
-    SAMPLES,
-    PRETESTS,
-    TESTS,
-    CHALLENGES,
-    TESTS1,
-    TESTS2,
-    TESTS3,
-    TESTS4,
-    TESTS5,
-    TESTS6,
-    TESTS7,
-    TESTS8,
-    TESTS9,
-    TESTS10,
+    Samples,
+    Pretests,
+    Tests,
+    Challenges,
+    Tests1,
+    Tests2,
+    Tests3,
+    Tests4,
+    Tests5,
+    Tests6,
+    Tests7,
+    Tests8,
+    Tests9,
+    Tests10,
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Type {
-    PROGRAMMING,
-    QUESTION,
+    Programming,
+    Question,
 }
 
 #[derive(Debug, Deserialize)]
@@ -129,6 +130,7 @@ pub struct Submission {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct User {
     pub handle: String,
     pub email: Option<String>,
@@ -199,16 +201,50 @@ impl CodeforcesApi {
         self.get("user.info", &[("handles", handles.into())])
     }
 
-    pub fn user_status(&self, handles: impl Into<String>) -> Result<Vec<Submission>> {
-        self.get("user.status", &[("handles", handles.into())])
+    pub fn user_status(
+        &self,
+        handle: impl Into<String>,
+        from: Option<i32>,
+        count: Option<i32>,
+        include_sources: Option<bool>,
+    ) -> Result<Vec<Submission>> {
+        let mut params: Vec<(&str, String)> = Vec::new();
+        params.push(("handle", handle.into()));
+        if let Some(f) = from {
+            params.push(("from", f.to_string()));
+        }
+        if let Some(c) = count {
+            params.push(("count", c.to_string()));
+        }
+        if let Some(s) = include_sources {
+            params.push(("includeSources", s.to_string()));
+        }
+
+        self.get("user.status", &params)
     }
 
-    pub fn user_rated_list(&self, handles: impl Into<String>) -> Result<Vec<User>> {
-        self.get("user.ratedList", &[("handles", handles.into())])
+    pub fn user_rated_list(
+        &self,
+        active_only: Option<bool>,
+        include_retired: Option<bool>,
+        contest_id: Option<i32>,
+    ) -> Result<Vec<User>> {
+        let mut params: Vec<(&str, String)> = Vec::new();
+        if let Some(a) = active_only {
+            params.push(("activeOnly", a.to_string()));
+        }
+        if let Some(ir) = include_retired {
+            params.push(("includeRetired", ir.to_string()));
+        }
+        if let Some(cid) = contest_id {
+            params.push(("contestId", cid.to_string()));
+        }
+
+        self.get("user.ratedList", &params)
     }
 
-    pub fn user_rating(&self, handles: impl Into<String>) -> Result<Option<RatingChange>> {
-        self.get("user.rating", &[("handles", handles.into())])
+    pub fn user_rating(&self, handle: impl Into<String>) -> Result<Vec<RatingChange>> {
+        self.get("user.rating", &[("handle", handle.into())])
     }
 }
 
