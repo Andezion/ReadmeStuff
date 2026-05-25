@@ -35,5 +35,13 @@ pub struct User {
 }
 
 impl CodeforcesApi {
-    
+    pub fn new(base_url: impl Into<String>) -> Self {
+        CodeforcesApi {
+            base_url: base_url.into(),
+            client: reqwest::blocking::Client::builder()
+                .timeout(std::time::Duration::from_secs(10))
+                .build()
+                .expect("failed to build HTTP client"),
+        }
+    }
 }
