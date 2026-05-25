@@ -84,7 +84,6 @@ pub enum ParticipantType {
     OutOfCompetition,
 }
 
-
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RatingChange {
