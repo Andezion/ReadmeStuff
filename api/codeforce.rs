@@ -329,4 +329,56 @@ mod tests {
 
         assert!(!ratings.is_empty());
     }
+
+    /*
+    
+    [
+        RatingChange {
+            contest_id: 2114,
+            contest_name: "Codeforces Round 1027 (Div. 3)",
+            handle: "Andezion",
+            rank: 17471,
+            rating_update_time_seconds: 1748278200,
+            old_rating: 0,
+            new_rating: 385,
+        },
+        RatingChange {
+            contest_id: 2117,
+            contest_name: "Codeforces Round 1029 (Div. 3)",
+            handle: "Andezion",
+            rank: 17699,
+            rating_update_time_seconds: 1749401400,
+            old_rating: 385,
+            new_rating: 622,
+        },
+        RatingChange {
+            contest_id: 2113,
+            contest_name: "Codeforces Round 1031 (Div. 2)",
+            handle: "Andezion",
+            rank: 9578,
+            rating_update_time_seconds: 1749985500,
+            old_rating: 622,
+            new_rating: 779,
+        },
+        RatingChange {
+            contest_id: 2160,
+            contest_name: "Codeforces Round 1058 (Div. 2)",
+            handle: "Andezion",
+            rank: 6857,
+            rating_update_time_seconds: 1760288700,
+            old_rating: 779,
+            new_rating: 952,
+        },
+        RatingChange {
+            contest_id: 2161,
+            contest_name: "Pinely Round 5 (Div. 1 + Div. 2)",
+            handle: "Andezion",
+            rank: 2895,
+            rating_update_time_seconds: 1761852900,
+            old_rating: 952,
+            new_rating: 1148,
+        },
+    ]
+
+     */
 }
