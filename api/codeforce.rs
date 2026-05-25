@@ -1,40 +1,39 @@
+use serde::de::DeserializeOwned;
 use serde::Deserialize;
 
-const DEFAULT_BASE_URL: &str = "https://www.codewars.com/api/";
+const DEFAULT_BASE_URL: &str = "https://codeforces.com/api";
 
-#[derive(Deserialize)]
+type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct User {
     pub handle: String,
-
-    pub email: String,
-    pub vkid: String,
-    #[serde(rename = "openId")]
-    pub openid: String,
-
-    #[serde(rename = "firstName")]
-    pub first_name: String,
-    #[serde(rename = "lastName")]
-    pub last_name: String,
-    pub country: String,
-    pub city: String,
-    pub organization: String,
+    pub email: Option<String>,
+    pub vk_id: Option<String>,
+    pub open_id: Option<String>,
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
+    pub country: Option<String>,
+    pub city: Option<String>,
+    pub organization: Option<String>,
     pub contribution: i32,
     pub rank: String,
     pub rating: i32,
-    #[serde(rename = "maxRank")]
     pub max_rank: String,
-    #[serde(rename = "maxRating")]
     pub max_rating: i32,
-    #[serde(rename = "lastOnlineTime")]
-    pub last_online_time: i64,
-
-    #[serde(rename = "registrationTime")]
-    pub registration_time: i64,
-    #[serde(rename = "friendOf")]
-    pub friend_of: i64,
+    pub last_online_time_seconds: i64,
+    pub registration_time_seconds: i64,
+    pub friend_of_count: i64,
     pub avatar: String,
-    #[serde(rename = "titlePhoto")]
     pub title_photo: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct ApiResponse<T> {
+    status: String,
+    comment: Option<String>,
+    result: Option<T>,
 }
 
 pub struct CodeforcesApi {
@@ -53,5 +52,36 @@ impl CodeforcesApi {
         }
     }
 
+    fn get<T: DeserializeOwned>(&self, method: &str, params: &[(&str, String)]) -> Result<T> {
+        let url = format!("{}/{}", self.base_url.trim_end_matches('/'), method);
+        let response = self
+            .client
+            .get(&url)
+            .query(params)
+            .send()?
+            .error_for_status()?
+            .json::<ApiResponse<T>>()?;
 
+        match response.status.as_str() {
+            "OK" => response
+                .result
+                .ok_or_else(|| "Codeforces response did not include a result field".into()),
+            _ => Err(response
+                .comment
+                .unwrap_or_else(|| "Codeforces request failed".to_string())
+                .into()),
+        }
+    }
+
+    pub fn user_info(&self, handles: impl Into<String>) -> Result<Vec<User>> {
+        self.get("user.info", &[("handles", handles.into())])
+    }
+
+    
+}
+
+impl Default for CodeforcesApi {
+    fn default() -> Self {
+        Self::new(DEFAULT_BASE_URL)
+    }
 }
