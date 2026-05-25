@@ -269,4 +269,36 @@ mod tests {
         assert_eq!(users.len(), 1);
         assert_eq!(users[0].handle, handle);
     }
+
+    #[test]
+    fn test_live_user_status_logs_full_response() {
+        let handle = "Andezion";
+        let api = CodeforcesApi::default();
+        let subs = api.user_status(handle, Some(1), Some(20), Some(false)).unwrap();
+
+        println!("{subs:#?}");
+
+        assert!(!subs.is_empty());
+    }
+
+    #[test]
+    fn test_live_user_rated_list_logs_full_response() {
+        let api = CodeforcesApi::default();
+        let list = api.user_rated_list(Some(true), Some(false), None).unwrap();
+
+        println!("{list:#?}");
+
+        assert!(!list.is_empty());
+    }
+
+    #[test]
+    fn test_live_user_rating_logs_full_response() {
+        let handle = "Andezion";
+        let api = CodeforcesApi::default();
+        let ratings = api.user_rating(handle).unwrap();
+
+        println!("{ratings:#?}");
+
+        assert!(!ratings.is_empty());
+    }
 }
