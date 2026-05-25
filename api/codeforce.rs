@@ -62,20 +62,30 @@ pub struct Problem {
     pub tags: Vec<String>
 }
 
+#[derive(Debug, Deserialize)]
 pub struct Member {
     pub handle: String,
     pub name: Option<String>
 }
 
 #[derive(Debug, Deserialize)]
+pub enum ParticipantType {
+    CONTESTANT, 
+    PRACTICE, 
+    VIRTUAL, 
+    MANAGER, 
+    OUT_OF_COMPETITION
+}
+
+#[derive(Debug, Deserialize)]
 pub struct Party { 
-    pub contestId: Option<i32>, Integer. Can be absent. Id of the contest, in which party is participating.
-    pub members 	List of Member objects. Members of the party.
-    pub participantType 	Enum: CONTESTANT, PRACTICE, VIRTUAL, MANAGER, OUT_OF_COMPETITION.
-    pub teamId 	Integer. Can be absent. If party is a team, then it is a unique team id. Otherwise, this field is absent.
-    pub teamName 	String. Localized. Can be absent. If party is a team or ghost, then it is a localized name of the team. Otherwise, it is absent.
-    pub ghost 	Boolean. If true then this party is a ghost. It participated in the contest, but not on Codeforces. For example, Andrew Stankevich Contests in Gym has ghosts of the participants from Petrozavodsk Training Camp.
-    pub room 	Integer. Can be absent. Room of the party. If absent, then the party has no room.
+    pub contestId: Option<i32>,
+    pub members: Vec<Member>,
+    pub participantType: ParticipantType,
+    pub teamId: Option<i32>,
+    pub teamName: Option<String>,
+    pub ghost: bool, Boolean. If true then this party is a ghost. It participated in the contest, but not on Codeforces. For example, Andrew Stankevich Contests in Gym has ghosts of the participants from Petrozavodsk Training Camp.
+    pub room: Option<i32>, Integer. Can be absent. Room of the party. If absent, then the party has no room.
     pub startTimeSeconds 	Integer. Can be absent. Time, when this party started a contest.
 }
 
