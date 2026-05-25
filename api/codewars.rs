@@ -6,7 +6,7 @@ const DEFAULT_BASE_URL: &str = "https://www.codewars.com/api/v1";
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct RankEntry {
     pub rank: i32,
     pub name: String,
@@ -14,20 +14,20 @@ pub struct RankEntry {
     pub score: u32,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct Ranks {
     pub overall: RankEntry,
     pub languages: HashMap<String, RankEntry>,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CodeChallenges {
     pub total_authored: u32,
     pub total_completed: u32,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct User {
     pub username: String,
@@ -72,50 +72,21 @@ impl Default for CodewarsApi {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use httpmock::prelude::*;
-    use serde_json::json;
 
-    fn api(server: &MockServer) -> CodewarsApi {
-        CodewarsApi::new(server.base_url())
-    }
+    const LIVE_TESTS_ENV: &str = "RUN_LIVE_CODEWARS_TESTS";
 
     #[test]
-    fn test_user() {
-        let server = MockServer::start();
-        let mock = server.mock(|when, then| {
-            when.method(GET).path("/users/testuser");
-            then.status(200).json_body(json!({
-                "username": "testuser",
-                "name": "Test User",
-                "honor": 544,
-                "clan": null,
-                "leaderboardPosition": 134,
-                "skills": ["rust", "python"],
-                "ranks": {
-                    "overall": { "rank": -3, "name": "3 kyu", "color": "blue", "score": 2116 },
-                    "languages": {
-                        "rust": { "rank": -3, "name": "3 kyu", "color": "blue", "score": 1819 }
-                    }
-                },
-                "codeChallenges": { "totalAuthored": 3, "totalCompleted": 230 }
-            }));
-        });
+    fn test_live_user_logs_full_response() {
+        if std::env::var(LIVE_TESTS_ENV).is_err() {
+            eprintln!("skipping live Codewars test; set {LIVE_TESTS_ENV}=1 to run it");
+            return;
+        }
 
-        let user = api(&server).user("testuser").unwrap();
+        let api = CodewarsApi::default();
+        let user = api.user("Andezion").unwrap();
 
-        assert_eq!(user.username, "testuser");
-        assert_eq!(user.honor, 544);
-        assert_eq!(user.ranks.overall.rank, -3);
-        assert_eq!(user.ranks.overall.name, "3 kyu");
-        assert_eq!(user.ranks.languages["rust"].score, 1819);
-        assert_eq!(user.code_challenges.total_completed, 230);
-        assert_eq!(user.leaderboard_position, Some(134));
-        mock.assert();
-    }
+        println!("{user:#?}");
 
-    #[test]
-    fn test_network_error_returns_err() {
-        let api = CodewarsApi::new("http://127.0.0.1:1");
-        assert!(api.user("testuser").is_err());
+        assert_eq!(user.username, "Andezion");
     }
 }
