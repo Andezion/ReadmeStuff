@@ -206,6 +206,10 @@ impl CodeforcesApi {
     pub fn user_rated_list(&self, handles: impl Into<String>) -> Result<Vec<User>> {
         self.get("user.ratedList", &[("handles", handles.into())])
     }
+
+    pub fn user_rating(&self, handles: impl Into<String>) -> Result<Option<RatingChange>> {
+        self.get("user.rating", &[("handles", handles.into())])
+    }
 }
 
 impl Default for CodeforcesApi {
