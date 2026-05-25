@@ -100,8 +100,8 @@ pub struct Submission {
     pub programming_language: String,
     pub verdict: Option<Verdict>,
     pub testset: Testset,
-    pub passedTestCount: i32, 
-    pub timeConsumedMillis: i64, 
+    pub passed_test_count: i32, 
+    pub time_consumed_millis: i64, 
     pub memory_consumed_bytes: i64, 
     pub points: Option<f64> 	
 }
