@@ -42,12 +42,20 @@ pub enum Testset {
     TESTS10,
 }
 
+pub struct Problem {
+
+}
+
+pub struct Party { 
+    
+}
+
 pub struct Submission {
     pub id: i32, 	
-    contestId 	Integer. Can be absent.
-    creationTimeSeconds 	Integer. Time, when submission was created, in unix-format.
-    relativeTimeSeconds 	Integer. Number of seconds, passed after the start of the contest (or a virtual start for virtual parties), before the submission.
-    problem 	Problem object.
+    pub contestId: Option<i32>, 	
+    pub creationTimeSeconds: i64, 	
+    pub relativeTimeSeconds: i64, 	
+    pub problem: Problem,
     author 	Party object.
     programmingLanguage 	String.
     verdict 	Enum: FAILED, OK, PARTIAL, COMPILATION_ERROR, RUNTIME_ERROR, WRONG_ANSWER, WRONG_ANSWER, TIME_LIMIT_EXCEEDED, MEMORY_LIMIT_EXCEEDED, IDLENESS_LIMIT_EXCEEDED, SECURITY_VIOLATED, CRASHED, INPUT_PREPARATION_CRASHED, CHALLENGED, SKIPPED, TESTING, REJECTED, SUBMITTED. Can be absent.
