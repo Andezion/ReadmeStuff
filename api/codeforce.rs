@@ -84,6 +84,19 @@ pub enum ParticipantType {
     OutOfCompetition,
 }
 
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RatingChange {
+    pub contest_id: i32,  	
+    pub contest_name: String,  	
+    pub handle: String, 	
+    pub rank: i32,
+    pub ratingUpdateTimeSeconds: i32,
+    pub old_rating: i32, 
+    pub new_rating: i32 
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Party {
