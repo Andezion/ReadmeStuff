@@ -6,6 +6,7 @@ const DEFAULT_BASE_URL: &str = "https://codeforces.com/api";
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Verdict {
     FAILED,
     OK,
@@ -27,6 +28,7 @@ pub enum Verdict {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum Testset {
     SAMPLES,
     PRETESTS,
@@ -46,63 +48,71 @@ pub enum Testset {
 
 #[derive(Debug, Deserialize)]
 pub enum Type {
-    PROGRAMMING, 
-    QUESTION
+    PROGRAMMING,
+    QUESTION,
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Problem {
-    pub contest_id: Option<i32>, 	
-    pub problemset_name: String, 
+    pub contest_id: Option<i32>,
+    pub problemset_name: Option<String>,
     pub index: String,
     pub name: String,
-    pub type_of: Type,
-    pub points: Option<f64>, 
+    #[serde(rename = "type")]
+    pub kind: Type,
+    pub points: Option<f64>,
     pub rating: Option<i32>,
-    pub tags: Vec<String>
+    pub tags: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Member {
     pub handle: String,
-    pub name: Option<String>
+    pub name: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ParticipantType {
-    CONTESTANT, 
-    PRACTICE, 
-    VIRTUAL, 
-    MANAGER, 
-    OUTOFCOMPETITION
+    CONTESTANT,
+    PRACTICE,
+    VIRTUAL,
+    MANAGER,
+    #[serde(rename = "OUT_OF_COMPETITION")]
+    OutOfCompetition,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Party { 
+#[serde(rename_all = "camelCase")]
+pub struct Party {
     pub contest_id: Option<i32>,
     pub members: Vec<Member>,
     pub participant_type: ParticipantType,
     pub team_id: Option<i32>,
     pub team_name: Option<String>,
     pub ghost: bool,
-    pub start_time_seconds: Option<i32> 	
+    pub room: Option<i32>,
+    pub start_time_seconds: Option<i32>,
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Submission {
-    pub id: i32, 	
-    pub contest_id: Option<i32>, 	
-    pub creation_time_seconds: i64, 	
-    pub relative_time_seconds: i64, 	
+    pub id: i32,
+    pub contest_id: Option<i32>,
+    pub creation_time_seconds: i64,
+    pub relative_time_seconds: i64,
     pub problem: Problem,
     pub author: Party,
     pub programming_language: String,
     pub verdict: Option<Verdict>,
     pub testset: Testset,
-    pub passed_test_count: i32, 
-    pub time_consumed_millis: i64, 
-    pub memory_consumed_bytes: i64, 
-    pub points: Option<f64> 	
+    pub passed_test_count: i32,
+    pub time_consumed_millis: i64,
+    pub memory_consumed_bytes: i64,
+    pub points: Option<f64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -175,8 +185,6 @@ impl CodeforcesApi {
     pub fn user_info(&self, handles: impl Into<String>) -> Result<Vec<User>> {
         self.get("user.info", &[("handles", handles.into())])
     }
-
-    
 }
 
 impl Default for CodeforcesApi {
