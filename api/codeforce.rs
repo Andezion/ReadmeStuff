@@ -5,10 +5,12 @@ const DEFAULT_BASE_URL: &str = "https://www.codewars.com/api/";
 #[derive(Deserialize)]
 pub struct User {
     pub handle: String,
+
     pub email: String,
     pub vkid: String,
     #[serde(rename = "openId")]
     pub openid: String,
+
     #[serde(rename = "firstName")]
     pub first_name: String,
     #[serde(rename = "lastName")]
@@ -25,6 +27,7 @@ pub struct User {
     pub max_rating: i32,
     #[serde(rename = "lastOnlineTime")]
     pub last_online_time: i64,
+
     #[serde(rename = "registrationTime")]
     pub registration_time: i64,
     #[serde(rename = "friendOf")]
@@ -32,6 +35,11 @@ pub struct User {
     pub avatar: String,
     #[serde(rename = "titlePhoto")]
     pub title_photo: String,
+}
+
+pub struct CodeforcesApi {
+    base_url: String,
+    client: reqwest::blocking::Client,
 }
 
 impl CodeforcesApi {
@@ -44,4 +52,6 @@ impl CodeforcesApi {
                 .expect("failed to build HTTP client"),
         }
     }
+
+
 }
