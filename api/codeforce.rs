@@ -270,6 +270,34 @@ mod tests {
         assert_eq!(users[0].handle, handle);
     }
 
+    /*
+    
+    [
+        User {
+            handle: "Andezion",
+            email: None,
+            vk_id: None,
+            open_id: None,
+            first_name: None,
+            last_name: None,
+            country: None,
+            city: None,
+            organization: None,
+            contribution: 0,
+            rank: "newbie",
+            rating: 1148,
+            max_rank: "newbie",
+            max_rating: 1148,
+            last_online_time_seconds: 1776974379,
+            registration_time_seconds: 1729697721,
+            friend_of_count: 0,
+            avatar: "https://userpic.codeforces.org/4365023/avatar/b64550ec3c9d18f6.jpg",
+            title_photo: "https://userpic.codeforces.org/4365023/title/760c02ca07760e71.jpg",
+        },
+    ]
+
+     */
+
     #[test]
     fn test_live_user_status_logs_full_response() {
         let handle = "Andezion";
