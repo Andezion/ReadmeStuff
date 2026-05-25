@@ -92,7 +92,8 @@ pub struct RatingChange {
     pub contest_name: String,  	
     pub handle: String, 	
     pub rank: i32,
-    pub ratingUpdateTimeSeconds: i32,
+    #[serde(rename = "ratingUpdateTimeSeconds")]
+    pub rating_update_time_seconds: i32,
     pub old_rating: i32, 
     pub new_rating: i32 
 }
