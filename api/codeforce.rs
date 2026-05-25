@@ -60,9 +60,9 @@ pub struct Submission {
     pub programmingLanguage: String,
     pub verdict: Option<Verdict>,
     pub testset: Testset,
-    pub passedTestCount 	Integer. Number of passed tests.
-    pub timeConsumedMillis 	Integer. Maximum time in milliseconds, consumed by solution for one test.
-    pub memoryConsumedBytes 	Integer. Maximum memory in bytes, consumed by solution for one test.
+    pub passedTestCount: i32, 
+    pub timeConsumedMillis: i64, 
+    pub memoryConsumedBytes: i64, 
     pub points 	Floating point number. Can be absent. Number of scored points for IOI-like contests.
 }
 
