@@ -92,8 +92,8 @@ pub struct Party {
 #[serde(rename_all = "camelCase")]
 pub struct Submission {
     pub id: i32, 	
-    pub contestId: Option<i32>, 	
-    pub creationTimeSeconds: i64, 	
+    pub contest_id: Option<i32>, 	
+    pub creation_time_seconds: i64, 	
     pub relativeTimeSeconds: i64, 	
     pub problem: Problem,
     pub author: Party,
