@@ -73,15 +73,8 @@ impl Default for CodewarsApi {
 mod tests {
     use super::*;
 
-    const LIVE_TESTS_ENV: &str = "RUN_LIVE_CODEWARS_TESTS";
-
     #[test]
     fn test_live_user_logs_full_response() {
-        if std::env::var(LIVE_TESTS_ENV).is_err() {
-            eprintln!("skipping live Codewars test; set {LIVE_TESTS_ENV}=1 to run it");
-            return;
-        }
-
         let api = CodewarsApi::default();
         let user = api.user("Andezion").unwrap();
 
