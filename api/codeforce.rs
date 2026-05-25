@@ -84,9 +84,8 @@ pub struct Party {
     pub participantType: ParticipantType,
     pub teamId: Option<i32>,
     pub teamName: Option<String>,
-    pub ghost: bool, Boolean. If true then this party is a ghost. It participated in the contest, but not on Codeforces. For example, Andrew Stankevich Contests in Gym has ghosts of the participants from Petrozavodsk Training Camp.
-    pub room: Option<i32>, Integer. Can be absent. Room of the party. If absent, then the party has no room.
-    pub startTimeSeconds 	Integer. Can be absent. Time, when this party started a contest.
+    pub ghost: bool,
+    pub startTimeSeconds: Option<i32> 	
 }
 
 #[derive(Debug, Deserialize)]
@@ -103,7 +102,7 @@ pub struct Submission {
     pub testset: Testset,
     pub passedTestCount: i32, 
     pub timeConsumedMillis: i64, 
-    pub memoryConsumedBytes: i64, 
+    pub memory_consumed_bytes: i64, 
     pub points: Option<f64> 	
 }
 
