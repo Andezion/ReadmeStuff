@@ -89,7 +89,6 @@ pub struct Party {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct Submission {
     pub id: i32, 	
     pub contest_id: Option<i32>, 	
