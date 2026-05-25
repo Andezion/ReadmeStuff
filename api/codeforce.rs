@@ -77,11 +77,10 @@ pub struct Member {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ParticipantType {
-    CONTESTANT,
-    PRACTICE,
-    VIRTUAL,
-    MANAGER,
-    #[serde(rename = "OUT_OF_COMPETITION")]
+    Contestant,
+    Practice,
+    Virtual,
+    Manager,
     OutOfCompetition,
 }
 
@@ -313,8 +312,8 @@ mod tests {
     fn test_live_user_rated_list_logs_full_response() {
         let api = CodeforcesApi::default();
         let list = api.user_rated_list(Some(true), Some(false), None).unwrap();
-
-        println!("{list:#?}");
+        let found = list.iter().any(|u| u.handle == "Andezion");
+        println!("Found Andezion in rated list: {}", found);
 
         assert!(!list.is_empty());
     }
