@@ -52,10 +52,10 @@ pub enum Type {
 #[derive(Debug, Deserialize)]
 pub struct Problem {
     pub contestId: Option<i32>, 	
-    pub problemsetName: String, Can be absent. Short name of the problemset the problem belongs to.
-    pub index: String. Usually, a letter or letter with digit(s) indicating the problem index in a contest.
-    pub name: String. Localized.
-    pub type_of: Type Enum: PROGRAMMING, QUESTION.
+    pub problemsetName: String, 
+    pub index: String,
+    pub name: String,
+    pub type_of: Type,
     pub points: Option<f64>, Floating point number. Can be absent. Maximum amount of points for the problem.
     pub rating: Option<i32>,Integer. Can be absent. Problem rating (difficulty).
     pub tags: Vec<String>String list. Problem tags.
