@@ -107,7 +107,6 @@ pub struct Submission {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct User {
     pub handle: String,
     pub email: Option<String>,
