@@ -1,5 +1,5 @@
 
 
-impl CodeforcesApi {
+// impl CodeforcesApi {
     
-}
+// }
