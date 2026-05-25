@@ -27,10 +27,14 @@ pub struct Language {
 
 #[derive(Deserialize)]
 pub struct Solved {
-    pub full_amount: u32,
-    pub easy_amount: u32,
-    pub medium_amount: u32,
-    pub hard_amount: u32,
+    #[serde(rename = "solvedProblem")]
+    pub solved_problem: u32,
+    #[serde(rename = "easySolved")]
+    pub easy_solved: u32,
+    #[serde(rename = "mediumSolved")]
+    pub medium_solved: u32,
+    #[serde(rename = "hardSolved")]
+    pub hard_solved: u32,
 }
 
 #[derive(Deserialize)]
@@ -62,7 +66,7 @@ impl LeetcodeApi {
     }
 
     pub fn badges(&self, username: &str) -> Result<Vec<BadgeStorage>> {
-        let url = format!("{}/{}/badge", self.base_url, username);
+        let url = format!("{}/{}/badges", self.base_url, username);
         let badges = self.client.get(&url).send()?.json::<Vec<BadgeStorage>>()?;
         Ok(badges)
     }
@@ -102,19 +106,19 @@ mod tests {
         let mock = server.mock(|when, then| {
             when.method(GET).path("/testuser/solved");
             then.status(200).json_body(json!({
-                "full_amount": 150,
-                "easy_amount": 80,
-                "medium_amount": 50,
-                "hard_amount": 20
+                "solvedProblem": 150,
+                "easySolved": 80,
+                "mediumSolved": 50,
+                "hardSolved": 20
             }));
         });
 
         let result = api(&server).amount_of_solved_problems("testuser").unwrap();
 
-        assert_eq!(result.full_amount, 150);
-        assert_eq!(result.easy_amount, 80);
-        assert_eq!(result.medium_amount, 50);
-        assert_eq!(result.hard_amount, 20);
+        assert_eq!(result.solved_problem, 150);
+        assert_eq!(result.easy_solved, 80);
+        assert_eq!(result.medium_solved, 50);
+        assert_eq!(result.hard_solved, 20);
         mock.assert();
     }
 
@@ -181,5 +185,39 @@ mod tests {
     fn test_network_error_returns_err() {
         let api = LeetcodeApi::new("http://127.0.0.1:1");
         assert!(api.amount_of_solved_problems("testuser").is_err());
+    }
+
+    #[test]
+    fn test_leetcode() -> Result<()> {
+        let client = reqwest::blocking::Client::builder()
+            .timeout(Duration::from_secs(10))
+            .build()?;
+
+        let solved: serde_json::Value = client
+            .get(format!("{DEFAULT_BASE_URL}/Andezion/solved"))
+            .send()?
+            .json()?;
+        println!("Solved:\n{}", serde_json::to_string_pretty(&solved)?);
+        assert_eq!(solved["solvedProblem"], 611);
+
+        let language: serde_json::Value = client
+            .get(format!("{DEFAULT_BASE_URL}/Andezion/language"))
+            .send()?
+            .json()?;
+        println!("Language:\n{}", serde_json::to_string_pretty(&language)?);
+
+        let skill: serde_json::Value = client
+            .get(format!("{DEFAULT_BASE_URL}/Andezion/skill"))
+            .send()?
+            .json()?;
+        println!("Skill:\n{}", serde_json::to_string_pretty(&skill)?);
+
+        let badges: serde_json::Value = client
+            .get(format!("{DEFAULT_BASE_URL}/Andezion/badges"))
+            .send()?
+            .json()?;
+        println!("Badges:\n{}", serde_json::to_string_pretty(&badges)?);
+
+        Ok(())
     }
 }
