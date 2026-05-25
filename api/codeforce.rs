@@ -85,3 +85,20 @@ impl Default for CodeforcesApi {
         Self::new(DEFAULT_BASE_URL)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_live_user_info_logs_full_response() {
+        let handle = "Andezion".to_string();
+        let api = CodeforcesApi::default();
+        let users = api.user_info(handle.as_str()).unwrap();
+
+        println!("{users:#?}");
+
+        assert_eq!(users.len(), 1);
+        assert_eq!(users[0].handle, handle);
+    }
+}
