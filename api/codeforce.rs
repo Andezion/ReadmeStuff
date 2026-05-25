@@ -97,7 +97,7 @@ pub struct Submission {
     pub relative_time_seconds: i64, 	
     pub problem: Problem,
     pub author: Party,
-    pub programmingLanguage: String,
+    pub programming_language: String,
     pub verdict: Option<Verdict>,
     pub testset: Testset,
     pub passedTestCount: i32, 
