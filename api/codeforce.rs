@@ -94,7 +94,7 @@ pub struct Submission {
     pub id: i32, 	
     pub contest_id: Option<i32>, 	
     pub creation_time_seconds: i64, 	
-    pub relativeTimeSeconds: i64, 	
+    pub relative_time_seconds: i64, 	
     pub problem: Problem,
     pub author: Party,
     pub programmingLanguage: String,
