@@ -5,6 +5,7 @@ const DEFAULT_BASE_URL: &str = "https://codeforces.com/api";
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
+#[derive(Debug, Deserialize)]
 pub enum Verdict {
     FAILED,
     OK,
@@ -25,6 +26,7 @@ pub enum Verdict {
     SUBMITTED,
 }
 
+#[derive(Debug, Deserialize)]
 pub enum Testset {
     SAMPLES,
     PRETESTS,
@@ -42,14 +44,18 @@ pub enum Testset {
     TESTS10,
 }
 
+#[derive(Debug, Deserialize)]
 pub struct Problem {
 
 }
 
+#[derive(Debug, Deserialize)]
 pub struct Party { 
 
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Submission {
     pub id: i32, 	
     pub contestId: Option<i32>, 	
@@ -63,7 +69,7 @@ pub struct Submission {
     pub passedTestCount: i32, 
     pub timeConsumedMillis: i64, 
     pub memoryConsumedBytes: i64, 
-    pub points 	Floating point number. Can be absent. Number of scored points for IOI-like contests.
+    pub points: Option<f64> 	
 }
 
 #[derive(Debug, Deserialize)]
