@@ -52,8 +52,8 @@ pub enum Type {
 
 #[derive(Debug, Deserialize)]
 pub struct Problem {
-    pub contestId: Option<i32>, 	
-    pub problemsetName: String, 
+    pub contest_id: Option<i32>, 	
+    pub problemset_name: String, 
     pub index: String,
     pub name: String,
     pub type_of: Type,
@@ -79,13 +79,13 @@ pub enum ParticipantType {
 
 #[derive(Debug, Deserialize)]
 pub struct Party { 
-    pub contestId: Option<i32>,
+    pub contest_id: Option<i32>,
     pub members: Vec<Member>,
-    pub participantType: ParticipantType,
-    pub teamId: Option<i32>,
-    pub teamName: Option<String>,
+    pub participant_type: ParticipantType,
+    pub team_id: Option<i32>,
+    pub team_name: Option<String>,
     pub ghost: bool,
-    pub startTimeSeconds: Option<i32> 	
+    pub start_time_seconds: Option<i32> 	
 }
 
 #[derive(Debug, Deserialize)]
