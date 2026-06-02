@@ -63,33 +63,28 @@ impl VisitorStorage for InMemoryStorage {
         let filtered: Vec<VisitorEvent> = events
             .iter()
             .filter(|e| {
-                if let Some(ref t) = query.target {
-                    if &e.target != t {
+                if let Some(ref t) = query.target
+                    && &e.target != t {
                         return false;
                     }
-                }
-                if let Some(src) = query.source {
-                    if e.source != src {
+                if let Some(src) = query.source
+                    && e.source != src {
                         return false;
                     }
-                }
-                if let Some(from) = query.from {
-                    if e.timestamp < from {
+                if let Some(from) = query.from
+                    && e.timestamp < from {
                         return false;
                     }
-                }
-                if let Some(to) = query.to {
-                    if e.timestamp > to {
+                if let Some(to) = query.to
+                    && e.timestamp > to {
                         return false;
                     }
-                }
                 if query.passed_only && !e.filter_result.passed {
                     return false;
                 }
                 true
             })
-            .cloned()
-            .take(query.limit.unwrap_or(u64::MAX) as usize)
+            .take(query.limit.unwrap_or(u64::MAX) as usize).cloned()
             .collect();
         Ok(filtered)
     }
@@ -431,11 +426,10 @@ impl VisitorStorage for JsonStorage {
         let mut lines = reader.lines();
         let mut snaps = Vec::new();
         while let Some(line) = lines.next_line().await? {
-            if let Ok(s) = serde_json::from_str::<TrafficSnapshot>(&line) {
-                if repo.map(|r| s.repo == r).unwrap_or(true) {
+            if let Ok(s) = serde_json::from_str::<TrafficSnapshot>(&line)
+                && repo.map(|r| s.repo == r).unwrap_or(true) {
                     snaps.push(s);
                 }
-            }
         }
         snaps.sort_by(|a, b| b.captured_at.cmp(&a.captured_at));
         snaps.truncate(limit as usize);

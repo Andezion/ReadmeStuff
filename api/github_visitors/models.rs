@@ -223,6 +223,7 @@ pub struct TrafficTrend {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct TrafficHeatmap {
     pub grid: [[u64; 24]; 7],
     pub peak_weekday: u8,
@@ -230,16 +231,6 @@ pub struct TrafficHeatmap {
     pub peak_count: u64,
 }
 
-impl Default for TrafficHeatmap {
-    fn default() -> Self {
-        Self {
-            grid: [[0; 24]; 7],
-            peak_weekday: 0,
-            peak_hour: 0,
-            peak_count: 0,
-        }
-    }
-}
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct FilterSummary {

@@ -162,11 +162,10 @@ impl VisitorFilter {
             reasons.push(FilterReason::EmptyUserAgent);
         }
 
-        if let (Some(owner_hash), Some(identity)) = (&self.config.owner_ip_hash, hashed_identity) {
-            if owner_hash == identity {
+        if let (Some(owner_hash), Some(identity)) = (&self.config.owner_ip_hash, hashed_identity)
+            && owner_hash == identity {
                 reasons.push(FilterReason::SelfVisit);
             }
-        }
 
         if !reasons.is_empty() {
             return FilterResult {
