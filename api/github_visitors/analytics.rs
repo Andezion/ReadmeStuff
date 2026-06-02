@@ -20,7 +20,7 @@ pub fn compute_analytics(
         .iter()
         .map(|r| (r.repo.clone(), r.total_views_all_time))
         .collect();
-    top_repos.sort_by(|a, b| b.1.cmp(&a.1));
+    top_repos.sort_by_key(|b| std::cmp::Reverse(b.1));
 
     VisitorAnalytics {
         generated_at: Utc::now(),
@@ -67,7 +67,7 @@ pub fn aggregate_repo_traffic(snapshots: &[TrafficSnapshot]) -> Vec<RepositoryTr
                     }
                 })
                 .collect();
-            top_referrers.sort_by(|a, b| b.count.cmp(&a.count));
+            top_referrers.sort_by_key(|b| std::cmp::Reverse(b.count));
             top_referrers.truncate(10);
 
             let mut path_map: HashMap<String, (String, u64, u64)> = HashMap::new();
@@ -91,7 +91,7 @@ pub fn aggregate_repo_traffic(snapshots: &[TrafficSnapshot]) -> Vec<RepositoryTr
                     }
                 })
                 .collect();
-            top_paths.sort_by(|a, b| b.count.cmp(&a.count));
+            top_paths.sort_by_key(|b| std::cmp::Reverse(b.count));
             top_paths.truncate(10);
 
             RepositoryTrafficSummary {
@@ -106,7 +106,7 @@ pub fn aggregate_repo_traffic(snapshots: &[TrafficSnapshot]) -> Vec<RepositoryTr
         })
         .collect();
 
-    summaries.sort_by(|a, b| b.total_views_all_time.cmp(&a.total_views_all_time));
+    summaries.sort_by_key(|b| std::cmp::Reverse(b.total_views_all_time));
     summaries
 }
 
@@ -306,7 +306,7 @@ pub fn repo_popularity_ranking(snapshots: &[TrafficSnapshot]) -> Vec<(String, u6
 
     let mut ranked: Vec<(String, u64, u64)> =
         totals.into_iter().map(|(r, (v, u))| (r, v, u)).collect();
-    ranked.sort_by(|a, b| b.1.cmp(&a.1));
+    ranked.sort_by_key(|b| std::cmp::Reverse(b.1));
     ranked
 }
 

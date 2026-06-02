@@ -431,7 +431,7 @@ impl VisitorStorage for JsonStorage {
                     snaps.push(s);
                 }
         }
-        snaps.sort_by(|a, b| b.captured_at.cmp(&a.captured_at));
+        snaps.sort_by_key(|b| std::cmp::Reverse(b.captured_at));
         snaps.truncate(limit as usize);
         Ok(snaps)
     }

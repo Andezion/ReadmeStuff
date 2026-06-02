@@ -117,7 +117,7 @@ impl TrafficFetcher {
             }
         }
 
-        snapshots.sort_by(|a, b| b.views.count.cmp(&a.views.count));
+        snapshots.sort_by_key(|b| std::cmp::Reverse(b.views.count));
         Ok(snapshots)
     }
 
