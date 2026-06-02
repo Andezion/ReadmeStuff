@@ -339,8 +339,8 @@ fn calc_gaps(days: &[ContributionDay]) -> Vec<ContributionGap> {
         }
     }
 
-    if let Some(start) = gap_start {
-        if let Some(last) = days.last() {
+    if let Some(start) = gap_start
+        && let Some(last) = days.last() {
             let len = (last.date.signed_duration_since(start).num_days() + 1) as u32;
             if len >= 3 {
                 gaps.push(ContributionGap {
@@ -350,7 +350,6 @@ fn calc_gaps(days: &[ContributionDay]) -> Vec<ContributionGap> {
                 });
             }
         }
-    }
 
     gaps
 }

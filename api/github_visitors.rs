@@ -173,7 +173,7 @@ impl GitHubVisitorsApi {
             }
         }
 
-        repos.sort_by(|a, b| b.views.count.cmp(&a.views.count));
+        repos.sort_by_key(|b| std::cmp::Reverse(b.views.count));
 
         Ok(ProfileTraffic {
             profile_views: None,
