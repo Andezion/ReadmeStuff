@@ -208,7 +208,7 @@ fn aggregate(repos: Vec<RepoNode>, opts: &LangQueryOptions) -> AggregatedLangSta
             })
             .collect();
 
-        entries.sort_by(|a, b| b.bytes.cmp(&a.bytes));
+        entries.sort_by_key(|b| std::cmp::Reverse(b.bytes));
         let dominant = entries.first().map(|e| e.name.clone());
 
         for e in &repo.languages.edges {
@@ -244,7 +244,7 @@ fn aggregate(repos: Vec<RepoNode>, opts: &LangQueryOptions) -> AggregatedLangSta
         })
         .collect();
 
-    languages.sort_by(|a, b| b.total_bytes.cmp(&a.total_bytes));
+    languages.sort_by_key(|b| std::cmp::Reverse(b.total_bytes));
     repo_stats.sort_by_key(|r| std::cmp::Reverse(r.languages.iter().map(|l| l.bytes).sum::<u64>()));
 
     let most_used = languages.first().map(|l| l.name.clone());
