@@ -90,9 +90,9 @@ impl GithubStreakApi {
 		)
 	}
 
-    pub fn full_commits(&self, storage: Vec<ContributorActivity>) -> Result<GitHubFullCommits> {
+    pub fn full_commits(&self, storage: Vec<ContributorActivity>) -> Result<GithubFullCommits> {
         let total_commits: i64 = storage.iter().map(|activity| activity.total).sum();
-        Ok(GitHubFullCommits { total: total_commits })
+        Ok(GithubFullCommits { total: total_commits })
     }
 }
 
