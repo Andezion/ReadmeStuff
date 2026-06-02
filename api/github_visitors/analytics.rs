@@ -319,6 +319,7 @@ mod tests {
     };
     use chrono::{TimeZone, Utc};
     use uuid::Uuid;
+    use crate::github_visitors::TrafficDay;
 
     fn make_snap(
         repo: &str,

@@ -214,6 +214,7 @@ fn parse_day(entry: &RestDayEntry) -> Option<TrafficDay> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::NaiveDate;
 
     #[test]
     fn parse_day_valid_timestamp() {
