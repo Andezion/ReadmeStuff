@@ -53,6 +53,10 @@ pub struct GithubStreakApi {
 	client: reqwest::blocking::Client,
 }
 
+pub struct GithubFullCommits {
+    pub total: i64,
+}
+
 impl GithubStreakApi {
 	pub fn new(base_url: impl Into<String>) -> Self {
 		GithubStreakApi {
@@ -85,6 +89,11 @@ impl GithubStreakApi {
 			&[("owner", owner.to_string()), ("repo", repo.to_string())],
 		)
 	}
+
+    pub fn full_commits(&self, storage: Vec<ContributorActivity>) -> Result<GitHubFullCommits> {
+        let total_commits: i64 = storage.iter().map(|activity| activity.total).sum();
+        Ok(GitHubFullCommits { total: total_commits })
+    }
 }
 
 impl Default for GithubStreakApi {
