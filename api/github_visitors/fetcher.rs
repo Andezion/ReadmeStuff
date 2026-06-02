@@ -2,10 +2,9 @@ use crate::github_client::{GitHubClient, GitHubError};
 use crate::github_visitors::models::{
     TrafficClones, TrafficDay, TrafficPath, TrafficReferrer, TrafficSnapshot, TrafficViews,
 };
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::DateTime;
 use serde::Deserialize;
 use serde_json::json;
-
 
 #[derive(Deserialize)]
 struct RestViews {
@@ -153,15 +152,30 @@ impl TrafficFetcher {
 
         let referrers = raw_refs
             .into_iter()
-            .map(|r| TrafficReferrer { referrer: r.referrer, count: r.count, uniques: r.uniques })
+            .map(|r| TrafficReferrer {
+                referrer: r.referrer,
+                count: r.count,
+                uniques: r.uniques,
+            })
             .collect();
 
         let top_paths = raw_paths
             .into_iter()
-            .map(|p| TrafficPath { path: p.path, title: p.title, count: p.count, uniques: p.uniques })
+            .map(|p| TrafficPath {
+                path: p.path,
+                title: p.title,
+                count: p.count,
+                uniques: p.uniques,
+            })
             .collect();
 
-        Ok(TrafficSnapshot::new(format!("{owner}/{repo}"), views, clones, referrers, top_paths))
+        Ok(TrafficSnapshot::new(
+            format!("{owner}/{repo}"),
+            views,
+            clones,
+            referrers,
+            top_paths,
+        ))
     }
 
     async fn enumerate_repo_names(&self, login: &str) -> Result<Vec<String>, GitHubError> {
@@ -216,7 +230,11 @@ mod tests {
 
     #[test]
     fn parse_day_invalid_timestamp_returns_none() {
-        let entry = RestDayEntry { timestamp: "not-a-date".into(), count: 1, uniques: 1 };
+        let entry = RestDayEntry {
+            timestamp: "not-a-date".into(),
+            count: 1,
+            uniques: 1,
+        };
         assert!(parse_day(&entry).is_none());
     }
 

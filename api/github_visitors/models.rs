@@ -26,7 +26,6 @@ impl VisitTarget {
     }
 }
 
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum EventSource {
@@ -44,7 +43,6 @@ impl std::fmt::Display for EventSource {
         }
     }
 }
-
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -127,7 +125,6 @@ pub struct VisitorSession {
     pub event_count: u32,
     pub targets: Vec<VisitTarget>,
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TrafficDay {
@@ -235,7 +232,12 @@ pub struct TrafficHeatmap {
 
 impl Default for TrafficHeatmap {
     fn default() -> Self {
-        Self { grid: [[0; 24]; 7], peak_weekday: 0, peak_hour: 0, peak_count: 0 }
+        Self {
+            grid: [[0; 24]; 7],
+            peak_weekday: 0,
+            peak_hour: 0,
+            peak_count: 0,
+        }
     }
 }
 

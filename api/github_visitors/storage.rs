@@ -1,4 +1,3 @@
-use crate::github_client::GitHubError;
 use crate::github_visitors::models::{EventQuery, TrafficSnapshot, VisitorEvent};
 use async_trait::async_trait;
 use chrono::Utc;
@@ -9,7 +8,6 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 pub type StorageResult<T> = std::result::Result<T, StorageError>;
-
 
 #[derive(Debug, thiserror::Error)]
 pub enum StorageError {
@@ -142,7 +140,10 @@ pub struct SqliteStorage {
 impl SqliteStorage {
     pub async fn open(path: impl AsRef<Path>) -> StorageResult<Self> {
         let url = format!("sqlite://{}?mode=rwc", path.as_ref().display());
-        let pool = SqlitePoolOptions::new().max_connections(4).connect(&url).await?;
+        let pool = SqlitePoolOptions::new()
+            .max_connections(4)
+            .connect(&url)
+            .await?;
         let storage = Self { pool };
         storage.migrate().await?;
         Ok(storage)
@@ -236,7 +237,7 @@ impl VisitorStorage for SqliteStorage {
             .to_string();
 
         if let Some(ref target) = query.target {
-            let _ = target; 
+            let _ = target;
             sql += " AND target_name = ?";
         }
         if let Some(src) = query.source {
@@ -318,14 +319,22 @@ impl VisitorStorage for SqliteStorage {
             .await?
         };
 
-        let snaps = rows.into_iter().filter_map(|row| deserialize_snapshot_row(&row).ok()).collect();
+        let snaps = rows
+            .into_iter()
+            .filter_map(|row| deserialize_snapshot_row(&row).ok())
+            .collect();
         Ok(snaps)
     }
 
     async fn export_json(&self, path: &Path) -> StorageResult<()> {
         use tokio::io::AsyncWriteExt;
 
-        let events = self.get_events(&EventQuery { limit: None, ..Default::default() }).await?;
+        let events = self
+            .get_events(&EventQuery {
+                limit: None,
+                ..Default::default()
+            })
+            .await?;
         let snaps = self.get_snapshots(None, 10_000).await?;
 
         let mut file = tokio::fs::File::create(path).await?;
@@ -389,7 +398,10 @@ impl VisitorStorage for JsonStorage {
         for e in events {
             let _ = storage.record_event(&e).await;
         }
-        storage.get_events(query).await.map_err(|_| StorageError::NotInitialised)
+        storage
+            .get_events(query)
+            .await
+            .map_err(|_| StorageError::NotInitialised)
     }
 
     async fn save_snapshot(&self, snapshot: &TrafficSnapshot) -> StorageResult<()> {
@@ -436,7 +448,6 @@ impl VisitorStorage for JsonStorage {
     }
 }
 
-
 fn deserialize_event_row(row: &sqlx::sqlite::SqliteRow) -> Result<VisitorEvent, StorageError> {
     use sqlx::Row;
     use std::str::FromStr;
@@ -456,7 +467,9 @@ fn deserialize_event_row(row: &sqlx::sqlite::SqliteRow) -> Result<VisitorEvent, 
         .unwrap_or_else(|_| Utc::now());
 
     let target = if target_type == "profile" {
-        VisitTarget::Profile { username: target_name }
+        VisitTarget::Profile {
+            username: target_name,
+        }
     } else {
         let parts: Vec<&str> = target_name.splitn(2, '/').collect();
         VisitTarget::Repository {
@@ -473,7 +486,15 @@ fn deserialize_event_row(row: &sqlx::sqlite::SqliteRow) -> Result<VisitorEvent, 
 
     let filter_result = serde_json::from_str(&filter_data)?;
 
-    Ok(VisitorEvent { id, timestamp, target, hashed_identity, user_agent, source, filter_result })
+    Ok(VisitorEvent {
+        id,
+        timestamp,
+        target,
+        hashed_identity,
+        user_agent,
+        source,
+        filter_result,
+    })
 }
 
 fn deserialize_snapshot_row(
@@ -520,7 +541,9 @@ mod tests {
         VisitorEvent {
             id: Uuid::new_v4(),
             timestamp: Utc::now(),
-            target: VisitTarget::Profile { username: "Andezion".into() },
+            target: VisitTarget::Profile {
+                username: "Andezion".into(),
+            },
             hashed_identity: Some("abc123".into()),
             user_agent: Some("Mozilla/5.0".into()),
             source: EventSource::CustomPixel,
@@ -533,8 +556,16 @@ mod tests {
             id: Uuid::new_v4(),
             captured_at: Utc::now(),
             repo: repo.to_string(),
-            views: TrafficViews { count: 42, uniques: 20, days: vec![] },
-            clones: TrafficClones { count: 5, uniques: 3, days: vec![] },
+            views: TrafficViews {
+                count: 42,
+                uniques: 20,
+                days: vec![],
+            },
+            clones: TrafficClones {
+                count: 5,
+                uniques: 3,
+                days: vec![],
+            },
             referrers: vec![],
             top_paths: vec![],
         }
@@ -582,8 +613,13 @@ mod tests {
         store.record_event(&rejected).await.unwrap();
 
         let all = store.get_events(&EventQuery::default()).await.unwrap();
-        let only_passed =
-            store.get_events(&EventQuery { passed_only: true, ..Default::default() }).await.unwrap();
+        let only_passed = store
+            .get_events(&EventQuery {
+                passed_only: true,
+                ..Default::default()
+            })
+            .await
+            .unwrap();
 
         assert_eq!(all.len(), 2);
         assert_eq!(only_passed.len(), 1);
@@ -599,7 +635,10 @@ mod tests {
         let snap = make_snapshot("Andezion/test-repo");
         store.save_snapshot(&snap).await.unwrap();
 
-        let snaps = store.get_snapshots(Some("Andezion/test-repo"), 5).await.unwrap();
+        let snaps = store
+            .get_snapshots(Some("Andezion/test-repo"), 5)
+            .await
+            .unwrap();
         assert_eq!(snaps.len(), 1);
         assert_eq!(snaps[0].views.count, 42);
     }
@@ -608,7 +647,10 @@ mod tests {
     async fn sqlite_export_to_json() {
         let store = SqliteStorage::open_in_memory().await.unwrap();
         store.record_event(&make_event()).await.unwrap();
-        store.save_snapshot(&make_snapshot("Andezion/repo")).await.unwrap();
+        store
+            .save_snapshot(&make_snapshot("Andezion/repo"))
+            .await
+            .unwrap();
 
         let tmp = std::env::temp_dir().join("test_export.jsonl");
         store.export_json(&tmp).await.unwrap();

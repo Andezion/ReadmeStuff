@@ -76,8 +76,7 @@ pub use storage::{InMemoryStorage, JsonStorage, SqliteStorage, StorageError, Vis
 
 use crate::github_client::GitHubClient;
 use analytics::{
-    build_heatmap, compute_analytics, daily_active_visitors, repo_popularity_ranking,
-    summarise_filter, unique_visitor_stats,
+    compute_analytics, daily_active_visitors, repo_popularity_ranking, unique_visitor_stats,
 };
 use chrono::{NaiveDate, Utc};
 use fetcher::TrafficFetcher;
@@ -116,9 +115,11 @@ impl GithubVisitorsService {
     ) -> Result<Self> {
         let storage: Arc<dyn VisitorStorage> = match kind {
             StorageKind::InMemory => Arc::new(InMemoryStorage::new()),
-            StorageKind::Sqlite { path } => {
-                Arc::new(SqliteStorage::open(path).await.map_err(VisitorsError::Storage)?)
-            }
+            StorageKind::Sqlite { path } => Arc::new(
+                SqliteStorage::open(path)
+                    .await
+                    .map_err(VisitorsError::Storage)?,
+            ),
             StorageKind::Json { dir } => Arc::new(JsonStorage::new(dir)),
         };
 
@@ -132,7 +133,10 @@ impl GithubVisitorsService {
     pub async fn refresh_from_github(&self, login: &str) -> Result<Vec<TrafficSnapshot>> {
         let snapshots = self.fetcher.fetch_all_repo_traffic(login).await?;
         for snap in &snapshots {
-            self.storage.save_snapshot(snap).await.map_err(VisitorsError::Storage)?;
+            self.storage
+                .save_snapshot(snap)
+                .await
+                .map_err(VisitorsError::Storage)?;
         }
         tracing::info!(
             login,
@@ -142,11 +146,7 @@ impl GithubVisitorsService {
         Ok(snapshots)
     }
 
-    pub async fn fetch_repo_snapshot(
-        &self,
-        owner: &str,
-        repo: &str,
-    ) -> Result<TrafficSnapshot> {
+    pub async fn fetch_repo_snapshot(&self, owner: &str, repo: &str) -> Result<TrafficSnapshot> {
         Ok(self.fetcher.fetch_repo_snapshot(owner, repo).await?)
     }
 
@@ -172,7 +172,10 @@ impl GithubVisitorsService {
             filter_result,
         );
 
-        self.storage.record_event(&event).await.map_err(VisitorsError::Storage)?;
+        self.storage
+            .record_event(&event)
+            .await
+            .map_err(VisitorsError::Storage)?;
         Ok(event)
     }
 
@@ -221,7 +224,10 @@ impl GithubVisitorsService {
     }
 
     pub async fn export_json(&self, path: &std::path::Path) -> Result<()> {
-        self.storage.export_json(path).await.map_err(VisitorsError::Storage)?;
+        self.storage
+            .export_json(path)
+            .await
+            .map_err(VisitorsError::Storage)?;
         Ok(())
     }
 
@@ -232,7 +238,6 @@ impl GithubVisitorsService {
         format!("{}/track?u={}", base_url.trim_end_matches('/'), username)
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -249,7 +254,9 @@ mod tests {
     #[tokio::test]
     async fn record_and_retrieve_visit() {
         let svc = make_service().await;
-        let target = VisitTarget::Profile { username: "Andezion".into() };
+        let target = VisitTarget::Profile {
+            username: "Andezion".into(),
+        };
 
         let event = svc
             .record_visit(
@@ -270,7 +277,9 @@ mod tests {
     #[tokio::test]
     async fn bot_visit_filtered() {
         let svc = make_service().await;
-        let target = VisitTarget::Profile { username: "Andezion".into() };
+        let target = VisitTarget::Profile {
+            username: "Andezion".into(),
+        };
 
         let event = svc
             .record_visit(target, Some("Googlebot/2.1"), Some("bot-ip"))
@@ -287,7 +296,9 @@ mod tests {
     #[tokio::test]
     async fn second_visit_within_window_deduplicated() {
         let svc = make_service().await;
-        let target = VisitTarget::Profile { username: "Andezion".into() };
+        let target = VisitTarget::Profile {
+            username: "Andezion".into(),
+        };
 
         let e1 = svc
             .record_visit(target.clone(), Some("Mozilla/5.0"), Some("id-xyz"))
@@ -300,7 +311,11 @@ mod tests {
 
         assert!(e1.filter_result.passed);
         assert!(!e2.filter_result.passed);
-        assert!(e2.filter_result.reasons.contains(&FilterReason::DeduplicatedByWindow));
+        assert!(
+            e2.filter_result
+                .reasons
+                .contains(&FilterReason::DeduplicatedByWindow)
+        );
     }
 
     #[tokio::test]
@@ -316,7 +331,12 @@ mod tests {
             .unwrap();
 
         assert!(!event.filter_result.passed);
-        assert!(event.filter_result.reasons.contains(&FilterReason::GithubCamoProxy));
+        assert!(
+            event
+                .filter_result
+                .reasons
+                .contains(&FilterReason::GithubCamoProxy)
+        );
     }
 
     #[tokio::test]
@@ -339,7 +359,7 @@ mod tests {
         let config = FilterConfig {
             max_requests_per_window: 20,
             rate_window_secs: 60,
-            dedup_window_secs: 1, 
+            dedup_window_secs: 1,
             filter_bots: false,
             filter_camo_proxy: false,
             filter_github_actions: false,
@@ -347,14 +367,17 @@ mod tests {
             owner_ip_hash: None,
         };
         let client = GitHubClient::new("dummy").unwrap();
-        let svc =
-            GithubVisitorsService::new(client, StorageKind::InMemory, config).await.unwrap();
+        let svc = GithubVisitorsService::new(client, StorageKind::InMemory, config)
+            .await
+            .unwrap();
 
         let mut passed = 0u32;
         let mut rate_limited = 0u32;
         for i in 0..25u32 {
             let id = format!("id-{i}");
-            let target = VisitTarget::Profile { username: "Andezion".into() };
+            let target = VisitTarget::Profile {
+                username: "Andezion".into(),
+            };
             let event = svc
                 .record_visit(target, Some("Mozilla/5.0"), Some(&id))
                 .await
@@ -374,16 +397,16 @@ mod tests {
         assert_eq!(rate_limited, 5, "the remaining 5 should be rate-limited");
     }
 
-
     #[tokio::test]
     async fn live_refresh_from_github_andezion() {
         let Ok(client) = GitHubClient::from_env() else {
             eprintln!("GITHUB_TOKEN not set — skipping live test");
             return;
         };
-        let svc = GithubVisitorsService::new(client, StorageKind::InMemory, FilterConfig::default())
-            .await
-            .unwrap();
+        let svc =
+            GithubVisitorsService::new(client, StorageKind::InMemory, FilterConfig::default())
+                .await
+                .unwrap();
 
         let snapshots = svc.refresh_from_github("Andezion").await.unwrap();
         println!("Refreshed {} snapshots", snapshots.len());
@@ -402,7 +425,9 @@ mod tests {
         let db_path = std::env::temp_dir().join("andezion_visitors_test.db");
         let svc = GithubVisitorsService::new(
             client,
-            StorageKind::Sqlite { path: db_path.clone() },
+            StorageKind::Sqlite {
+                path: db_path.clone(),
+            },
             FilterConfig::default(),
         )
         .await

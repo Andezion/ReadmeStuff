@@ -1,9 +1,8 @@
 use crate::github_visitors::models::{
-    EventQuery, FilterReason, FilterSummary, RepositoryTrafficSummary, TrafficDay, TrafficHeatmap,
-    TrafficSnapshot, TrafficTrend, TrendPoint, UniqueVisitorStats, VisitTarget, VisitorAnalytics,
-    VisitorEvent,
+    FilterReason, FilterSummary, RepositoryTrafficSummary, TrafficHeatmap, TrafficSnapshot,
+    TrafficTrend, TrendPoint, UniqueVisitorStats, VisitorAnalytics, VisitorEvent,
 };
-use chrono::{Datelike, NaiveDate, Timelike, Utc, Weekday};
+use chrono::{Datelike, NaiveDate, Timelike, Utc};
 use std::collections::{BTreeMap, HashMap};
 
 pub fn compute_analytics(
@@ -60,10 +59,12 @@ pub fn aggregate_repo_traffic(snapshots: &[TrafficSnapshot]) -> Vec<RepositoryTr
             }
             let mut top_referrers: Vec<_> = ref_map
                 .into_iter()
-                .map(|(referrer, (count, uniques))| crate::github_visitors::models::TrafficReferrer {
-                    referrer,
-                    count,
-                    uniques,
+                .map(|(referrer, (count, uniques))| {
+                    crate::github_visitors::models::TrafficReferrer {
+                        referrer,
+                        count,
+                        uniques,
+                    }
                 })
                 .collect();
             top_referrers.sort_by(|a, b| b.count.cmp(&a.count));
@@ -72,18 +73,22 @@ pub fn aggregate_repo_traffic(snapshots: &[TrafficSnapshot]) -> Vec<RepositoryTr
             let mut path_map: HashMap<String, (String, u64, u64)> = HashMap::new();
             for s in &snaps {
                 for p in &s.top_paths {
-                    let e = path_map.entry(p.path.clone()).or_insert((p.title.clone(), 0, 0));
+                    let e = path_map
+                        .entry(p.path.clone())
+                        .or_insert((p.title.clone(), 0, 0));
                     e.1 += p.count;
                     e.2 += p.uniques;
                 }
             }
             let mut top_paths: Vec<_> = path_map
                 .into_iter()
-                .map(|(path, (title, count, uniques))| crate::github_visitors::models::TrafficPath {
-                    path,
-                    title,
-                    count,
-                    uniques,
+                .map(|(path, (title, count, uniques))| {
+                    crate::github_visitors::models::TrafficPath {
+                        path,
+                        title,
+                        count,
+                        uniques,
+                    }
                 })
                 .collect();
             top_paths.sort_by(|a, b| b.count.cmp(&a.count));
@@ -133,7 +138,12 @@ pub fn compute_trend_from_snapshots(snapshots: &[TrafficSnapshot]) -> TrafficTre
     for date in &dates {
         let (total, unique) = daily[date];
         let delta = total as i64 - prev_total as i64;
-        data_points.push(TrendPoint { date: *date, total, unique, delta });
+        data_points.push(TrendPoint {
+            date: *date,
+            total,
+            unique,
+            delta,
+        });
         prev_total = total;
     }
     if let Some(p) = data_points.first_mut() {
@@ -157,8 +167,7 @@ pub fn compute_trend_from_snapshots(snapshots: &[TrafficSnapshot]) -> TrafficTre
         0.0
     };
 
-    let average_daily =
-        data_points.iter().map(|p| p.total).sum::<u64>() as f64 / n as f64;
+    let average_daily = data_points.iter().map(|p| p.total).sum::<u64>() as f64 / n as f64;
 
     TrafficTrend {
         data_points,
@@ -175,7 +184,7 @@ pub fn build_heatmap(events: &[VisitorEvent]) -> TrafficHeatmap {
 
     for e in events.iter().filter(|e| e.filter_result.passed) {
         let ts = e.timestamp;
-        let weekday = ts.weekday().num_days_from_sunday() as usize; 
+        let weekday = ts.weekday().num_days_from_sunday() as usize;
         let hour = ts.hour() as usize;
         grid[weekday][hour] += 1;
     }
@@ -191,11 +200,19 @@ pub fn build_heatmap(events: &[VisitorEvent]) -> TrafficHeatmap {
         }
     }
 
-    TrafficHeatmap { grid, peak_weekday: peak_wd, peak_hour: peak_hr, peak_count }
+    TrafficHeatmap {
+        grid,
+        peak_weekday: peak_wd,
+        peak_hour: peak_hr,
+        peak_count,
+    }
 }
 
 pub fn summarise_filter(events: &[VisitorEvent]) -> FilterSummary {
-    let mut s = FilterSummary { total_raw: events.len() as u64, ..Default::default() };
+    let mut s = FilterSummary {
+        total_raw: events.len() as u64,
+        ..Default::default()
+    };
 
     for e in events {
         if e.filter_result.passed {
@@ -219,8 +236,10 @@ pub fn summarise_filter(events: &[VisitorEvent]) -> FilterSummary {
 
 pub fn returning_visitor_ratio(events: &[VisitorEvent]) -> f64 {
     let passed: Vec<&VisitorEvent> = events.iter().filter(|e| e.filter_result.passed).collect();
-    let with_identity: Vec<&&VisitorEvent> =
-        passed.iter().filter(|e| e.hashed_identity.is_some()).collect();
+    let with_identity: Vec<&&VisitorEvent> = passed
+        .iter()
+        .filter(|e| e.hashed_identity.is_some())
+        .collect();
 
     if with_identity.is_empty() {
         return 0.0;
@@ -228,7 +247,9 @@ pub fn returning_visitor_ratio(events: &[VisitorEvent]) -> f64 {
 
     let mut counts: HashMap<&str, u32> = HashMap::new();
     for e in &with_identity {
-        *counts.entry(e.hashed_identity.as_deref().unwrap()).or_insert(0) += 1;
+        *counts
+            .entry(e.hashed_identity.as_deref().unwrap())
+            .or_insert(0) += 1;
     }
 
     let returning = counts.values().filter(|&&n| n > 1).count();
@@ -269,7 +290,10 @@ pub fn daily_active_visitors(events: &[VisitorEvent]) -> BTreeMap<NaiveDate, u64
         day_map.entry(date).or_default().insert(key);
     }
 
-    day_map.into_iter().map(|(d, set)| (d, set.len() as u64)).collect()
+    day_map
+        .into_iter()
+        .map(|(d, set)| (d, set.len() as u64))
+        .collect()
 }
 
 pub fn repo_popularity_ranking(snapshots: &[TrafficSnapshot]) -> Vec<(String, u64, u64)> {
@@ -290,13 +314,18 @@ pub fn repo_popularity_ranking(snapshots: &[TrafficSnapshot]) -> Vec<(String, u6
 mod tests {
     use super::*;
     use crate::github_visitors::models::{
-        BotDetectionResult, EventSource, FilterResult, TrafficClones, TrafficViews, VisitorEvent,
-        VisitTarget,
+        BotDetectionResult, EventSource, FilterResult, TrafficClones, TrafficViews, VisitTarget,
+        VisitorEvent,
     };
     use chrono::{TimeZone, Utc};
     use uuid::Uuid;
 
-    fn make_snap(repo: &str, days: &[(NaiveDate, u64, u64)], total: u64, unique: u64) -> TrafficSnapshot {
+    fn make_snap(
+        repo: &str,
+        days: &[(NaiveDate, u64, u64)],
+        total: u64,
+        unique: u64,
+    ) -> TrafficSnapshot {
         TrafficSnapshot {
             id: Uuid::new_v4(),
             captured_at: Utc::now(),
@@ -306,10 +335,18 @@ mod tests {
                 uniques: unique,
                 days: days
                     .iter()
-                    .map(|(d, c, u)| TrafficDay { date: *d, count: *c, uniques: *u })
+                    .map(|(d, c, u)| TrafficDay {
+                        date: *d,
+                        count: *c,
+                        uniques: *u,
+                    })
                     .collect(),
             },
-            clones: TrafficClones { count: 0, uniques: 0, days: vec![] },
+            clones: TrafficClones {
+                count: 0,
+                uniques: 0,
+                days: vec![],
+            },
             referrers: vec![],
             top_paths: vec![],
         }
@@ -319,7 +356,9 @@ mod tests {
         VisitorEvent {
             id: Uuid::new_v4(),
             timestamp: Utc.timestamp_opt(ts_secs, 0).unwrap(),
-            target: VisitTarget::Profile { username: "Andezion".into() },
+            target: VisitTarget::Profile {
+                username: "Andezion".into(),
+            },
             hashed_identity: hashed_id.map(|s| s.to_string()),
             user_agent: Some("Mozilla/5.0".into()),
             source: EventSource::CustomPixel,
@@ -350,7 +389,10 @@ mod tests {
             make_snap("Andezion/repo-b", &[(d1, 5, 3)], 5, 3),
         ];
         let summaries = aggregate_repo_traffic(&snaps);
-        let a = summaries.iter().find(|s| s.repo == "Andezion/repo-a").unwrap();
+        let a = summaries
+            .iter()
+            .find(|s| s.repo == "Andezion/repo-a")
+            .unwrap();
         assert_eq!(a.total_views_all_time, 25);
         assert!(summaries[0].total_views_all_time >= summaries[1].total_views_all_time);
     }
@@ -358,8 +400,8 @@ mod tests {
     #[test]
     fn heatmap_populated_correctly() {
         let events = vec![
-            make_event(true, Some("id-1"), 0),     
-            make_event(true, Some("id-2"), 3_600), 
+            make_event(true, Some("id-1"), 0),
+            make_event(true, Some("id-2"), 3_600),
         ];
         let hm = build_heatmap(&events);
         let total: u64 = hm.grid.iter().flat_map(|r| r.iter()).sum();
@@ -393,7 +435,7 @@ mod tests {
     fn returning_visitor_ratio_half_returning() {
         let events = vec![
             make_event(true, Some("id-1"), 0),
-            make_event(true, Some("id-1"), 100), 
+            make_event(true, Some("id-1"), 100),
             make_event(true, Some("id-2"), 200),
         ];
         assert_eq!(returning_visitor_ratio(&events), 0.5);
@@ -405,7 +447,7 @@ mod tests {
         let days: Vec<(NaiveDate, u64, u64)> = (0..14i64)
             .map(|i| {
                 let d = base + chrono::Duration::days(i);
-                let count = (i + 1) as u64 * 10; 
+                let count = (i + 1) as u64 * 10;
                 (d, count, count / 2)
             })
             .collect();
@@ -421,10 +463,10 @@ mod tests {
         let day_start = d1.and_hms_opt(0, 0, 0).unwrap().and_utc().timestamp();
         let events = vec![
             make_event(true, Some("id-1"), day_start),
-            make_event(true, Some("id-1"), day_start + 3_600), 
+            make_event(true, Some("id-1"), day_start + 3_600),
             make_event(true, Some("id-2"), day_start + 7_200),
         ];
         let dav = daily_active_visitors(&events);
-        assert_eq!(dav[&d1], 2); 
+        assert_eq!(dav[&d1], 2);
     }
 }

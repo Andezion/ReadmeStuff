@@ -128,7 +128,10 @@ pub struct VisitorFilter {
 
 impl VisitorFilter {
     pub fn new(config: FilterConfig) -> Self {
-        Self { config, state: FilterState::new() }
+        Self {
+            config,
+            state: FilterState::new(),
+        }
     }
 
     pub fn evaluate(
@@ -159,21 +162,27 @@ impl VisitorFilter {
             reasons.push(FilterReason::EmptyUserAgent);
         }
 
-        if let (Some(owner_hash), Some(identity)) =
-            (&self.config.owner_ip_hash, hashed_identity)
-        {
+        if let (Some(owner_hash), Some(identity)) = (&self.config.owner_ip_hash, hashed_identity) {
             if owner_hash == identity {
                 reasons.push(FilterReason::SelfVisit);
             }
         }
 
         if !reasons.is_empty() {
-            return FilterResult { passed: false, reasons, bot_detection: bot };
+            return FilterResult {
+                passed: false,
+                reasons,
+                bot_detection: bot,
+            };
         }
 
         if self.is_rate_limited(target_key, now) {
             reasons.push(FilterReason::RateLimitExceeded);
-            return FilterResult { passed: false, reasons, bot_detection: bot };
+            return FilterResult {
+                passed: false,
+                reasons,
+                bot_detection: bot,
+            };
         }
 
         let dedup_key = match hashed_identity {
@@ -188,18 +197,29 @@ impl VisitorFilter {
             let age = now.signed_duration_since(last_seen).num_seconds() as u64;
             if age < self.config.dedup_window_secs {
                 reasons.push(FilterReason::DeduplicatedByWindow);
-                return FilterResult { passed: false, reasons, bot_detection: bot };
+                return FilterResult {
+                    passed: false,
+                    reasons,
+                    bot_detection: bot,
+                };
             }
         }
 
         self.state.dedup.insert(dedup_key, now);
-        FilterResult { passed: true, reasons: vec![], bot_detection: bot }
+        FilterResult {
+            passed: true,
+            reasons: vec![],
+            bot_detection: bot,
+        }
     }
-
 
     fn is_rate_limited(&mut self, target_key: &str, now: DateTime<Utc>) -> bool {
         let window_start = now - chrono::Duration::seconds(self.rate_window_secs() as i64);
-        let times = self.state.rate_windows.entry(target_key.to_string()).or_default();
+        let times = self
+            .state
+            .rate_windows
+            .entry(target_key.to_string())
+            .or_default();
 
         times.retain(|t| *t > window_start);
         times.push(now);
@@ -212,7 +232,11 @@ impl VisitorFilter {
     }
 
     pub fn gc(&mut self) {
-        let keep = self.config.dedup_window_secs.max(self.config.rate_window_secs) * 2;
+        let keep = self
+            .config
+            .dedup_window_secs
+            .max(self.config.rate_window_secs)
+            * 2;
         self.state.gc(keep);
     }
 }
@@ -226,7 +250,7 @@ pub fn detect_bot(user_agent: Option<&str>) -> BotDetectionResult {
                 confidence: 0.0,
                 reason: None,
                 matched_pattern: None,
-            }
+            };
         }
     };
 
@@ -241,7 +265,12 @@ pub fn detect_bot(user_agent: Option<&str>) -> BotDetectionResult {
         }
     }
 
-    BotDetectionResult { is_bot: false, confidence: 0.05, reason: None, matched_pattern: None }
+    BotDetectionResult {
+        is_bot: false,
+        confidence: 0.05,
+        reason: None,
+        matched_pattern: None,
+    }
 }
 
 pub fn is_camo_proxy(user_agent: Option<&str>) -> bool {
@@ -271,7 +300,9 @@ mod tests {
 
     #[test]
     fn bot_ua_detected() {
-        let r = detect_bot(Some("Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"));
+        let r = detect_bot(Some(
+            "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+        ));
         assert!(r.is_bot);
         assert_eq!(r.reason, Some(FilterReason::BotUserAgent));
     }
@@ -292,20 +323,30 @@ mod tests {
 
     #[test]
     fn camo_proxy_detected() {
-        assert!(is_camo_proxy(Some("camo-rs (https://example.com; +https://github.com/atmos/camo) abc123")));
+        assert!(is_camo_proxy(Some(
+            "camo-rs (https://example.com; +https://github.com/atmos/camo) abc123"
+        )));
         assert!(!is_camo_proxy(Some("Mozilla/5.0 Chrome/120.0")));
     }
 
     #[test]
     fn dedup_within_window_filtered() {
-        let mut f = VisitorFilter::new(FilterConfig { dedup_window_secs: 1_800, ..Default::default() });
-        
+        let mut f = VisitorFilter::new(FilterConfig {
+            dedup_window_secs: 1_800,
+            ..Default::default()
+        });
+
         let r1 = f.evaluate(Some("Mozilla/5.0"), Some("id-abc"), "Andezion", ts(1_000));
         assert!(r1.passed);
         let r2 = f.evaluate(Some("Mozilla/5.0"), Some("id-abc"), "Andezion", ts(1_300));
         assert!(!r2.passed);
         assert!(r2.reasons.contains(&FilterReason::DeduplicatedByWindow));
-        let r3 = f.evaluate(Some("Mozilla/5.0"), Some("id-abc"), "Andezion", ts(1_000 + 1_860));
+        let r3 = f.evaluate(
+            Some("Mozilla/5.0"),
+            Some("id-abc"),
+            "Andezion",
+            ts(1_000 + 1_860),
+        );
         assert!(r3.passed);
     }
 
@@ -316,7 +357,12 @@ mod tests {
             owner_ip_hash: Some(owner_hash.clone()),
             ..Default::default()
         });
-        let r = f.evaluate(Some("Mozilla/5.0"), Some(&owner_hash), "Andezion", Utc::now());
+        let r = f.evaluate(
+            Some("Mozilla/5.0"),
+            Some(&owner_hash),
+            "Andezion",
+            Utc::now(),
+        );
         assert!(!r.passed);
         assert!(r.reasons.contains(&FilterReason::SelfVisit));
     }
@@ -330,7 +376,7 @@ mod tests {
             filter_camo_proxy: false,
             filter_github_actions: false,
             filter_empty_user_agents: false,
-            dedup_window_secs: 1, 
+            dedup_window_secs: 1,
             owner_ip_hash: None,
         });
 
@@ -369,7 +415,7 @@ mod tests {
     #[test]
     fn anon_bucket_dedup_without_identity() {
         let mut f = VisitorFilter::new(FilterConfig {
-            dedup_window_secs: 300, 
+            dedup_window_secs: 300,
             filter_bots: false,
             filter_camo_proxy: false,
             filter_github_actions: false,
