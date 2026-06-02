@@ -73,7 +73,6 @@ pub struct ProfileRank {
     pub percentile: f64,
 }
 
-
 #[derive(Deserialize)]
 struct ProfileRoot {
     user: GqlProfile,
@@ -185,7 +184,6 @@ struct LangName {
     name: String,
 }
 
-
 const PROFILE_QUERY: &str = r#"
 query($login: String!) {
   user(login: $login) {
@@ -274,7 +272,11 @@ impl GitHubStatisticApi {
             .organizations
             .nodes
             .into_iter()
-            .map(|o| OrganizationInfo { login: o.login, name: o.name, avatar_url: o.avatar_url })
+            .map(|o| OrganizationInfo {
+                login: o.login,
+                name: o.name,
+                avatar_url: o.avatar_url,
+            })
             .collect();
 
         let gc = profile.contributions_collection;
@@ -290,12 +292,20 @@ impl GitHubStatisticApi {
         let repos = build_repo_stats(repo_nodes);
         let rank = calculate_rank(&metadata, &contributions, &repos);
 
-        Ok(ProfileStats { metadata, organizations, contributions, repos, rank })
+        Ok(ProfileStats {
+            metadata,
+            organizations,
+            contributions,
+            repos,
+            rank,
+        })
     }
 
     async fn fetch_profile(&self, login: &str) -> Result<GqlProfile> {
-        let root: ProfileRoot =
-            self.client.graphql(PROFILE_QUERY, json!({ "login": login })).await?;
+        let root: ProfileRoot = self
+            .client
+            .graphql(PROFILE_QUERY, json!({ "login": login }))
+            .await?;
         Ok(root.user)
     }
 
@@ -392,7 +402,11 @@ pub fn calculate_rank(
     }
     .to_string();
 
-    ProfileRank { grade, score, percentile }
+    ProfileRank {
+        grade,
+        score,
+        percentile,
+    }
 }
 
 #[cfg(test)]
@@ -446,7 +460,10 @@ mod tests {
         contrib_high.total_commits = 10_000;
         contrib_high.total_pull_requests = 500;
 
-        let repos_high = AggregatedRepoStats { total_stars: 8_000, ..empty_repos() };
+        let repos_high = AggregatedRepoStats {
+            total_stars: 8_000,
+            ..empty_repos()
+        };
 
         let low = calculate_rank(&low_meta(), &low_contrib(), &empty_repos());
         let high = calculate_rank(&meta_high, &contrib_high, &repos_high);
@@ -466,7 +483,11 @@ mod tests {
 
     #[test]
     fn grade_list_is_consistent() {
-        let zero_meta = ProfileMetadata { followers: 0, public_repos: 0, ..low_meta() };
+        let zero_meta = ProfileMetadata {
+            followers: 0,
+            public_repos: 0,
+            ..low_meta()
+        };
         let zero_contrib = ContributionSummary {
             total_commits: 0,
             total_pull_requests: 0,
@@ -483,7 +504,10 @@ mod tests {
         let mut stellar_contrib = low_contrib();
         stellar_contrib.total_commits = 100_000;
         stellar_contrib.total_pull_requests = 10_000;
-        let stellar_repos = AggregatedRepoStats { total_stars: 50_000, ..empty_repos() };
+        let stellar_repos = AggregatedRepoStats {
+            total_stars: 50_000,
+            ..empty_repos()
+        };
         let stellar = calculate_rank(&stellar_meta, &stellar_contrib, &stellar_repos);
         assert_eq!(stellar.grade, "S+");
     }
@@ -506,6 +530,9 @@ mod tests {
             stats.rank.score,
             stats.rank.percentile * 100.0
         );
-        println!("Stars: {}  Forks: {}", stats.repos.total_stars, stats.repos.total_forks);
+        println!(
+            "Stars: {}  Forks: {}",
+            stats.repos.total_stars, stats.repos.total_forks
+        );
     }
 }

@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;
 
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ContributionDay {
     pub date: NaiveDate,
@@ -45,7 +44,6 @@ pub struct StreakStats {
     pub weekday_distribution: [u32; 7],
     pub contribution_gaps: Vec<ContributionGap>,
 }
-
 
 #[derive(Deserialize)]
 struct UserRoot {
@@ -154,7 +152,6 @@ impl GitHubStreakApi {
         })
     }
 
-
     async fn fetch_all_days(&self, login: &str) -> Result<Vec<ContributionDay>> {
         let now = Utc::now();
         let current_year = now.year();
@@ -244,7 +241,13 @@ fn calc_current_streak(days: &[ContributionDay], today: NaiveDate) -> (u32, Opti
     }
 
     let mut anchor = today;
-    if days.iter().rev().find(|d| d.date == today).map(|d| d.contribution_count).unwrap_or(0) == 0
+    if days
+        .iter()
+        .rev()
+        .find(|d| d.date == today)
+        .map(|d| d.contribution_count)
+        .unwrap_or(0)
+        == 0
     {
         anchor = match today.pred_opt() {
             Some(d) => d,
@@ -261,7 +264,7 @@ fn calc_current_streak(days: &[ContributionDay], today: NaiveDate) -> (u32, Opti
             continue;
         }
         if day.date < expected {
-            break; 
+            break;
         }
         if day.contribution_count > 0 {
             streak += 1;
@@ -327,7 +330,11 @@ fn calc_gaps(days: &[ContributionDay]) -> Vec<ContributionGap> {
             let end = day.date - Duration::days(1);
             let len = (end.signed_duration_since(start).num_days() + 1) as u32;
             if len >= 3 {
-                gaps.push(ContributionGap { start, end, days: len });
+                gaps.push(ContributionGap {
+                    start,
+                    end,
+                    days: len,
+                });
             }
         }
     }
@@ -336,7 +343,11 @@ fn calc_gaps(days: &[ContributionDay]) -> Vec<ContributionGap> {
         if let Some(last) = days.last() {
             let len = (last.date.signed_duration_since(start).num_days() + 1) as u32;
             if len >= 3 {
-                gaps.push(ContributionGap { start, end: last.date, days: len });
+                gaps.push(ContributionGap {
+                    start,
+                    end: last.date,
+                    days: len,
+                });
             }
         }
     }
@@ -353,21 +364,27 @@ fn flatten_calendar(cal: GqlCalendar) -> Vec<ContributionDay> {
 }
 
 fn parse_day(d: GqlDay) -> Option<ContributionDay> {
-    NaiveDate::parse_from_str(&d.date, "%Y-%m-%d").ok().map(|date| ContributionDay {
-        date,
-        contribution_count: d.contribution_count,
-        color: d.color,
-        weekday: d.weekday,
-    })
+    NaiveDate::parse_from_str(&d.date, "%Y-%m-%d")
+        .ok()
+        .map(|date| ContributionDay {
+            date,
+            contribution_count: d.contribution_count,
+            color: d.color,
+            weekday: d.weekday,
+        })
 }
-
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     fn make_day(date: NaiveDate, count: u32) -> ContributionDay {
-        ContributionDay { date, contribution_count: count, color: "#196127".into(), weekday: 1 }
+        ContributionDay {
+            date,
+            contribution_count: count,
+            color: "#196127".into(),
+            weekday: 1,
+        }
     }
 
     #[test]
@@ -390,7 +407,7 @@ mod tests {
         let days = vec![
             make_day(today - Duration::days(3), 5),
             make_day(today - Duration::days(2), 4),
-            make_day(today - Duration::days(1), 0), 
+            make_day(today - Duration::days(1), 0),
             make_day(today, 7),
         ];
         let stats = compute_streak_stats(days);
@@ -418,7 +435,7 @@ mod tests {
         let base = NaiveDate::from_ymd_opt(2024, 3, 1).unwrap();
         let days = vec![
             make_day(base, 2),
-            make_day(base + Duration::days(1), 0), 
+            make_day(base + Duration::days(1), 0),
             make_day(base + Duration::days(2), 0),
             make_day(base + Duration::days(3), 1),
         ];
@@ -428,7 +445,7 @@ mod tests {
 
     #[test]
     fn weekday_distribution_sums_correctly() {
-        let base = NaiveDate::from_ymd_opt(2024, 1, 7).unwrap(); 
+        let base = NaiveDate::from_ymd_opt(2024, 1, 7).unwrap();
         let days: Vec<ContributionDay> = (0i64..7)
             .map(|i| ContributionDay {
                 date: base + Duration::days(i),
@@ -438,7 +455,7 @@ mod tests {
             })
             .collect();
         let stats = compute_streak_stats(days);
-        assert_eq!(stats.total_contributions, 28); 
+        assert_eq!(stats.total_contributions, 28);
     }
 
     #[tokio::test]

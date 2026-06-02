@@ -212,11 +212,20 @@ impl GitHubVisitorsApi {
             },
             referrers: refs_raw
                 .into_iter()
-                .map(|r| TrafficReferrer { referrer: r.referrer, count: r.count, uniques: r.uniques })
+                .map(|r| TrafficReferrer {
+                    referrer: r.referrer,
+                    count: r.count,
+                    uniques: r.uniques,
+                })
                 .collect(),
             top_paths: paths_raw
                 .into_iter()
-                .map(|p| TrafficPath { path: p.path, title: p.title, count: p.count, uniques: p.uniques })
+                .map(|p| TrafficPath {
+                    path: p.path,
+                    title: p.title,
+                    count: p.count,
+                    uniques: p.uniques,
+                })
                 .collect(),
         })
     }
@@ -246,7 +255,11 @@ impl GitHubVisitorsApi {
 }
 
 fn into_day(r: RestDay) -> TrafficDay {
-    TrafficDay { timestamp: r.timestamp, count: r.count, uniques: r.uniques }
+    TrafficDay {
+        timestamp: r.timestamp,
+        count: r.count,
+        uniques: r.uniques,
+    }
 }
 
 #[cfg(test)]
@@ -265,9 +278,7 @@ mod tests {
         println!("{traffic:#?}");
         println!(
             "14-day totals - views: {}  unique visitors: {}  clones: {}",
-            traffic.total_repo_views,
-            traffic.total_unique_visitors,
-            traffic.total_clones,
+            traffic.total_repo_views, traffic.total_unique_visitors, traffic.total_clones,
         );
         assert!(traffic.profile_views.is_none());
     }
@@ -282,7 +293,9 @@ mod tests {
         match api.fetch_repo_traffic("Andezion", "ReadmeStuff").await {
             Ok(t) => println!("{t:#?}"),
             Err(GitHubError::Http(e)) if e.status().map(|s| s.as_u16() == 403).unwrap_or(false) => {
-                eprintln!("No push access to ReadmeStuff - this is expected with a read-only token");
+                eprintln!(
+                    "No push access to ReadmeStuff - this is expected with a read-only token"
+                );
             }
             Err(e) => panic!("Unexpected error: {e}"),
         }

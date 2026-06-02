@@ -45,7 +45,10 @@ pub struct LangQueryOptions {
 
 impl Default for LangQueryOptions {
     fn default() -> Self {
-        Self { exclude_forks: true, exclude_archived: true }
+        Self {
+            exclude_forks: true,
+            exclude_archived: true,
+        }
     }
 }
 
@@ -209,7 +212,9 @@ fn aggregate(repos: Vec<RepoNode>, opts: &LangQueryOptions) -> AggregatedLangSta
         let dominant = entries.first().map(|e| e.name.clone());
 
         for e in &repo.languages.edges {
-            let entry = global.entry(e.node.name.clone()).or_insert((0, e.node.color.clone(), 0));
+            let entry = global
+                .entry(e.node.name.clone())
+                .or_insert((0, e.node.color.clone(), 0));
             entry.0 += e.size;
             entry.2 += 1;
             total_bytes += e.size;
@@ -244,7 +249,12 @@ fn aggregate(repos: Vec<RepoNode>, opts: &LangQueryOptions) -> AggregatedLangSta
 
     let most_used = languages.first().map(|l| l.name.clone());
 
-    AggregatedLangStats { most_used, total_bytes, languages, repos: repo_stats }
+    AggregatedLangStats {
+        most_used,
+        total_bytes,
+        languages,
+        repos: repo_stats,
+    }
 }
 
 #[cfg(test)]
@@ -256,7 +266,10 @@ mod tests {
             .iter()
             .map(|(n, s)| LangEdge {
                 size: *s,
-                node: LangNode { name: n.to_string(), color: None },
+                node: LangNode {
+                    name: n.to_string(),
+                    color: None,
+                },
             })
             .collect::<Vec<_>>();
         let total = langs.iter().map(|(_, s)| s).sum();
@@ -264,7 +277,10 @@ mod tests {
             name: name.to_string(),
             is_fork,
             is_archived,
-            languages: LangConnection { total_size: total, edges },
+            languages: LangConnection {
+                total_size: total,
+                edges,
+            },
         }
     }
 
@@ -291,7 +307,10 @@ mod tests {
         )];
         let stats = aggregate(repos, &LangQueryOptions::default());
         let sum: f64 = stats.languages.iter().map(|l| l.percentage).sum();
-        assert!((sum - 100.0).abs() < 0.01, "percentages must sum to 100, got {sum}");
+        assert!(
+            (sum - 100.0).abs() < 0.01,
+            "percentages must sum to 100, got {sum}"
+        );
     }
 
     #[test]

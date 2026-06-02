@@ -1,5 +1,5 @@
-use serde::de::DeserializeOwned;
 use serde::Deserialize;
+use serde::de::DeserializeOwned;
 
 const DEFAULT_BASE_URL: &str = "https://codeforces.com/api";
 
@@ -87,14 +87,14 @@ pub enum ParticipantType {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RatingChange {
-    pub contest_id: i32,  	
-    pub contest_name: String,  	
-    pub handle: String, 	
+    pub contest_id: i32,
+    pub contest_name: String,
+    pub handle: String,
     pub rank: i32,
     #[serde(rename = "ratingUpdateTimeSeconds")]
     pub rating_update_time_seconds: i32,
-    pub old_rating: i32, 
-    pub new_rating: i32 
+    pub old_rating: i32,
+    pub new_rating: i32,
 }
 
 #[derive(Debug, Deserialize)]
@@ -270,7 +270,7 @@ mod tests {
     }
 
     /*
-    
+
     [
         User {
             handle: "Andezion",
@@ -301,7 +301,9 @@ mod tests {
     fn test_live_user_status_logs_full_response() {
         let handle = "Andezion";
         let api = CodeforcesApi::default();
-        let subs = api.user_status(handle, Some(1), Some(20), Some(false)).unwrap();
+        let subs = api
+            .user_status(handle, Some(1), Some(20), Some(false))
+            .unwrap();
 
         println!("{subs:#?}");
 
@@ -330,7 +332,7 @@ mod tests {
     }
 
     /*
-    
+
     [
         RatingChange {
             contest_id: 2114,
