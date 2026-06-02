@@ -48,6 +48,33 @@ pub struct ContributorActivity {
 	pub weeks: Vec<ContributorWeek>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct WeeklyCommitActivity {
+	pub days: Vec<i64>,
+	pub total: i64,
+	pub week: i64,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Participation {
+	pub all: Vec<i64>,
+	pub owner: Vec<i64>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CodeFrequencyWeek {
+	pub week: i64,
+	pub additions: i64,
+	pub deletions: i64,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PunchCardEntry {
+	pub day: i64,
+	pub hour: i64,
+	pub count: i64,
+}
+
 pub struct GithubStreakApi {
 	base_url: String,
 	client: reqwest::blocking::Client,
@@ -86,6 +113,34 @@ impl GithubStreakApi {
 	pub fn contributor_activity(&self, owner: &str, repo: &str) -> Result<Vec<ContributorActivity>> {
 		self.get(
 			"repos/stats/contributors",
+			&[("owner", owner.to_string()), ("repo", repo.to_string())],
+		)
+	}
+
+	pub fn weekly_commit_activity(&self, owner: &str, repo: &str) -> Result<Vec<WeeklyCommitActivity>> {
+		self.get(
+			"repos/stats/commit_activity",
+			&[("owner", owner.to_string()), ("repo", repo.to_string())],
+		)
+	}
+
+	pub fn participation(&self, owner: &str, repo: &str) -> Result<Participation> {
+		self.get(
+			"repos/stats/participation",
+			&[("owner", owner.to_string()), ("repo", repo.to_string())],
+		)
+	}
+
+	pub fn code_frequency(&self, owner: &str, repo: &str) -> Result<Vec<CodeFrequencyWeek>> {
+		self.get(
+			"repos/stats/code_frequency",
+			&[("owner", owner.to_string()), ("repo", repo.to_string())],
+		)
+	}
+
+	pub fn punch_card(&self, owner: &str, repo: &str) -> Result<Vec<PunchCardEntry>> {
+		self.get(
+			"repos/stats/punch_card",
 			&[("owner", owner.to_string()), ("repo", repo.to_string())],
 		)
 	}
