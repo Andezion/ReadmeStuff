@@ -1,158 +1,474 @@
-use serde::de::DeserializeOwned;
-use serde::Deserialize;
-use std::time::Duration;
+use crate::github_client::{GitHubClient, Result};
+use chrono::{Datelike, Duration, NaiveDate, Utc};
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+use std::collections::HashMap;
 
-const DEFAULT_BASE_URL: &str = "https://api.github.com";
 
-type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
-
-#[derive(Debug, Deserialize)]
-pub struct GitHubUser {
-	pub login: String,
-	pub id: i64,
-	pub node_id: String,
-	pub avatar_url: String,
-	pub gravatar_id: Option<String>,
-	pub url: String,
-	pub html_url: String,
-	pub followers_url: String,
-	pub following_url: String,
-	pub gists_url: String,
-	pub starred_url: String,
-	pub subscriptions_url: String,
-	pub organizations_url: String,
-	pub repos_url: String,
-	pub events_url: String,
-	pub received_events_url: String,
-	#[serde(rename = "type")]
-	pub user_type: String,
-	pub site_admin: bool,
-	pub name: Option<String>,
-	pub email: Option<String>,
-	pub starred_at: Option<String>,
-	pub user_view_type: Option<String>,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ContributionDay {
+    pub date: NaiveDate,
+    pub contribution_count: u32,
+    pub color: String,
+    pub weekday: u8,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct ContributorWeek {
-	pub w: i64,
-	pub a: i64,
-	pub d: i64,
-	pub c: i64,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ContributionWeek {
+    pub contribution_days: Vec<ContributionDay>,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct ContributorActivity {
-	pub author: Option<GitHubUser>,
-	pub total: i64,
-	pub weeks: Vec<ContributorWeek>,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ContributionCalendar {
+    pub total_contributions: u32,
+    pub weeks: Vec<ContributionWeek>,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct WeeklyCommitActivity {
-	pub days: Vec<i64>,
-	pub total: i64,
-	pub week: i64,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ContributionGap {
+    pub start: NaiveDate,
+    pub end: NaiveDate,
+    pub days: u32,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct Participation {
-	pub all: Vec<i64>,
-	pub owner: Vec<i64>,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StreakStats {
+    pub total_contributions: u32,
+    pub current_streak: u32,
+    pub longest_streak: u32,
+    pub current_streak_start: Option<NaiveDate>,
+    pub longest_streak_start: Option<NaiveDate>,
+    pub longest_streak_end: Option<NaiveDate>,
+    pub average_daily_contributions: f64,
+    pub daily_history: Vec<ContributionDay>,
+    pub monthly_totals: HashMap<String, u32>,
+    pub weekday_distribution: [u32; 7],
+    pub contribution_gaps: Vec<ContributionGap>,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct CodeFrequencyWeek {
-	pub week: i64,
-	pub additions: i64,
-	pub deletions: i64,
+
+#[derive(Deserialize)]
+struct UserRoot {
+    user: GqlUser,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct PunchCardEntry {
-	pub day: i64,
-	pub hour: i64,
-	pub count: i64,
+#[derive(Deserialize)]
+struct GqlUser {
+    #[serde(rename = "createdAt")]
+    created_at: String,
+    #[serde(rename = "contributionsCollection")]
+    contributions_collection: GqlContribCollection,
 }
 
-pub struct GithubStreakApi {
-	base_url: String,
-	client: reqwest::blocking::Client,
+#[derive(Deserialize)]
+struct GqlContribCollection {
+    #[serde(rename = "contributionCalendar")]
+    contribution_calendar: GqlCalendar,
 }
 
-pub struct GithubFullCommits {
-    pub total: i64,
+#[derive(Deserialize)]
+struct GqlCalendar {
+    #[serde(rename = "totalContributions")]
+    total_contributions: u32,
+    weeks: Vec<GqlWeek>,
 }
 
-impl GithubStreakApi {
-	pub fn new(base_url: impl Into<String>) -> Self {
-		GithubStreakApi {
-			base_url: base_url.into(),
-			client: reqwest::blocking::Client::builder()
-				.timeout(Duration::from_secs(10))
-				.user_agent("readme-stuff-api")
-				.build()
-				.expect("failed to build HTTP client"),
-		}
-	}
+#[derive(Deserialize)]
+struct GqlWeek {
+    #[serde(rename = "contributionDays")]
+    contribution_days: Vec<GqlDay>,
+}
 
-	fn get<T: DeserializeOwned>(&self, method: &str, params: &[(&str, String)]) -> Result<T> {
-		let url = format!("{}/{}", self.base_url.trim_end_matches('/'), method);
-		let response = self
-			.client
-			.get(&url)
-			.header("Accept", "application/vnd.github+json")
-			.header("X-GitHub-Api-Version", "2026-03-10")
-			.query(params)
-			.send()?
-			.error_for_status()?;
+#[derive(Deserialize)]
+struct GqlDay {
+    date: String,
+    #[serde(rename = "contributionCount")]
+    contribution_count: u32,
+    color: String,
+    weekday: u8,
+}
 
-		Ok(response.json::<T>()?)
-	}
+const CALENDAR_QUERY: &str = r#"
+query($login: String!, $from: DateTime!, $to: DateTime!) {
+  user(login: $login) {
+    createdAt
+    contributionsCollection(from: $from, to: $to) {
+      contributionCalendar {
+        totalContributions
+        weeks {
+          contributionDays {
+            date
+            contributionCount
+            color
+            weekday
+          }
+        }
+      }
+    }
+  }
+}
+"#;
 
-	pub fn contributor_activity(&self, owner: &str, repo: &str) -> Result<Vec<ContributorActivity>> {
-		self.get(
-			"repos/stats/contributors",
-			&[("owner", owner.to_string()), ("repo", repo.to_string())],
-		)
-	}
+pub struct GitHubStreakApi {
+    client: GitHubClient,
+}
 
-	pub fn weekly_commit_activity(&self, owner: &str, repo: &str) -> Result<Vec<WeeklyCommitActivity>> {
-		self.get(
-			"repos/stats/commit_activity",
-			&[("owner", owner.to_string()), ("repo", repo.to_string())],
-		)
-	}
+impl GitHubStreakApi {
+    pub fn new(client: GitHubClient) -> Self {
+        Self { client }
+    }
 
-	pub fn participation(&self, owner: &str, repo: &str) -> Result<Participation> {
-		self.get(
-			"repos/stats/participation",
-			&[("owner", owner.to_string()), ("repo", repo.to_string())],
-		)
-	}
+    pub async fn fetch_streak_stats(&self, login: &str) -> Result<StreakStats> {
+        let days = self.fetch_all_days(login).await?;
+        Ok(compute_streak_stats(days))
+    }
 
-	pub fn code_frequency(&self, owner: &str, repo: &str) -> Result<Vec<CodeFrequencyWeek>> {
-		self.get(
-			"repos/stats/code_frequency",
-			&[("owner", owner.to_string()), ("repo", repo.to_string())],
-		)
-	}
+    pub async fn fetch_current_year_calendar(&self, login: &str) -> Result<ContributionCalendar> {
+        let year = Utc::now().year();
+        let data: UserRoot = self
+            .client
+            .graphql(
+                CALENDAR_QUERY,
+                json!({
+                    "login": login,
+                    "from": format!("{year}-01-01T00:00:00Z"),
+                    "to":   format!("{year}-12-31T23:59:59Z"),
+                }),
+            )
+            .await?;
 
-	pub fn punch_card(&self, owner: &str, repo: &str) -> Result<Vec<PunchCardEntry>> {
-		self.get(
-			"repos/stats/punch_card",
-			&[("owner", owner.to_string()), ("repo", repo.to_string())],
-		)
-	}
+        let cal = data.user.contributions_collection.contribution_calendar;
+        Ok(ContributionCalendar {
+            total_contributions: cal.total_contributions,
+            weeks: cal
+                .weeks
+                .into_iter()
+                .map(|w| ContributionWeek {
+                    contribution_days: w
+                        .contribution_days
+                        .into_iter()
+                        .filter_map(parse_day)
+                        .collect(),
+                })
+                .collect(),
+        })
+    }
 
-    pub fn full_commits(&self, storage: Vec<ContributorActivity>) -> Result<GithubFullCommits> {
-        let total_commits: i64 = storage.iter().map(|activity| activity.total).sum();
-        Ok(GithubFullCommits { total: total_commits })
+
+    async fn fetch_all_days(&self, login: &str) -> Result<Vec<ContributionDay>> {
+        let now = Utc::now();
+        let current_year = now.year();
+
+        let initial: UserRoot = self
+            .client
+            .graphql(
+                CALENDAR_QUERY,
+                json!({
+                    "login": login,
+                    "from": format!("{current_year}-01-01T00:00:00Z"),
+                    "to":   format!("{current_year}-12-31T23:59:59Z"),
+                }),
+            )
+            .await?;
+
+        let start_year = initial.user.created_at[..4]
+            .parse::<i32>()
+            .unwrap_or(current_year);
+
+        let mut all = flatten_calendar(initial.user.contributions_collection.contribution_calendar);
+
+        for year in start_year..current_year {
+            let data: UserRoot = self
+                .client
+                .graphql(
+                    CALENDAR_QUERY,
+                    json!({
+                        "login": login,
+                        "from": format!("{year}-01-01T00:00:00Z"),
+                        "to":   format!("{year}-12-31T23:59:59Z"),
+                    }),
+                )
+                .await?;
+            all.extend(flatten_calendar(
+                data.user.contributions_collection.contribution_calendar,
+            ));
+        }
+
+        all.sort_by_key(|d| d.date);
+        Ok(all)
     }
 }
 
-impl Default for GithubStreakApi {
-	fn default() -> Self {
-		Self::new(DEFAULT_BASE_URL)
-	}
+pub fn compute_streak_stats(days: Vec<ContributionDay>) -> StreakStats {
+    let today = Utc::now().date_naive();
+
+    let total_contributions: u32 = days.iter().map(|d| d.contribution_count).sum();
+
+    let non_zero = days.iter().filter(|d| d.contribution_count > 0).count();
+    let average_daily_contributions = if non_zero > 0 {
+        total_contributions as f64 / non_zero as f64
+    } else {
+        0.0
+    };
+
+    let mut monthly_totals: HashMap<String, u32> = HashMap::new();
+    let mut weekday_distribution = [0u32; 7];
+    for d in &days {
+        let key = format!("{}-{:02}", d.date.year(), d.date.month());
+        *monthly_totals.entry(key).or_insert(0) += d.contribution_count;
+        weekday_distribution[d.weekday as usize % 7] += d.contribution_count;
+    }
+
+    let (current_streak, current_streak_start) = calc_current_streak(&days, today);
+    let (longest_streak, longest_streak_start, longest_streak_end) = calc_longest_streak(&days);
+    let contribution_gaps = calc_gaps(&days);
+
+    StreakStats {
+        total_contributions,
+        current_streak,
+        longest_streak,
+        current_streak_start,
+        longest_streak_start,
+        longest_streak_end,
+        average_daily_contributions,
+        monthly_totals,
+        weekday_distribution,
+        contribution_gaps,
+        daily_history: days,
+    }
+}
+
+fn calc_current_streak(days: &[ContributionDay], today: NaiveDate) -> (u32, Option<NaiveDate>) {
+    if days.is_empty() {
+        return (0, None);
+    }
+
+    let mut anchor = today;
+    if days.iter().rev().find(|d| d.date == today).map(|d| d.contribution_count).unwrap_or(0) == 0
+    {
+        anchor = match today.pred_opt() {
+            Some(d) => d,
+            None => return (0, None),
+        };
+    }
+
+    let mut streak = 0u32;
+    let mut start: Option<NaiveDate> = None;
+    let mut expected = anchor;
+
+    for day in days.iter().rev() {
+        if day.date > expected {
+            continue;
+        }
+        if day.date < expected {
+            break; 
+        }
+        if day.contribution_count > 0 {
+            streak += 1;
+            start = Some(day.date);
+            expected = match expected.pred_opt() {
+                Some(d) => d,
+                None => break,
+            };
+        } else {
+            break;
+        }
+    }
+
+    (streak, start)
+}
+
+fn calc_longest_streak(days: &[ContributionDay]) -> (u32, Option<NaiveDate>, Option<NaiveDate>) {
+    let mut longest = 0u32;
+    let mut best_start: Option<NaiveDate> = None;
+    let mut best_end: Option<NaiveDate> = None;
+
+    let mut run = 0u32;
+    let mut run_start: Option<NaiveDate> = None;
+    let mut prev: Option<NaiveDate> = None;
+
+    for day in days {
+        let consecutive = prev
+            .map(|p| day.date.signed_duration_since(p).num_days() == 1)
+            .unwrap_or(false);
+
+        if day.contribution_count > 0 {
+            if consecutive && run > 0 {
+                run += 1;
+            } else {
+                run = 1;
+                run_start = Some(day.date);
+            }
+            if run > longest {
+                longest = run;
+                best_start = run_start;
+                best_end = Some(day.date);
+            }
+        } else {
+            run = 0;
+            run_start = None;
+        }
+        prev = Some(day.date);
+    }
+
+    (longest, best_start, best_end)
+}
+
+fn calc_gaps(days: &[ContributionDay]) -> Vec<ContributionGap> {
+    let mut gaps = Vec::new();
+    let mut gap_start: Option<NaiveDate> = None;
+
+    for day in days {
+        if day.contribution_count == 0 {
+            if gap_start.is_none() {
+                gap_start = Some(day.date);
+            }
+        } else if let Some(start) = gap_start.take() {
+            let end = day.date - Duration::days(1);
+            let len = (end.signed_duration_since(start).num_days() + 1) as u32;
+            if len >= 3 {
+                gaps.push(ContributionGap { start, end, days: len });
+            }
+        }
+    }
+
+    if let Some(start) = gap_start {
+        if let Some(last) = days.last() {
+            let len = (last.date.signed_duration_since(start).num_days() + 1) as u32;
+            if len >= 3 {
+                gaps.push(ContributionGap { start, end: last.date, days: len });
+            }
+        }
+    }
+
+    gaps
+}
+
+fn flatten_calendar(cal: GqlCalendar) -> Vec<ContributionDay> {
+    cal.weeks
+        .into_iter()
+        .flat_map(|w| w.contribution_days)
+        .filter_map(parse_day)
+        .collect()
+}
+
+fn parse_day(d: GqlDay) -> Option<ContributionDay> {
+    NaiveDate::parse_from_str(&d.date, "%Y-%m-%d").ok().map(|date| ContributionDay {
+        date,
+        contribution_count: d.contribution_count,
+        color: d.color,
+        weekday: d.weekday,
+    })
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_day(date: NaiveDate, count: u32) -> ContributionDay {
+        ContributionDay { date, contribution_count: count, color: "#196127".into(), weekday: 1 }
+    }
+
+    #[test]
+    fn streak_three_consecutive_days() {
+        let today = Utc::now().date_naive();
+        let days = vec![
+            make_day(today - Duration::days(2), 5),
+            make_day(today - Duration::days(1), 3),
+            make_day(today, 7),
+        ];
+        let stats = compute_streak_stats(days);
+        assert_eq!(stats.current_streak, 3);
+        assert_eq!(stats.longest_streak, 3);
+        assert_eq!(stats.total_contributions, 15);
+    }
+
+    #[test]
+    fn streak_broken_yesterday() {
+        let today = Utc::now().date_naive();
+        let days = vec![
+            make_day(today - Duration::days(3), 5),
+            make_day(today - Duration::days(2), 4),
+            make_day(today - Duration::days(1), 0), 
+            make_day(today, 7),
+        ];
+        let stats = compute_streak_stats(days);
+        assert_eq!(stats.current_streak, 1);
+        assert_eq!(stats.longest_streak, 2);
+    }
+
+    #[test]
+    fn gap_detection_minimum_three_days() {
+        let base = NaiveDate::from_ymd_opt(2024, 1, 1).unwrap();
+        let days: Vec<ContributionDay> = (0i64..20)
+            .map(|i| {
+                let count = if (5..=11).contains(&i) { 0 } else { 3 };
+                make_day(base + Duration::days(i), count)
+            })
+            .collect();
+
+        let gaps = calc_gaps(&days);
+        assert_eq!(gaps.len(), 1);
+        assert_eq!(gaps[0].days, 7);
+    }
+
+    #[test]
+    fn gap_under_threshold_not_recorded() {
+        let base = NaiveDate::from_ymd_opt(2024, 3, 1).unwrap();
+        let days = vec![
+            make_day(base, 2),
+            make_day(base + Duration::days(1), 0), 
+            make_day(base + Duration::days(2), 0),
+            make_day(base + Duration::days(3), 1),
+        ];
+        let gaps = calc_gaps(&days);
+        assert!(gaps.is_empty(), "2-day gaps should not be recorded");
+    }
+
+    #[test]
+    fn weekday_distribution_sums_correctly() {
+        let base = NaiveDate::from_ymd_opt(2024, 1, 7).unwrap(); 
+        let days: Vec<ContributionDay> = (0i64..7)
+            .map(|i| ContributionDay {
+                date: base + Duration::days(i),
+                contribution_count: (i + 1) as u32,
+                color: "#196127".into(),
+                weekday: i as u8,
+            })
+            .collect();
+        let stats = compute_streak_stats(days);
+        assert_eq!(stats.total_contributions, 28); 
+    }
+
+    #[tokio::test]
+    async fn live_streak_andezion() {
+        let Ok(client) = GitHubClient::from_env() else {
+            eprintln!("GITHUB_TOKEN not set - skipping live test");
+            return;
+        };
+        let api = GitHubStreakApi::new(client);
+        let stats = api.fetch_streak_stats("Andezion").await.unwrap();
+
+        println!("{stats:#?}");
+        assert!(stats.total_contributions > 0);
+        assert!(stats.longest_streak >= stats.current_streak);
+        println!(
+            "Streak  current={} longest={}  total={}",
+            stats.current_streak, stats.longest_streak, stats.total_contributions
+        );
+    }
+
+    #[tokio::test]
+    async fn live_current_year_calendar_andezion() {
+        let Ok(client) = GitHubClient::from_env() else {
+            eprintln!("GITHUB_TOKEN not set - skipping live test");
+            return;
+        };
+        let api = GitHubStreakApi::new(client);
+        let cal = api.fetch_current_year_calendar("Andezion").await.unwrap();
+
+        println!("Contributions this year: {}", cal.total_contributions);
+        assert!(!cal.weeks.is_empty());
+    }
 }
