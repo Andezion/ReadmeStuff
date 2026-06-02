@@ -354,7 +354,7 @@ fn build_repo_stats(nodes: Vec<RepoStatsNode>) -> AggregatedRepoStats {
         })
         .collect();
 
-    list.sort_by(|a, b| b.stars.cmp(&a.stars));
+    list.sort_by_key(|b| std::cmp::Reverse(b.stars));
 
     AggregatedRepoStats {
         total_repos,
