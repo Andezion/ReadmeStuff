@@ -4,7 +4,7 @@ use readme_stuff_api::{
     github_langs::AggregatedLangStats,
     codeforce::{User as CodeforcesUser, RatingChange},
     codewars::User as CodewarsUser,
-    leetcode::{Solved, Language as LcLanguage},
+    leetcode::{Solved, Language as LeetcodeLanguage},
     github_visitors::models::VisitorAnalytics,
 };
 
@@ -15,7 +15,7 @@ pub struct CodeforcesData {
 
 pub struct LeetcodeData {
     pub solved: Solved,
-    pub languages: Vec<LcLanguage>,
+    pub languages: Vec<LeetcodeLanguage>,
 }
 
 pub struct UserProfile {
