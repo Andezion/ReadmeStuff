@@ -13,7 +13,7 @@ pub struct CodeforcesData {
     pub rating_history: Vec<RatingChange>,
 }
 
-pub struct LcData {
+pub struct LeetcodeData {
     pub solved: Solved,
     pub languages: Vec<LcLanguage>,
 }
@@ -24,7 +24,7 @@ pub struct UserProfile {
     pub langs:      Option<AggregatedLangStats>,
     pub codeforces: Option<CodeforcesData>,
     pub codewars:   Option<CwUser>,
-    pub leetcode:   Option<LcData>,
+    pub leetcode:   Option<LeetcodeData>,
     pub visitors:   Option<VisitorAnalytics>,
     pub sources:    SourceStatus,
 }
