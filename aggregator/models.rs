@@ -2,14 +2,14 @@ use readme_stuff_api::{
     github_statistic::ProfileStats,
     github_streak::StreakStats,
     github_langs::AggregatedLangStats,
-    codeforce::{User as CfUser, RatingChange},
+    codeforce::{User as CodeforcesUser, RatingChange},
     codewars::User as CodewarsUser,
     leetcode::{Solved, Language as LcLanguage},
     github_visitors::models::VisitorAnalytics,
 };
 
 pub struct CodeforcesData {
-    pub user: CfUser,
+    pub user: CodeforcesUser,
     pub rating_history: Vec<RatingChange>,
 }
 
