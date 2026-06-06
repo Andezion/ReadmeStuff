@@ -10,4 +10,6 @@ pub enum AggregatorError {
     Codewars(String),
     #[error("leetcode: {0}")]
     LeetCode(String),
+    #[error("visitors: {0}")]
+    Visitors(String),
 }
