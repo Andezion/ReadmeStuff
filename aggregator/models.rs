@@ -3,7 +3,7 @@ use readme_stuff_api::{
     github_streak::StreakStats,
     github_langs::AggregatedLangStats,
     codeforce::{User as CfUser, RatingChange},
-    codewars::User as CwUser,
+    codewars::User as CodewarsUser,
     leetcode::{Solved, Language as LcLanguage},
     github_visitors::models::VisitorAnalytics,
 };
@@ -23,7 +23,7 @@ pub struct UserProfile {
     pub streak:     Option<StreakStats>,
     pub langs:      Option<AggregatedLangStats>,
     pub codeforces: Option<CodeforcesData>,
-    pub codewars:   Option<CwUser>,
+    pub codewars:   Option<CodewarsUser>,
     pub leetcode:   Option<LeetcodeData>,
     pub visitors:   Option<VisitorAnalytics>,
     pub sources:    SourceStatus,
