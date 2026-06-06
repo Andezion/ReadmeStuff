@@ -17,7 +17,6 @@ pub async fn build_profile(
 ) -> UserProfile {
     let gh_client = GitHubClient::from_env().ok();
 
-    // Три async-вызова к GitHub — идут параллельно
     let github_fut = {
         let login = github_login.to_owned();
         let client = gh_client.clone();
@@ -54,8 +53,6 @@ pub async fn build_profile(
         }
     };
 
-    // Три blocking-вызова — нельзя вызывать прямо в async,
-    // поэтому каждый уходит в spawn_blocking (отдельный пул потоков)
     let cf = cf_handle.to_owned();
     let cf_fut = tokio::task::spawn_blocking(move || {
         let api = CodeforcesApi::default();
@@ -86,7 +83,6 @@ pub async fn build_profile(
         Ok::<LeetcodeData, String>(LeetcodeData { solved, languages })
     });
 
-    // Все 6 запросов стартуют одновременно, ждём всех
     let (github_res, streak_res, langs_res, cf_join, cw_join, lc_join) = tokio::join!(
         github_fut,
         streak_fut,
@@ -96,7 +92,6 @@ pub async fn build_profile(
         lc_fut,
     );
 
-    // spawn_blocking возвращает JoinHandle<Result<T>> — разворачиваем внешний слой
     let cf_res = cf_join.unwrap_or_else(|e| Err(e.to_string()));
     let cw_res = cw_join.unwrap_or_else(|e| Err(e.to_string()));
     let lc_res = lc_join.unwrap_or_else(|e| Err(e.to_string()));
