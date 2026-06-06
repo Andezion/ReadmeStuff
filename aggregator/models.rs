@@ -8,7 +8,7 @@ use readme_stuff_api::{
     github_visitors::models::VisitorAnalytics,
 };
 
-pub struct CfData {
+pub struct CodeforcesData {
     pub user: CfUser,
     pub rating_history: Vec<RatingChange>,
 }
@@ -22,7 +22,7 @@ pub struct UserProfile {
     pub github:     Option<ProfileStats>,
     pub streak:     Option<StreakStats>,
     pub langs:      Option<AggregatedLangStats>,
-    pub codeforces: Option<CfData>,
+    pub codeforces: Option<CodeforcesData>,
     pub codewars:   Option<CwUser>,
     pub leetcode:   Option<LcData>,
     pub visitors:   Option<VisitorAnalytics>,
