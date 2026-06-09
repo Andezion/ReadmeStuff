@@ -58,14 +58,10 @@ impl DashboardCache {
         }
     }
 
-    pub async fn set(&self, key: CacheKey, profile: UserProfile) {
+    pub async fn set(&self, key: CacheKey, profile: UserProfile) -> Arc<UserProfile> {
+        let arc = Arc::new(profile);
         let mut store = self.store.write().await;
-        store.insert(
-            key,
-            CachedEntry {
-                profile: Arc::new(profile),
-                fetched_at: Instant::now(),
-            },
-        );
+        store.insert(key, CachedEntry { profile: Arc::clone(&arc), fetched_at: Instant::now() });
+        arc
     }
 }
