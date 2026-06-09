@@ -1,3 +1,3 @@
 [workspace]
-members = ["api", "aggregator", "cache"]
+members = ["api", "aggregator", "cache", "server"]
 resolver = "2"
