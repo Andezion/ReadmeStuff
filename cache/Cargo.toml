@@ -1,0 +1,8 @@
+[package]
+name = "readme-stuff-cache"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+readme-stuff-aggregator = { path = "../aggregator" }
+tokio = { version = "1", features = ["sync"] }
