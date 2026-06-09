@@ -1,10 +1,10 @@
+use readme_stuff_aggregator::models::UserProfile;
 use std::{
     collections::HashMap,
     sync::Arc,
     time::{Duration, Instant},
 };
 use tokio::sync::RwLock;
-use readme_stuff_aggregator::models::UserProfile;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CacheKey {
@@ -61,7 +61,13 @@ impl DashboardCache {
     pub async fn set(&self, key: CacheKey, profile: UserProfile) -> Arc<UserProfile> {
         let arc = Arc::new(profile);
         let mut store = self.store.write().await;
-        store.insert(key, CachedEntry { profile: Arc::clone(&arc), fetched_at: Instant::now() });
+        store.insert(
+            key,
+            CachedEntry {
+                profile: Arc::clone(&arc),
+                fetched_at: Instant::now(),
+            },
+        );
         arc
     }
 }

@@ -222,15 +222,13 @@ pub struct TrafficTrend {
     pub peak_value: u64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct TrafficHeatmap {
     pub grid: [[u64; 24]; 7],
     pub peak_weekday: u8,
     pub peak_hour: u8,
     pub peak_count: u64,
 }
-
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct FilterSummary {

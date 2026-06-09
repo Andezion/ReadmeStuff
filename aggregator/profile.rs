@@ -63,14 +63,15 @@ pub async fn build_profile(
             .next()
             .ok_or_else(|| "user not found".to_string())?;
         let rating_history = api.user_rating(cf.as_str()).map_err(|e| e.to_string())?;
-        Ok::<CodeforcesData, String>(CodeforcesData { user, rating_history })
+        Ok::<CodeforcesData, String>(CodeforcesData {
+            user,
+            rating_history,
+        })
     });
 
     let cw = cw_username.to_owned();
     let cw_fut = tokio::task::spawn_blocking(move || {
-        CodewarsApi::default()
-            .user(&cw)
-            .map_err(|e| e.to_string())
+        CodewarsApi::default().user(&cw).map_err(|e| e.to_string())
     });
 
     let lc = lc_username.to_owned();
@@ -83,14 +84,8 @@ pub async fn build_profile(
         Ok::<LeetcodeData, String>(LeetcodeData { solved, languages })
     });
 
-    let (github_res, streak_res, langs_res, cf_join, cw_join, lc_join) = tokio::join!(
-        github_fut,
-        streak_fut,
-        langs_fut,
-        cf_fut,
-        cw_fut,
-        lc_fut,
-    );
+    let (github_res, streak_res, langs_res, cf_join, cw_join, lc_join) =
+        tokio::join!(github_fut, streak_fut, langs_fut, cf_fut, cw_fut, lc_fut,);
 
     let cf_res = cf_join.unwrap_or_else(|e| Err(e.to_string()));
     let cw_res = cw_join.unwrap_or_else(|e| Err(e.to_string()));
@@ -98,18 +93,18 @@ pub async fn build_profile(
 
     UserProfile {
         sources: SourceStatus {
-            github:     github_res.as_ref().map(|_| ()).map_err(|e| e.clone()),
+            github: github_res.as_ref().map(|_| ()).map_err(|e| e.clone()),
             codeforces: cf_res.as_ref().map(|_| ()).map_err(|e| e.clone()),
-            codewars:   cw_res.as_ref().map(|_| ()).map_err(|e| e.clone()),
-            leetcode:   lc_res.as_ref().map(|_| ()).map_err(|e| e.clone()),
-            visitors:   Err("not implemented".to_string()),
+            codewars: cw_res.as_ref().map(|_| ()).map_err(|e| e.clone()),
+            leetcode: lc_res.as_ref().map(|_| ()).map_err(|e| e.clone()),
+            visitors: Err("not implemented".to_string()),
         },
-        github:     github_res.ok(),
-        streak:     streak_res.ok(),
-        langs:      langs_res.ok(),
+        github: github_res.ok(),
+        streak: streak_res.ok(),
+        langs: langs_res.ok(),
         codeforces: cf_res.ok(),
-        codewars:   cw_res.ok(),
-        leetcode:   lc_res.ok(),
-        visitors:   None,
+        codewars: cw_res.ok(),
+        leetcode: lc_res.ok(),
+        visitors: None,
     }
 }

@@ -10,27 +10,29 @@ use std::sync::Arc;
 
 use crate::AppState;
 
-
 #[derive(Deserialize)]
 pub struct ProfileQuery {
     pub login: Option<String>,
-    pub cf:    Option<String>,
-    pub cw:    Option<String>,
-    pub lc:    Option<String>,
+    pub cf: Option<String>,
+    pub cw: Option<String>,
+    pub lc: Option<String>,
 }
 
 #[derive(Deserialize)]
 pub struct LangsQuery {
     pub login: Option<String>,
-    pub cf:    Option<String>,
-    pub cw:    Option<String>,
-    pub lc:    Option<String>,
-    pub top:   Option<usize>,
+    pub cf: Option<String>,
+    pub cw: Option<String>,
+    pub lc: Option<String>,
+    pub top: Option<usize>,
 }
 
-
 fn svg_response(svg: String) -> Response {
-    ([(header::CONTENT_TYPE, "image/svg+xml; charset=utf-8")], svg).into_response()
+    (
+        [(header::CONTENT_TYPE, "image/svg+xml; charset=utf-8")],
+        svg,
+    )
+        .into_response()
 }
 
 fn placeholder(label: &str) -> String {
@@ -42,7 +44,6 @@ fn placeholder(label: &str) -> String {
 </svg>"##
     )
 }
-
 
 async fn get_profile(
     cache: &DashboardCache,
@@ -60,7 +61,6 @@ async fn get_profile(
     cache.set(key, profile).await
 }
 
-
 fn render_github(profile: &UserProfile) -> String {
     let Some(w) = widgets::github_stats_widget(profile) else {
         return placeholder("github stats");
@@ -72,12 +72,12 @@ fn render_github(profile: &UserProfile) -> String {
   <text x="20" y="55"  font-family="monospace" font-size="12" fill="#89b4fa">stars {stars}  commits {commits}  PRs {prs}  issues {issues}</text>
   <text x="20" y="80"  font-family="monospace" font-size="12" fill="#a6e3a1">rank {rank}  followers {followers}</text>
 </svg>"##,
-        login     = w.login,
-        stars     = w.stars,
-        commits   = w.commits,
-        prs       = w.prs,
-        issues    = w.issues,
-        rank      = w.rank,
+        login = w.login,
+        stars = w.stars,
+        commits = w.commits,
+        prs = w.prs,
+        issues = w.issues,
+        rank = w.rank,
         followers = w.followers,
     )
 }
@@ -94,7 +94,7 @@ fn render_streak(profile: &UserProfile) -> String {
 </svg>"##,
         current = w.current_streak,
         longest = w.longest_streak,
-        total   = w.total_contributions,
+        total = w.total_contributions,
     )
 }
 
@@ -130,11 +130,15 @@ fn render_competitive(profile: &UserProfile) -> String {
     let Some(w) = widgets::competitive_widget(profile) else {
         return placeholder("competitive");
     };
-    let cf_rating = w.cf_rating.map_or_else(|| "-".to_owned(), |r| r.to_string());
-    let cf_rank   = w.cf_rank.as_deref().unwrap_or("-");
-    let cw_rank   = w.cw_rank.as_deref().unwrap_or("-");
-    let cw_honor  = w.cw_honor.map_or_else(|| "-".to_owned(), |h| h.to_string());
-    let lc_solved = w.lc_solved.map_or_else(|| "-".to_owned(), |s| s.to_string());
+    let cf_rating = w
+        .cf_rating
+        .map_or_else(|| "-".to_owned(), |r| r.to_string());
+    let cf_rank = w.cf_rank.as_deref().unwrap_or("-");
+    let cw_rank = w.cw_rank.as_deref().unwrap_or("-");
+    let cw_honor = w.cw_honor.map_or_else(|| "-".to_owned(), |h| h.to_string());
+    let lc_solved = w
+        .lc_solved
+        .map_or_else(|| "-".to_owned(), |s| s.to_string());
     format!(
         r##"<svg xmlns="http://www.w3.org/2000/svg" width="400" height="110">
   <rect width="400" height="110" rx="6" fill="#1e1e2e"/>
@@ -145,59 +149,50 @@ fn render_competitive(profile: &UserProfile) -> String {
     )
 }
 
-
-pub async fn github(
-    State(state): State<AppState>,
-    Query(q): Query<ProfileQuery>,
-) -> Response {
+pub async fn github(State(state): State<AppState>, Query(q): Query<ProfileQuery>) -> Response {
     let profile = get_profile(
         &state.cache,
         q.login.as_deref().unwrap_or(""),
         q.cf.as_deref().unwrap_or(""),
         q.cw.as_deref().unwrap_or(""),
         q.lc.as_deref().unwrap_or(""),
-    ).await;
+    )
+    .await;
     svg_response(render_github(&profile))
 }
 
-pub async fn streak(
-    State(state): State<AppState>,
-    Query(q): Query<ProfileQuery>,
-) -> Response {
+pub async fn streak(State(state): State<AppState>, Query(q): Query<ProfileQuery>) -> Response {
     let profile = get_profile(
         &state.cache,
         q.login.as_deref().unwrap_or(""),
         q.cf.as_deref().unwrap_or(""),
         q.cw.as_deref().unwrap_or(""),
         q.lc.as_deref().unwrap_or(""),
-    ).await;
+    )
+    .await;
     svg_response(render_streak(&profile))
 }
 
-pub async fn langs(
-    State(state): State<AppState>,
-    Query(q): Query<LangsQuery>,
-) -> Response {
+pub async fn langs(State(state): State<AppState>, Query(q): Query<LangsQuery>) -> Response {
     let profile = get_profile(
         &state.cache,
         q.login.as_deref().unwrap_or(""),
         q.cf.as_deref().unwrap_or(""),
         q.cw.as_deref().unwrap_or(""),
         q.lc.as_deref().unwrap_or(""),
-    ).await;
+    )
+    .await;
     svg_response(render_langs(&profile, q.top.unwrap_or(6)))
 }
 
-pub async fn competitive(
-    State(state): State<AppState>,
-    Query(q): Query<ProfileQuery>,
-) -> Response {
+pub async fn competitive(State(state): State<AppState>, Query(q): Query<ProfileQuery>) -> Response {
     let profile = get_profile(
         &state.cache,
         q.login.as_deref().unwrap_or(""),
         q.cf.as_deref().unwrap_or(""),
         q.cw.as_deref().unwrap_or(""),
         q.lc.as_deref().unwrap_or(""),
-    ).await;
+    )
+    .await;
     svg_response(render_competitive(&profile))
 }

@@ -163,9 +163,10 @@ impl VisitorFilter {
         }
 
         if let (Some(owner_hash), Some(identity)) = (&self.config.owner_ip_hash, hashed_identity)
-            && owner_hash == identity {
-                reasons.push(FilterReason::SelfVisit);
-            }
+            && owner_hash == identity
+        {
+            reasons.push(FilterReason::SelfVisit);
+        }
 
         if !reasons.is_empty() {
             return FilterResult {

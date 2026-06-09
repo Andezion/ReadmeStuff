@@ -313,13 +313,13 @@ pub fn repo_popularity_ranking(snapshots: &[TrafficSnapshot]) -> Vec<(String, u6
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::github_visitors::TrafficDay;
     use crate::github_visitors::models::{
         BotDetectionResult, EventSource, FilterResult, TrafficClones, TrafficViews, VisitTarget,
         VisitorEvent,
     };
     use chrono::{TimeZone, Utc};
     use uuid::Uuid;
-    use crate::github_visitors::TrafficDay;
 
     fn make_snap(
         repo: &str,

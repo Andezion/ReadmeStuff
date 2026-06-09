@@ -1,8 +1,8 @@
 mod handlers;
 
-use std::{sync::Arc, time::Duration};
-use axum::{routing::get, Router};
+use axum::{Router, routing::get};
 use readme_stuff_cache::DashboardCache;
+use std::{sync::Arc, time::Duration};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -25,9 +25,9 @@ async fn main() {
     };
 
     let app = Router::new()
-        .route("/github.svg",      get(handlers::github))
-        .route("/streak.svg",      get(handlers::streak))
-        .route("/langs.svg",       get(handlers::langs))
+        .route("/github.svg", get(handlers::github))
+        .route("/streak.svg", get(handlers::streak))
+        .route("/langs.svg", get(handlers::langs))
         .route("/competitive.svg", get(handlers::competitive))
         .with_state(state);
 

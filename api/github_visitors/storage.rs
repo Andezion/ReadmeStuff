@@ -64,27 +64,32 @@ impl VisitorStorage for InMemoryStorage {
             .iter()
             .filter(|e| {
                 if let Some(ref t) = query.target
-                    && &e.target != t {
-                        return false;
-                    }
+                    && &e.target != t
+                {
+                    return false;
+                }
                 if let Some(src) = query.source
-                    && e.source != src {
-                        return false;
-                    }
+                    && e.source != src
+                {
+                    return false;
+                }
                 if let Some(from) = query.from
-                    && e.timestamp < from {
-                        return false;
-                    }
+                    && e.timestamp < from
+                {
+                    return false;
+                }
                 if let Some(to) = query.to
-                    && e.timestamp > to {
-                        return false;
-                    }
+                    && e.timestamp > to
+                {
+                    return false;
+                }
                 if query.passed_only && !e.filter_result.passed {
                     return false;
                 }
                 true
             })
-            .take(query.limit.unwrap_or(u64::MAX) as usize).cloned()
+            .take(query.limit.unwrap_or(u64::MAX) as usize)
+            .cloned()
             .collect();
         Ok(filtered)
     }
@@ -427,9 +432,10 @@ impl VisitorStorage for JsonStorage {
         let mut snaps = Vec::new();
         while let Some(line) = lines.next_line().await? {
             if let Ok(s) = serde_json::from_str::<TrafficSnapshot>(&line)
-                && repo.map(|r| s.repo == r).unwrap_or(true) {
-                    snaps.push(s);
-                }
+                && repo.map(|r| s.repo == r).unwrap_or(true)
+            {
+                snaps.push(s);
+            }
         }
         snaps.sort_by_key(|b| std::cmp::Reverse(b.captured_at));
         snaps.truncate(limit as usize);

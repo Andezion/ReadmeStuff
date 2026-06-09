@@ -1,11 +1,11 @@
 use readme_stuff_api::{
+    codeforce::{RatingChange, User as CodeforcesUser},
+    codewars::User as CodewarsUser,
+    github_langs::AggregatedLangStats,
     github_statistic::ProfileStats,
     github_streak::StreakStats,
-    github_langs::AggregatedLangStats,
-    codeforce::{User as CodeforcesUser, RatingChange},
-    codewars::User as CodewarsUser,
-    leetcode::{Solved, Language as LeetcodeLanguage},
     github_visitors::models::VisitorAnalytics,
+    leetcode::{Language as LeetcodeLanguage, Solved},
 };
 
 pub struct CodeforcesData {
@@ -19,20 +19,20 @@ pub struct LeetcodeData {
 }
 
 pub struct UserProfile {
-    pub github:     Option<ProfileStats>,
-    pub streak:     Option<StreakStats>,
-    pub langs:      Option<AggregatedLangStats>,
+    pub github: Option<ProfileStats>,
+    pub streak: Option<StreakStats>,
+    pub langs: Option<AggregatedLangStats>,
     pub codeforces: Option<CodeforcesData>,
-    pub codewars:   Option<CodewarsUser>,
-    pub leetcode:   Option<LeetcodeData>,
-    pub visitors:   Option<VisitorAnalytics>,
-    pub sources:    SourceStatus,
+    pub codewars: Option<CodewarsUser>,
+    pub leetcode: Option<LeetcodeData>,
+    pub visitors: Option<VisitorAnalytics>,
+    pub sources: SourceStatus,
 }
 
 pub struct SourceStatus {
-    pub github:     Result<(), String>,
+    pub github: Result<(), String>,
     pub codeforces: Result<(), String>,
-    pub codewars:   Result<(), String>,
-    pub leetcode:   Result<(), String>,
-    pub visitors:   Result<(), String>,
+    pub codewars: Result<(), String>,
+    pub leetcode: Result<(), String>,
+    pub visitors: Result<(), String>,
 }

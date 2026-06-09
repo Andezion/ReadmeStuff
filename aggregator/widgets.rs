@@ -86,12 +86,12 @@ pub fn competitive_widget(p: &UserProfile) -> Option<CompetitiveWidget> {
     }
     Some(CompetitiveWidget {
         cf_rating: p.codeforces.as_ref().map(|d| d.user.rating),
-        cf_rank:   p.codeforces.as_ref().map(|d| d.user.rank.clone()),
-        cw_rank:   p.codewars.as_ref().map(|u| u.ranks.overall.name.clone()),
-        cw_honor:  p.codewars.as_ref().map(|u| u.honor),
+        cf_rank: p.codeforces.as_ref().map(|d| d.user.rank.clone()),
+        cw_rank: p.codewars.as_ref().map(|u| u.ranks.overall.name.clone()),
+        cw_honor: p.codewars.as_ref().map(|u| u.honor),
         lc_solved: p.leetcode.as_ref().map(|d| d.solved.solved_problem),
-        lc_easy:   p.leetcode.as_ref().map(|d| d.solved.easy_solved),
+        lc_easy: p.leetcode.as_ref().map(|d| d.solved.easy_solved),
         lc_medium: p.leetcode.as_ref().map(|d| d.solved.medium_solved),
-        lc_hard:   p.leetcode.as_ref().map(|d| d.solved.hard_solved),
+        lc_hard: p.leetcode.as_ref().map(|d| d.solved.hard_solved),
     })
 }
