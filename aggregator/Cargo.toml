@@ -10,3 +10,4 @@ path = "mod.rs"
 readme-stuff-api = { path = "../api" }
 tokio = { version = "1", features = ["full"] }
 thiserror = "1"
+chrono = "0.4"
