@@ -467,6 +467,7 @@ mod tests {
             total_pull_request_reviews: 0,
             repos_contributed_to: 2,
             restricted_contributions: 0,
+            commits_by_language: HashMap::new(),
         }
     }
 
@@ -524,6 +525,7 @@ mod tests {
             total_pull_request_reviews: 0,
             repos_contributed_to: 0,
             restricted_contributions: 0,
+            commits_by_language: HashMap::new(),
         };
         let zero_rank = calculate_rank(&zero_meta, &zero_contrib, &empty_repos());
         assert_eq!(zero_rank.grade, "C-");
