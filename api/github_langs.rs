@@ -27,6 +27,31 @@ pub struct LanguageStats {
     pub total_bytes: u64,
     pub percentage: f64,
     pub repo_count: u32,
+    pub estimated_lines: u64,
+}
+
+fn bytes_per_line(lang: &str) -> f64 {
+    match lang {
+        "C" => 35.0,
+        "C++" => 38.0,
+        "Rust" => 38.0,
+        "Go" => 34.0,
+        "Python" => 28.0,
+        "JavaScript" => 32.0,
+        "TypeScript" => 34.0,
+        "Java" => 46.0,
+        "C#" => 44.0,
+        "Dart" => 40.0,
+        "Swift" => 42.0,
+        "Kotlin" => 42.0,
+        "Zig" => 36.0,
+        "HTML" | "Roff" => 52.0,
+        "CSS" => 22.0,
+        "CMake" | "Makefile" | "Dockerfile" => 26.0,
+        "Shell" => 38.0,
+        "Cuda" => 38.0,
+        _ => 35.0,
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -231,16 +256,20 @@ fn aggregate(repos: Vec<RepoNode>, opts: &LangQueryOptions) -> AggregatedLangSta
 
     let mut languages: Vec<LanguageStats> = global
         .into_iter()
-        .map(|(name, (bytes, color, repo_count))| LanguageStats {
-            name,
-            color,
-            total_bytes: bytes,
-            percentage: if total_bytes > 0 {
-                (bytes as f64 / total_bytes as f64) * 100.0
-            } else {
-                0.0
-            },
-            repo_count,
+        .map(|(name, (bytes, color, repo_count))| {
+            let bpl = bytes_per_line(&name);
+            LanguageStats {
+                estimated_lines: (bytes as f64 / bpl).round() as u64,
+                name,
+                color,
+                total_bytes: bytes,
+                percentage: if total_bytes > 0 {
+                    (bytes as f64 / total_bytes as f64) * 100.0
+                } else {
+                    0.0
+                },
+                repo_count,
+            }
         })
         .collect();
 
