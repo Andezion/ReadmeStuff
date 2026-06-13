@@ -5,27 +5,37 @@ const DEFAULT_BASE_URL: &str = "https://alfa-leetcode-api.onrender.com";
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Badge {
-    pub id: u32,
-    pub name: String,
-    pub icon_url: String,
-    pub date: String,
+    pub id: String,
+    pub display_name: String,
+    pub icon: String,
+    pub creation_date: String,
 }
 
-#[derive(Deserialize)]
-pub struct BadgeStorage {
-    pub counter: u32,
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BadgesResponse {
+    pub badges_count: u32,
     pub badges: Vec<Badge>,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Language {
+    #[serde(rename = "languageName")]
     pub name: String,
+    #[serde(rename = "problemsSolved")]
     pub solved_amount: u32,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
+struct LanguagesResponse {
+    #[serde(rename = "languageProblemCount")]
+    language_problem_count: Vec<Language>,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct Solved {
     #[serde(rename = "solvedProblem")]
     pub solved_problem: u32,
@@ -37,10 +47,19 @@ pub struct Solved {
     pub hard_solved: u32,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Skill {
+    #[serde(rename = "tagName")]
     pub name: String,
+    #[serde(rename = "problemsSolved")]
     pub amount: u32,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SkillsResponse {
+    pub advanced: Vec<Skill>,
+    pub intermediate: Vec<Skill>,
+    pub fundamental: Vec<Skill>,
 }
 
 pub struct LeetcodeApi {
@@ -65,22 +84,22 @@ impl LeetcodeApi {
         Ok(solved)
     }
 
-    pub fn badges(&self, username: &str) -> Result<Vec<BadgeStorage>> {
+    pub fn badges(&self, username: &str) -> Result<BadgesResponse> {
         let url = format!("{}/{}/badges", self.base_url, username);
-        let badges = self.client.get(&url).send()?.json::<Vec<BadgeStorage>>()?;
-        Ok(badges)
+        let resp = self.client.get(&url).send()?.json::<BadgesResponse>()?;
+        Ok(resp)
     }
 
     pub fn languages(&self, username: &str) -> Result<Vec<Language>> {
         let url = format!("{}/{}/language", self.base_url, username);
-        let languages = self.client.get(&url).send()?.json::<Vec<Language>>()?;
-        Ok(languages)
+        let resp = self.client.get(&url).send()?.json::<LanguagesResponse>()?;
+        Ok(resp.language_problem_count)
     }
 
-    pub fn skills(&self, username: &str) -> Result<Vec<Skill>> {
+    pub fn skills(&self, username: &str) -> Result<SkillsResponse> {
         let url = format!("{}/{}/skill", self.base_url, username);
-        let skills = self.client.get(&url).send()?.json::<Vec<Skill>>()?;
-        Ok(skills)
+        let resp = self.client.get(&url).send()?.json::<SkillsResponse>()?;
+        Ok(resp)
     }
 }
 
