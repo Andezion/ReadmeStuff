@@ -1,6 +1,7 @@
 use crate::github_client::{GitHubClient, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProfileMetadata {
@@ -33,6 +34,8 @@ pub struct ContributionSummary {
     pub total_pull_request_reviews: u32,
     pub repos_contributed_to: u32,
     pub restricted_contributions: u32,
+    /// Commits this year grouped by the repository's primary language.
+    pub commits_by_language: HashMap<String, u32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -133,6 +136,20 @@ struct GqlContribs {
     total_repositories_with_contributed_commits: u32,
     #[serde(rename = "restrictedContributionsCount")]
     restricted_contributions_count: u32,
+    #[serde(rename = "commitContributionsByRepository", default)]
+    commit_contributions_by_repository: Vec<GqlCommitByRepo>,
+}
+
+#[derive(Deserialize)]
+struct GqlCommitByRepo {
+    repository: GqlCommitRepoNode,
+    contributions: TotalCount,
+}
+
+#[derive(Deserialize)]
+struct GqlCommitRepoNode {
+    #[serde(rename = "primaryLanguage")]
+    primary_language: Option<LangName>,
 }
 
 #[derive(Deserialize)]
@@ -209,6 +226,10 @@ query($login: String!) {
       totalPullRequestReviewContributions
       totalRepositoriesWithContributedCommits
       restrictedContributionsCount
+      commitContributionsByRepository(maxRepositories: 100) {
+        repository { primaryLanguage { name } }
+        contributions { totalCount }
+      }
     }
   }
 }
@@ -280,6 +301,13 @@ impl GitHubStatisticApi {
             .collect();
 
         let gc = profile.contributions_collection;
+        let mut commits_by_language: HashMap<String, u32> = HashMap::new();
+        for entry in &gc.commit_contributions_by_repository {
+            if let Some(lang) = &entry.repository.primary_language {
+                *commits_by_language.entry(lang.name.clone()).or_insert(0) +=
+                    entry.contributions.total_count;
+            }
+        }
         let contributions = ContributionSummary {
             total_commits: gc.total_commit_contributions,
             total_pull_requests: gc.total_pull_request_contributions,
@@ -287,6 +315,7 @@ impl GitHubStatisticApi {
             total_pull_request_reviews: gc.total_pull_request_review_contributions,
             repos_contributed_to: gc.total_repositories_with_contributed_commits,
             restricted_contributions: gc.restricted_contributions_count,
+            commits_by_language,
         };
 
         let repos = build_repo_stats(repo_nodes);
