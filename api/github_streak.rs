@@ -3,6 +3,7 @@ use chrono::{Datelike, Duration, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ContributionDay {
@@ -52,8 +53,6 @@ struct UserRoot {
 
 #[derive(Deserialize)]
 struct GqlUser {
-    #[serde(rename = "createdAt")]
-    created_at: String,
     #[serde(rename = "contributionsCollection")]
     contributions_collection: GqlContribCollection,
 }
@@ -89,7 +88,6 @@ struct GqlDay {
 const CALENDAR_QUERY: &str = r#"
 query($login: String!, $from: DateTime!, $to: DateTime!) {
   user(login: $login) {
-    createdAt
     contributionsCollection(from: $from, to: $to) {
       contributionCalendar {
         totalContributions
@@ -153,42 +151,49 @@ impl GitHubStreakApi {
     }
 
     async fn fetch_all_days(&self, login: &str) -> Result<Vec<ContributionDay>> {
+        use tokio::task::JoinSet;
+
         let now = Utc::now();
         let current_year = now.year();
 
-        let initial: UserRoot = self
-            .client
-            .graphql(
-                CALENDAR_QUERY,
-                json!({
-                    "login": login,
-                    "from": format!("{current_year}-01-01T00:00:00Z"),
-                    "to":   format!("{current_year}-12-31T23:59:59Z"),
-                }),
-            )
-            .await?;
+        const MIN_YEAR: i32 = 1969;
+        let sem = Arc::new(tokio::sync::Semaphore::new(8));
+        let mut set: JoinSet<Vec<ContributionDay>> = JoinSet::new();
 
-        let start_year = initial.user.created_at[..4]
-            .parse::<i32>()
-            .unwrap_or(current_year);
+        for year in MIN_YEAR..=current_year {
+            let client = self.client.clone();
+            let login = login.to_owned();
+            let sem = sem.clone();
+            set.spawn(async move {
+                let Ok(_permit) = sem.acquire_owned().await else {
+                    return vec![];
+                };
+                let Ok(data): Result<UserRoot> = client
+                    .graphql(
+                        CALENDAR_QUERY,
+                        json!({
+                            "login": login,
+                            "from": format!("{year}-01-01T00:00:00Z"),
+                            "to":   format!("{year}-12-31T23:59:59Z"),
+                        }),
+                    )
+                    .await
+                else {
+                    return vec![];
+                };
+                let cal = data.user.contributions_collection.contribution_calendar;
+                if cal.total_contributions == 0 {
+                    return vec![];
+                }
+                flatten_calendar(cal)
+            });
+        }
 
-        let mut all = flatten_calendar(initial.user.contributions_collection.contribution_calendar);
-
-        for year in start_year..current_year {
-            let data: UserRoot = self
-                .client
-                .graphql(
-                    CALENDAR_QUERY,
-                    json!({
-                        "login": login,
-                        "from": format!("{year}-01-01T00:00:00Z"),
-                        "to":   format!("{year}-12-31T23:59:59Z"),
-                    }),
-                )
-                .await?;
-            all.extend(flatten_calendar(
-                data.user.contributions_collection.contribution_calendar,
-            ));
+        let mut all = Vec::new();
+        while let Some(result) = set.join_next().await {
+            if let Ok(days) = result {
+                all.extend(days);
+            }
         }
 
         all.sort_by_key(|d| d.date);
@@ -198,6 +203,7 @@ impl GitHubStreakApi {
 
 pub fn compute_streak_stats(days: Vec<ContributionDay>) -> StreakStats {
     let today = Utc::now().date_naive();
+    let days: Vec<ContributionDay> = days.into_iter().filter(|d| d.date <= today).collect();
 
     let total_contributions: u32 = days.iter().map(|d| d.contribution_count).sum();
 
