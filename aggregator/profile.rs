@@ -180,6 +180,12 @@ mod tests {
                 println!("pr_reviews     : {}", c.total_pull_request_reviews);
                 println!("repos_contrib  : {}", c.repos_contributed_to);
                 println!("restricted     : {}", c.restricted_contributions);
+                println!("commits by language (this year) :");
+                let mut cbl: Vec<_> = c.commits_by_language.iter().collect();
+                cbl.sort_by_key(|(_, v)| std::cmp::Reverse(**v));
+                for (lang, cnt) in &cbl {
+                    println!("  {:20} {}", lang, cnt);
+                }
                 let r = &g.repos;
                 println!("total_repos    : {}", r.total_repos);
                 println!("total_stars    : {}", r.total_stars);
@@ -246,8 +252,12 @@ mod tests {
                 println!("languages     :");
                 for lang in &l.languages {
                     println!(
-                        "  {:20} {:5.1}%  {} bytes  {} repos",
-                        lang.name, lang.percentage, lang.total_bytes, lang.repo_count,
+                        "  {:20} {:5.1}%  {:>10} bytes  ~{:>8} lines  {} repos",
+                        lang.name,
+                        lang.percentage,
+                        lang.total_bytes,
+                        lang.estimated_lines,
+                        lang.repo_count,
                     );
                 }
             }
