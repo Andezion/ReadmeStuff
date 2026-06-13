@@ -167,8 +167,14 @@ mod tests {
                 println!("location       : {:?}", m.location);
                 println!("website        : {:?}", m.website_url);
                 println!("created_at     : {}", m.created_at);
-                println!("followers      : {}   following: {}", m.followers, m.following);
-                println!("public_repos   : {}   gists: {}", m.public_repos, m.public_gists);
+                println!(
+                    "followers      : {}   following: {}",
+                    m.followers, m.following
+                );
+                println!(
+                    "public_repos   : {}   gists: {}",
+                    m.public_repos, m.public_gists
+                );
                 println!("organizations  :");
                 for org in &g.organizations {
                     println!("  - {} ({:?})", org.login, org.name);
@@ -222,7 +228,10 @@ mod tests {
                 println!("longest_streak         : {} days", s.longest_streak);
                 println!("longest_streak_start   : {:?}", s.longest_streak_start);
                 println!("longest_streak_end     : {:?}", s.longest_streak_end);
-                println!("average_daily          : {:.2}", s.average_daily_contributions);
+                println!(
+                    "average_daily          : {:.2}",
+                    s.average_daily_contributions
+                );
                 println!("daily_history (days)   : {}", s.daily_history.len());
                 println!("contribution_gaps (3+) : {}", s.contribution_gaps.len());
                 let mut months: Vec<_> = s.monthly_totals.iter().collect();
@@ -237,10 +246,7 @@ mod tests {
                     println!("  {} : {}", days[i], count);
                 }
             }
-            None => println!(
-                "ERROR: {:?}",
-                profile.sources.github.as_ref().err()
-            ),
+            None => println!("ERROR: {:?}", profile.sources.github.as_ref().err()),
         }
 
         println!("\n         GITHUB LANGUAGES         \n");
@@ -274,7 +280,10 @@ mod tests {
                 println!("country/city   : {:?} / {:?}", u.country, u.city);
                 println!("organization   : {:?}", u.organization);
                 println!("rank           : {}   rating: {}", u.rank, u.rating);
-                println!("max_rank       : {}   max_rating: {}", u.max_rank, u.max_rating);
+                println!(
+                    "max_rank       : {}   max_rating: {}",
+                    u.max_rank, u.max_rating
+                );
                 println!("contribution   : {}", u.contribution);
                 println!("friend_of      : {}", u.friend_of_count);
                 let reg = chrono::DateTime::from_timestamp(u.registration_time_seconds, 0)
@@ -302,14 +311,20 @@ mod tests {
                 println!("clan               : {:?}", cw.clan);
                 println!("leaderboard_pos    : {:?}", cw.leaderboard_position);
                 println!("skills             : {:?}", cw.skills);
-                println!("overall rank       : {} ({}) score={}", cw.ranks.overall.name, cw.ranks.overall.color, cw.ranks.overall.score);
+                println!(
+                    "overall rank       : {} ({}) score={}",
+                    cw.ranks.overall.name, cw.ranks.overall.color, cw.ranks.overall.score
+                );
                 println!("per-language ranks :");
                 let mut langs: Vec<_> = cw.ranks.languages.iter().collect();
                 langs.sort_by_key(|(k, _)| k.as_str());
                 for (lang, entry) in &langs {
                     println!("  {:12} {} score={}", lang, entry.name, entry.score);
                 }
-                println!("kata_completed     : {}", cw.code_challenges.total_completed);
+                println!(
+                    "kata_completed     : {}",
+                    cw.code_challenges.total_completed
+                );
                 println!("kata_authored      : {}", cw.code_challenges.total_authored);
             }
             Err(e) => println!("ERROR: {e}"),
