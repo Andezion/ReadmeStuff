@@ -5,7 +5,7 @@ use readme_stuff_api::{
     github_statistic::ProfileStats,
     github_streak::StreakStats,
     github_visitors::models::VisitorAnalytics,
-    leetcode::{Language as LeetcodeLanguage, Solved},
+    leetcode::{Language as LeetcodeLanguage, Skill as LeetcodeSkill, Solved},
 };
 
 pub struct CodeforcesData {
@@ -16,6 +16,9 @@ pub struct CodeforcesData {
 pub struct LeetcodeData {
     pub solved: Solved,
     pub languages: Vec<LeetcodeLanguage>,
+    pub skills_advanced: Vec<LeetcodeSkill>,
+    pub skills_intermediate: Vec<LeetcodeSkill>,
+    pub skills_fundamental: Vec<LeetcodeSkill>,
 }
 
 pub struct UserProfile {
