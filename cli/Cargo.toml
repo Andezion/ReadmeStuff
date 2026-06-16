@@ -1,0 +1,14 @@
+[package]
+name = "readme-stuff-cli"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "readmestuff"
+path = "src/main.rs"
+
+[dependencies]
+readme-stuff-api        = { path = "../api" }
+readme-stuff-aggregator = { path = "../aggregator" }
+readme-stuff-draw       = { path = "../draw" }
+tokio = { version = "1", features = ["full"] }
