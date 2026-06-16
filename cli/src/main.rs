@@ -58,11 +58,25 @@ fn env(key: &str, default: &str) -> String {
 fn write_svg(dir: &Path, name: &str, content: &str) {
     let path = dir.join(name);
     std::fs::write(&path, content).unwrap_or_else(|e| panic!("write {name}: {e}"));
-    eprintln!("    → {}", path.display());
+    eprintln!("    - {}", path.display());
+}
+
+fn find_dotenv() -> Option<std::path::PathBuf> {
+    let mut dir = std::env::current_dir().ok()?;
+    loop {
+        let candidate = dir.join(".env");
+        if candidate.exists() {
+            return Some(candidate);
+        }
+        if !dir.pop() {
+            return None;
+        }
+    }
 }
 
 fn load_dotenv() {
-    let Ok(text) = std::fs::read_to_string(".env") else {
+    let Some(path) = find_dotenv() else { return };
+    let Ok(text) = std::fs::read_to_string(path) else {
         return;
     };
     for line in text.lines() {
@@ -73,6 +87,10 @@ fn load_dotenv() {
         if let Some((key, val)) = line.split_once('=') {
             if std::env::var(key).is_err() {
                 unsafe { std::env::set_var(key, val.trim()) };
+            }
+        } else if line.starts_with("ghp_") || line.starts_with("github_pat_") {
+            if std::env::var("GITHUB_TOKEN").is_err() {
+                unsafe { std::env::set_var("GITHUB_TOKEN", line) };
             }
         }
     }
