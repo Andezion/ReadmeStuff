@@ -90,9 +90,13 @@ pub async fn build_profile(
             .next()
             .ok_or_else(|| "user not found".to_string())?;
         let rating_history = api.user_rating(cf.as_str()).map_err(|e| e.to_string())?;
+        let submissions = api
+            .user_status(cf.as_str(), None, None, Some(false))
+            .unwrap_or_default();
         Ok::<CodeforcesData, String>(CodeforcesData {
             user,
             rating_history,
+            submissions,
         })
     });
 
@@ -109,12 +113,16 @@ pub async fn build_profile(
             .map_err(|e| e.to_string())?;
         let languages = api.languages(&lc).map_err(|e| e.to_string())?;
         let skills = api.skills(&lc).map_err(|e| e.to_string())?;
+        let badges = api.badges(&lc).unwrap_or_else(|_| {
+            readme_stuff_api::leetcode::BadgesResponse { badges_count: 0, badges: vec![] }
+        });
         Ok::<LeetcodeData, String>(LeetcodeData {
             solved,
             languages,
             skills_advanced: skills.advanced,
             skills_intermediate: skills.intermediate,
             skills_fundamental: skills.fundamental,
+            badges,
         })
     });
 
