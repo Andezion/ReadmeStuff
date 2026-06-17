@@ -1,16 +1,17 @@
 use readme_stuff_api::{
-    codeforce::{RatingChange, User as CodeforcesUser},
+    codeforce::{RatingChange, Submission, User as CodeforcesUser},
     codewars::User as CodewarsUser,
     github_langs::AggregatedLangStats,
     github_statistic::ProfileStats,
     github_streak::StreakStats,
     github_visitors::models::VisitorAnalytics,
-    leetcode::{Language as LeetcodeLanguage, Skill as LeetcodeSkill, Solved},
+    leetcode::{BadgesResponse, Language as LeetcodeLanguage, Skill as LeetcodeSkill, Solved},
 };
 
 pub struct CodeforcesData {
     pub user: CodeforcesUser,
     pub rating_history: Vec<RatingChange>,
+    pub submissions: Vec<Submission>,
 }
 
 pub struct LeetcodeData {
@@ -19,6 +20,7 @@ pub struct LeetcodeData {
     pub skills_advanced: Vec<LeetcodeSkill>,
     pub skills_intermediate: Vec<LeetcodeSkill>,
     pub skills_fundamental: Vec<LeetcodeSkill>,
+    pub badges: BadgesResponse,
 }
 
 pub struct UserProfile {
