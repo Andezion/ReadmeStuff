@@ -156,7 +156,7 @@ impl GitHubStreakApi {
         let now = Utc::now();
         let current_year = now.year();
 
-        const MIN_YEAR: i32 = 1969;
+        const MIN_YEAR: i32 = 2008;
         let sem = Arc::new(tokio::sync::Semaphore::new(8));
         let mut set: JoinSet<Vec<ContributionDay>> = JoinSet::new();
 
@@ -197,6 +197,16 @@ impl GitHubStreakApi {
         }
 
         all.sort_by_key(|d| d.date);
+        all.dedup_by(|b, a| {
+            if a.date == b.date {
+                if b.contribution_count > a.contribution_count {
+                    a.contribution_count = b.contribution_count;
+                }
+                true
+            } else {
+                false
+            }
+        });
         Ok(all)
     }
 }
