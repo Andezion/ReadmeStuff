@@ -1,0 +1,1 @@
+OUTPUT_DIR=/tmp/readme_test cargo run -p readme-stuff-cli
