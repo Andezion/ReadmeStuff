@@ -31,6 +31,19 @@ pub fn rank_color(rank: &str) -> &'static str {
     }
 }
 
+
+pub fn cw_color(codewars_color: &str) -> &'static str {
+    match codewars_color.to_lowercase().as_str() {
+        "white"  => "#b0b0b0",
+        "yellow" => "#e8b400",
+        "blue"   => "#4285f4",
+        "purple" => "#9b59b6",
+        "black"  => "#f0f0f0",
+        "red"    => "#ff6b6b",
+        _        => "#8b949e",
+    }
+}
+
 pub fn cf_rank_color(rank: &str) -> &'static str {
     let r = rank.to_lowercase();
     let r = r.trim();
