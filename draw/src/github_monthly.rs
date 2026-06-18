@@ -25,19 +25,16 @@ pub fn render_github_monthly(w: &GithubMonthlyWidget, theme: Theme) -> String {
         let bar_h = (*count as f64 / max_count as f64 * bar_area_h as f64).round() as u32;
         let bar_y = BAR_AREA_BOTTOM - bar_h;
 
-        // background track
         bars.push_str(&format!(
             "<rect x=\"{x}\" y=\"{BAR_AREA_TOP}\" width=\"{bar_w}\" height=\"{bar_area_h}\" rx=\"3\" fill=\"{bg_track}\"/>",
             bg_track = c.separator,
         ));
-        // filled bar
         if bar_h > 0 {
             bars.push_str(&format!(
                 "<rect x=\"{x}\" y=\"{bar_y}\" width=\"{bar_w}\" height=\"{bar_h}\" rx=\"3\" fill=\"{accent}\"/>",
                 accent = c.accent,
             ));
         }
-        // label
         let label_x = x + bar_w / 2;
         bars.push_str(&format!(
             "<text x=\"{label_x}\" y=\"{LABEL_Y}\" text-anchor=\"middle\" \
@@ -45,7 +42,6 @@ pub fn render_github_monthly(w: &GithubMonthlyWidget, theme: Theme) -> String {
                 fill=\"{ts}\">{label}</text>",
             ts = c.text_secondary,
         ));
-        // count on top of bar (only if bar is tall enough)
         if bar_h >= 14 {
             let val_y = bar_y + 11;
             bars.push_str(&format!(

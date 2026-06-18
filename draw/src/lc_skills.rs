@@ -50,7 +50,6 @@ pub fn render_lc_skills(w: &LcSkillsWidget, theme: Theme) -> String {
         ));
     }
 
-    // Legend
     let legend = CAT_COLORS.iter().enumerate().map(|(i, (cat, color))| {
         let lx = 25 + i as u32 * 110;
         let label = match *cat { "adv" => "Advanced", "int" => "Intermediate", _ => "Fundamental" };
