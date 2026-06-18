@@ -1,6 +1,7 @@
 pub mod codeforce;
 pub mod codewars;
 pub mod github_client;
+pub mod github_commit_streak;
 pub mod github_langs;
 pub mod github_statistic;
 pub mod github_streak;
