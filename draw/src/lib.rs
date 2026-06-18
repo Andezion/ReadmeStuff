@@ -9,6 +9,7 @@ mod github_contributions;
 mod github_social;
 mod github_heatmap;
 mod github_monthly;
+mod github_visitors;
 
 // Codeforces
 mod cf_rating;
@@ -39,6 +40,8 @@ pub use github_contributions::render_github_contributions;
 pub use github_social::render_github_social;
 pub use github_heatmap::render_github_heatmap;
 pub use github_monthly::render_github_monthly;
+pub use github_visitors::render_github_visitors;
+pub use github_visitors::render_github_commit_streak;
 
 // GitHub streak / langs (kept)
 pub use streak::render_streak;
