@@ -44,7 +44,7 @@ pub fn generate(
 ) -> String {
     let mut rng = Lcg::new(seed);
     let char_h: i32 = 14;
-    let num_drops = ((width / 24).max(8)) as usize;
+    let num_drops = ((width / 13).max(12)) as usize;
 
     let mut css = String::new();
     let mut drops = String::new();

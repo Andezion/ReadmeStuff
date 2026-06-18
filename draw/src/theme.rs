@@ -27,7 +27,7 @@ impl Theme {
                 text_secondary: "#8b949e",
                 accent: "#00ff41",
                 matrix_color: "#00ff41",
-                matrix_opacity: 0.10,
+                matrix_opacity: 0.22,
             },
         }
     }
