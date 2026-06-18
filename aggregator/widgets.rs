@@ -4,6 +4,50 @@ use readme_stuff_api::codeforce::Verdict;
 
 use crate::models::UserProfile;
 
+
+pub struct GithubVisitorsWidget {
+    pub total_views: u64,
+    pub total_unique: u64,
+    pub top_repos: Vec<(String, u64)>,
+}
+
+pub fn github_visitors_widget(p: &UserProfile) -> Option<GithubVisitorsWidget> {
+    let v = p.visitors.as_ref()?;
+    let total_views: u64 = v.repositories.iter().map(|r| r.total_views_all_time).sum();
+    let total_unique: u64 = v
+        .repositories
+        .iter()
+        .map(|r| r.total_unique_visitors_all_time)
+        .sum();
+    if total_views == 0 {
+        return None;
+    }
+    let top_repos = v.top_repos_by_views.iter().take(5).cloned().collect();
+    Some(GithubVisitorsWidget { total_views, total_unique, top_repos })
+}
+
+
+pub struct CommitStreakWidget {
+    pub total_commits: u64,
+    pub days_with_commits: u32,
+    pub current_streak: u32,
+    pub longest_streak: u32,
+    pub longest_streak_start: Option<chrono::NaiveDate>,
+    pub longest_streak_end: Option<chrono::NaiveDate>,
+}
+
+pub fn commit_streak_widget(p: &UserProfile) -> Option<CommitStreakWidget> {
+    let s = p.commit_streak.as_ref()?;
+    Some(CommitStreakWidget {
+        total_commits: s.total_commits,
+        days_with_commits: s.days_with_commits,
+        current_streak: s.current_streak,
+        longest_streak: s.longest_streak,
+        longest_streak_start: s.longest_streak_start,
+        longest_streak_end: s.longest_streak_end,
+    })
+}
+
 pub struct StreakWidget {
     pub current_streak: u32,
     pub longest_streak: u32,

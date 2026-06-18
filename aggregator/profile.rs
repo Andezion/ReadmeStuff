@@ -3,9 +3,11 @@ use readme_stuff_api::{
     codeforce::CodeforcesApi,
     codewars::CodewarsApi,
     github_client::GitHubClient,
+    github_commit_streak::GitHubCommitStreakApi,
     github_langs::{GitHubLangsApi, LangQueryOptions},
     github_statistic::GitHubStatisticApi,
     github_streak::GitHubStreakApi,
+    github_visitors::{GithubVisitorsService, StorageKind, filter::FilterConfig},
     leetcode::LeetcodeApi,
 };
 
@@ -80,6 +82,33 @@ pub async fn build_profile(
         }
     };
 
+    let commit_streak_fut = {
+        let login = github_login.to_owned();
+        let client = gh_client.clone();
+        async move {
+            let c = client.ok_or_else(|| "GITHUB_TOKEN not set".to_string())?;
+            GitHubCommitStreakApi::new(c)
+                .fetch_stats(&login)
+                .await
+                .map_err(|e| e.to_string())
+        }
+    };
+
+    let visitors_fut = {
+        let login = github_login.to_owned();
+        let client = gh_client.clone();
+        async move {
+            let c = client.ok_or_else(|| "GITHUB_TOKEN not set".to_string())?;
+            let svc = GithubVisitorsService::new(c, StorageKind::InMemory, FilterConfig::default())
+                .await
+                .map_err(|e| e.to_string())?;
+            svc.refresh_from_github(&login)
+                .await
+                .map_err(|e| e.to_string())?;
+            svc.analytics(&login).await.map_err(|e| e.to_string())
+        }
+    };
+
     let cf = cf_handle.to_owned();
     let cf_fut = tokio::task::spawn_blocking(move || {
         let api = CodeforcesApi::default();
@@ -126,8 +155,8 @@ pub async fn build_profile(
         })
     });
 
-    let (github_res, streak_res, langs_res, cf_join, cw_join, lc_join) =
-        tokio::join!(github_fut, streak_fut, langs_fut, cf_fut, cw_fut, lc_fut,);
+    let (github_res, streak_res, langs_res, commit_streak_res, visitors_res, cf_join, cw_join, lc_join) =
+        tokio::join!(github_fut, streak_fut, langs_fut, commit_streak_fut, visitors_fut, cf_fut, cw_fut, lc_fut);
 
     let cf_res = cf_join.unwrap_or_else(|e| Err(e.to_string()));
     let cw_res = cw_join.unwrap_or_else(|e| Err(e.to_string()));
@@ -139,15 +168,17 @@ pub async fn build_profile(
             codeforces: cf_res.as_ref().map(|_| ()).map_err(|e| e.clone()),
             codewars: cw_res.as_ref().map(|_| ()).map_err(|e| e.clone()),
             leetcode: lc_res.as_ref().map(|_| ()).map_err(|e| e.clone()),
-            visitors: Err("not implemented".to_string()),
+            visitors: visitors_res.as_ref().map(|_| ()).map_err(|e| e.clone()),
+            commit_streak: commit_streak_res.as_ref().map(|_| ()).map_err(|e| e.clone()),
         },
         github: github_res.ok(),
         streak: streak_res.ok(),
+        commit_streak: commit_streak_res.ok(),
         langs: langs_res.ok(),
         codeforces: cf_res.ok(),
         codewars: cw_res.ok(),
         leetcode: lc_res.ok(),
-        visitors: None,
+        visitors: visitors_res.ok(),
     }
 }
 

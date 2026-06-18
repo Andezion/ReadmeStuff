@@ -1,6 +1,7 @@
 use readme_stuff_api::{
     codeforce::{RatingChange, Submission, User as CodeforcesUser},
     codewars::User as CodewarsUser,
+    github_commit_streak::CommitStreakStats,
     github_langs::AggregatedLangStats,
     github_statistic::ProfileStats,
     github_streak::StreakStats,
@@ -26,6 +27,7 @@ pub struct LeetcodeData {
 pub struct UserProfile {
     pub github: Option<ProfileStats>,
     pub streak: Option<StreakStats>,
+    pub commit_streak: Option<CommitStreakStats>,
     pub langs: Option<AggregatedLangStats>,
     pub codeforces: Option<CodeforcesData>,
     pub codewars: Option<CodewarsUser>,
@@ -40,4 +42,5 @@ pub struct SourceStatus {
     pub codewars: Result<(), String>,
     pub leetcode: Result<(), String>,
     pub visitors: Result<(), String>,
+    pub commit_streak: Result<(), String>,
 }
