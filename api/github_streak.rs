@@ -252,49 +252,42 @@ pub fn compute_streak_stats(days: Vec<ContributionDay>) -> StreakStats {
 }
 
 fn calc_current_streak(days: &[ContributionDay], today: NaiveDate) -> (u32, Option<NaiveDate>) {
-    if days.is_empty() {
-        return (0, None);
-    }
-
-    let mut anchor = today;
-    if days
-        .iter()
-        .rev()
-        .find(|d| d.date == today)
-        .map(|d| d.contribution_count)
-        .unwrap_or(0)
-        == 0
-    {
-        anchor = match today.pred_opt() {
-            Some(d) => d,
-            None => return (0, None),
-        };
-    }
-
     let mut streak = 0u32;
-    let mut start: Option<NaiveDate> = None;
-    let mut expected = anchor;
+    let mut streak_start: Option<NaiveDate> = None;
+    let mut expected: Option<NaiveDate> = None;
 
     for day in days.iter().rev() {
-        if day.date > expected {
+        if day.date > today {
             continue;
         }
-        if day.date < expected {
-            break;
+        if day.contribution_count == 0 {
+            if streak > 0 {
+                break;
+            }
+            continue;
         }
-        if day.contribution_count > 0 {
-            streak += 1;
-            start = Some(day.date);
-            expected = match expected.pred_opt() {
-                Some(d) => d,
-                None => break,
-            };
-        } else {
-            break;
+        match expected {
+            None => {
+                if today.signed_duration_since(day.date).num_days() > 1 {
+                    break;
+                }
+                streak = 1;
+                streak_start = Some(day.date);
+                expected = day.date.pred_opt();
+            }
+            Some(exp) => {
+                if day.date == exp {
+                    streak += 1;
+                    streak_start = Some(day.date);
+                    expected = day.date.pred_opt();
+                } else {
+                    break;
+                }
+            }
         }
     }
 
-    (streak, start)
+    (streak, streak_start)
 }
 
 fn calc_longest_streak(days: &[ContributionDay]) -> (u32, Option<NaiveDate>, Option<NaiveDate>) {
@@ -304,30 +297,30 @@ fn calc_longest_streak(days: &[ContributionDay]) -> (u32, Option<NaiveDate>, Opt
 
     let mut run = 0u32;
     let mut run_start: Option<NaiveDate> = None;
-    let mut prev: Option<NaiveDate> = None;
+    let mut run_end: Option<NaiveDate> = None;
 
     for day in days {
-        let consecutive = prev
-            .map(|p| day.date.signed_duration_since(p).num_days() == 1)
-            .unwrap_or(false);
-
         if day.contribution_count > 0 {
-            if consecutive && run > 0 {
+            let continues = run_end
+                .map(|last| day.date.signed_duration_since(last).num_days() == 1)
+                .unwrap_or(false);
+            if continues {
                 run += 1;
             } else {
                 run = 1;
                 run_start = Some(day.date);
             }
+            run_end = Some(day.date);
             if run > longest {
                 longest = run;
                 best_start = run_start;
-                best_end = Some(day.date);
+                best_end = run_end;
             }
         } else {
             run = 0;
             run_start = None;
+            run_end = None;
         }
-        prev = Some(day.date);
     }
 
     (longest, best_start, best_end)
@@ -472,6 +465,48 @@ mod tests {
             .collect();
         let stats = compute_streak_stats(days);
         assert_eq!(stats.total_contributions, 28);
+    }
+
+    #[test]
+    fn streak_across_year_boundary() {
+        let d = |y, m, d| NaiveDate::from_ymd_opt(y, m, d).unwrap();
+        let days = vec![
+            make_day(d(2022, 12, 30), 3),
+            make_day(d(2022, 12, 31), 5),
+            make_day(d(2023, 1, 1), 2),
+            make_day(d(2023, 1, 2), 4),
+        ];
+        let stats = compute_streak_stats(days);
+        assert_eq!(stats.longest_streak, 4);
+        assert_eq!(stats.longest_streak_start, Some(d(2022, 12, 30)));
+        assert_eq!(stats.longest_streak_end, Some(d(2023, 1, 2)));
+    }
+
+    #[test]
+    fn skipped_year_breaks_streak() {
+        let d = |y, m, day| NaiveDate::from_ymd_opt(y, m, day).unwrap();
+        let days = vec![
+            make_day(d(2021, 12, 31), 5),
+            make_day(d(2024, 1, 1), 5),
+        ];
+        let (longest, start, end) = calc_longest_streak(&days);
+        assert_eq!(longest, 1);
+        assert_eq!(start, Some(d(2021, 12, 31)));
+        assert_eq!(end, Some(d(2021, 12, 31)));
+    }
+
+    #[test]
+    fn current_streak_today_no_contribution() {
+        let today = Utc::now().date_naive();
+        let yesterday = today.pred_opt().unwrap();
+        let days = vec![
+            make_day(yesterday - Duration::days(1), 2),
+            make_day(yesterday, 3),
+            make_day(today, 0),
+        ];
+        let stats = compute_streak_stats(days);
+        assert_eq!(stats.current_streak, 2);
+        assert_eq!(stats.current_streak_start, Some(yesterday - Duration::days(1)));
     }
 
     #[tokio::test]
