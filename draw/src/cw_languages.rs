@@ -1,4 +1,8 @@
-use crate::{helpers::{cw_color, fmt_num, xml_escape}, matrix, theme::Theme};
+use crate::{
+    helpers::{cw_color, fmt_num, xml_escape},
+    matrix,
+    theme::Theme,
+};
 use readme_stuff_aggregator::widgets::CwLanguagesWidget;
 
 const W: u32 = 495;
@@ -13,7 +17,13 @@ pub fn render_cw_languages(w: &CwLanguagesWidget, theme: Theme) -> String {
 
     let rain = matrix::generate(W, h, c.matrix_color, c.matrix_opacity, 0xCCCC_0303, "cwl");
 
-    let max_score = w.languages.iter().map(|l| l.score).max().unwrap_or(1).max(1);
+    let max_score = w
+        .languages
+        .iter()
+        .map(|l| l.score)
+        .max()
+        .unwrap_or(1)
+        .max(1);
     const BAR_X: u32 = 220;
     const BAR_MAX_W: u32 = 175;
     const SCORE_X: u32 = 400;
@@ -60,7 +70,13 @@ pub fn render_cw_languages(w: &CwLanguagesWidget, theme: Theme) -> String {
 <text x="220" y="67" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="10" fill="{ts}">SCORE</text>
 {rows}
 </svg>"#,
-        bg = c.bg, border = c.border, accent = c.accent, title = c.title,
-        sep = c.separator, ts = c.text_secondary, rain = rain, rows = rows,
+        bg = c.bg,
+        border = c.border,
+        accent = c.accent,
+        title = c.title,
+        sep = c.separator,
+        ts = c.text_secondary,
+        rain = rain,
+        rows = rows,
     )
 }

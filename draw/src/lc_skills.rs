@@ -9,14 +9,14 @@ const COUNT_X: u32 = 438;
 const ROW_H: u32 = 18;
 const FIRST_Y: u32 = 70;
 
-const CAT_COLORS: [(&str, &str); 3] = [
-    ("adv", "#ff6e96"),
-    ("int", "#58a6ff"),
-    ("fun", "#3fb950"),
-];
+const CAT_COLORS: [(&str, &str); 3] = [("adv", "#ff6e96"), ("int", "#58a6ff"), ("fun", "#3fb950")];
 
 fn cat_color(cat: &str) -> &'static str {
-    CAT_COLORS.iter().find(|(c, _)| *c == cat).map(|(_, col)| *col).unwrap_or("#8b949e")
+    CAT_COLORS
+        .iter()
+        .find(|(c, _)| *c == cat)
+        .map(|(_, col)| *col)
+        .unwrap_or("#8b949e")
 }
 
 pub fn render_lc_skills(w: &LcSkillsWidget, theme: Theme) -> String {
@@ -77,8 +77,13 @@ pub fn render_lc_skills(w: &LcSkillsWidget, theme: Theme) -> String {
 {legend}
 {rows}
 </svg>"#,
-        bg = c.bg, border = c.border, title = c.title,
-        sep = c.separator, rain = rain, legend = legend, rows = rows,
+        bg = c.bg,
+        border = c.border,
+        title = c.title,
+        sep = c.separator,
+        rain = rain,
+        legend = legend,
+        rows = rows,
         lc_accent = "#ffa116",
     )
 }

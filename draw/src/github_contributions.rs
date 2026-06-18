@@ -10,13 +10,13 @@ pub fn render_github_contributions(w: &GithubContributionsWidget, theme: Theme) 
 
     let col_x = [25u32, 181, 337];
     let row1: [(&str, String); 3] = [
-        ("Total Commits",      fmt_num(w.total_commits as u64)),
-        ("Pull Requests",      fmt_num(w.total_prs as u64)),
-        ("Issues",             fmt_num(w.total_issues as u64)),
+        ("Total Commits", fmt_num(w.total_commits as u64)),
+        ("Pull Requests", fmt_num(w.total_prs as u64)),
+        ("Issues", fmt_num(w.total_issues as u64)),
     ];
     let row2: [(&str, String); 2] = [
-        ("PR Reviews",         fmt_num(w.total_reviews as u64)),
-        ("Repos Contributed",  fmt_num(w.repos_contributed_to as u64)),
+        ("PR Reviews", fmt_num(w.total_reviews as u64)),
+        ("Repos Contributed", fmt_num(w.repos_contributed_to as u64)),
     ];
 
     let mut stat_svg = String::new();
@@ -53,7 +53,12 @@ pub fn render_github_contributions(w: &GithubContributionsWidget, theme: Theme) 
 <line x1="25" y1="52" x2="470" y2="52" stroke="{sep}" stroke-width="1"/>
 {stat_svg}
 </svg>"#,
-        bg = c.bg, border = c.border, accent = c.accent, title = c.title,
-        sep = c.separator, rain = rain, stat_svg = stat_svg,
+        bg = c.bg,
+        border = c.border,
+        accent = c.accent,
+        title = c.title,
+        sep = c.separator,
+        rain = rain,
+        stat_svg = stat_svg,
     )
 }

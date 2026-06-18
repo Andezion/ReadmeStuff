@@ -26,12 +26,12 @@ pub fn render_github_stats(w: &GithubStatsWidget, theme: Theme) -> String {
     let col_x = [25u32, 181, 337];
 
     let stats: [(&str, String); 6] = [
-        ("Total Commits",  fmt_num(w.commits as u64)),
-        ("Pull Requests",  fmt_num(w.prs as u64)),
-        ("Issues",         fmt_num(w.issues as u64)),
-        ("Total Stars",    fmt_num(w.stars)),
-        ("Followers",      fmt_num(w.followers as u64)),
-        ("Top",            format!("{:.1}%", w.rank_percentile * 100.0)),
+        ("Total Commits", fmt_num(w.commits as u64)),
+        ("Pull Requests", fmt_num(w.prs as u64)),
+        ("Issues", fmt_num(w.issues as u64)),
+        ("Total Stars", fmt_num(w.stars)),
+        ("Followers", fmt_num(w.followers as u64)),
+        ("Top", format!("{:.1}%", w.rank_percentile * 100.0)),
     ];
 
     let mut stat_svg = String::new();

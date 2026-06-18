@@ -1,4 +1,8 @@
-use crate::{helpers::{fmt_num, xml_escape}, matrix, theme::Theme};
+use crate::{
+    helpers::{fmt_num, xml_escape},
+    matrix,
+    theme::Theme,
+};
 use readme_stuff_aggregator::widgets::LcLanguagesWidget;
 
 const W: u32 = 300;
@@ -37,7 +41,13 @@ pub fn render_lc_languages(w: &LcLanguagesWidget, theme: Theme) -> String {
     let h: u32 = FIRST_ROW_Y + n as u32 * ROW_H + 10;
 
     let rain = matrix::generate(W, h, c.matrix_color, c.matrix_opacity, 0x1C00_0003, "lcl");
-    let max_solved = w.languages.iter().map(|l| l.solved).max().unwrap_or(1).max(1);
+    let max_solved = w
+        .languages
+        .iter()
+        .map(|l| l.solved)
+        .max()
+        .unwrap_or(1)
+        .max(1);
 
     let mut rows = String::new();
     for (i, entry) in w.languages.iter().take(MAX_ROWS).enumerate() {
@@ -79,8 +89,12 @@ pub fn render_lc_languages(w: &LcLanguagesWidget, theme: Theme) -> String {
 <line x1="15" y1="48" x2="285" y2="48" stroke="{sep}" stroke-width="1"/>
 {rows}
 </svg>"#,
-        bg = c.bg, border = c.border, title = c.title,
-        sep = c.separator, rain = rain, rows = rows,
+        bg = c.bg,
+        border = c.border,
+        title = c.title,
+        sep = c.separator,
+        rain = rain,
+        rows = rows,
         lc_accent = "#ffa116",
     )
 }

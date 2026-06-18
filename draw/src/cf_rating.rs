@@ -20,8 +20,8 @@ pub fn render_cf_rating(w: &CfRatingWidget, theme: Theme) -> String {
 
     let stats: [(&str, String, &str); 3] = [
         ("Current Rating", rating_str.clone(), rank_color),
-        ("Max Rating",     max_rating_str,     max_rank_color),
-        ("Contests",       w.contest_count.to_string(), c.text_primary),
+        ("Max Rating", max_rating_str, max_rank_color),
+        ("Contests", w.contest_count.to_string(), c.text_primary),
     ];
     let col_x = [25u32, 185, 345];
 
@@ -68,7 +68,12 @@ pub fn render_cf_rating(w: &CfRatingWidget, theme: Theme) -> String {
 <line x1="337" y1="58" x2="337" y2="155" stroke="{sep}" stroke-width="1"/>
 {stat_svg}
 </svg>"#,
-        bg = c.bg, border = c.border, accent = c.accent, title = c.title,
-        sep = c.separator, rain = rain, stat_svg = stat_svg,
+        bg = c.bg,
+        border = c.border,
+        accent = c.accent,
+        title = c.title,
+        sep = c.separator,
+        rain = rain,
+        stat_svg = stat_svg,
     )
 }

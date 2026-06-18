@@ -85,7 +85,14 @@ fn render_cf(w: &CompetitiveWidget, c: &crate::theme::Colors) -> String {
     let rcolor = cf_rank_color(rank);
 
     platform_label(CF_X, "codeforces", rcolor)
-        + &stat_line(CF_X, 105, &fmt_num(rating.unsigned_abs() as u64), 20, "700", c.text_primary)
+        + &stat_line(
+            CF_X,
+            105,
+            &fmt_num(rating.unsigned_abs() as u64),
+            20,
+            "700",
+            c.text_primary,
+        )
         + &stat_line(CF_X, 123, rank, 11, "400", rcolor)
 }
 

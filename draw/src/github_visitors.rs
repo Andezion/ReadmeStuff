@@ -1,4 +1,8 @@
-use crate::{helpers::{fmt_num, xml_escape}, matrix, theme::Theme};
+use crate::{
+    helpers::{fmt_num, xml_escape},
+    matrix,
+    theme::Theme,
+};
 use readme_stuff_aggregator::widgets::GithubVisitorsWidget;
 
 const W: u32 = 400;
@@ -69,7 +73,14 @@ pub fn render_github_commit_streak(
 ) -> String {
     use crate::helpers::fmt_num;
     let c = theme.colors();
-    let rain = matrix::generate(400, 150, c.matrix_color, c.matrix_opacity, 0xDEAD_BEEF, "gcs");
+    let rain = matrix::generate(
+        400,
+        150,
+        c.matrix_color,
+        c.matrix_opacity,
+        0xDEAD_BEEF,
+        "gcs",
+    );
 
     let fmt_date = |d: Option<chrono::NaiveDate>| {
         d.map(|dt| dt.format("%b %d %Y").to_string())

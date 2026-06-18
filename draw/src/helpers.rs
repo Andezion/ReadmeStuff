@@ -21,26 +21,25 @@ pub fn fmt_num(n: u64) -> String {
 pub fn rank_color(rank: &str) -> &'static str {
     match rank.trim() {
         "S+" | "S" => "#ff6e96",
-        "A+"        => "#ff8c00",
-        "A"         => "#fe428e",
-        "A-"        => "#fc7ef7",
-        "B+"        => "#a9fef7",
-        "B"         => "#79e7ff",
-        "B-"        => "#9be1fe",
-        _           => "#6cb6ff",
+        "A+" => "#ff8c00",
+        "A" => "#fe428e",
+        "A-" => "#fc7ef7",
+        "B+" => "#a9fef7",
+        "B" => "#79e7ff",
+        "B-" => "#9be1fe",
+        _ => "#6cb6ff",
     }
 }
 
-
 pub fn cw_color(codewars_color: &str) -> &'static str {
     match codewars_color.to_lowercase().as_str() {
-        "white"  => "#b0b0b0",
+        "white" => "#b0b0b0",
         "yellow" => "#e8b400",
-        "blue"   => "#4285f4",
+        "blue" => "#4285f4",
         "purple" => "#9b59b6",
-        "black"  => "#f0f0f0",
-        "red"    => "#ff6b6b",
-        _        => "#8b949e",
+        "black" => "#f0f0f0",
+        "red" => "#ff6b6b",
+        _ => "#8b949e",
     }
 }
 

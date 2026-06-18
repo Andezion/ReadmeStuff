@@ -1,4 +1,8 @@
-use crate::{helpers::{fmt_num, xml_escape}, matrix, theme::Theme};
+use crate::{
+    helpers::{fmt_num, xml_escape},
+    matrix,
+    theme::Theme,
+};
 use readme_stuff_aggregator::widgets::LcBadgesWidget;
 
 const W: u32 = 495;
@@ -52,8 +56,13 @@ pub fn render_lc_badges(w: &LcBadgesWidget, theme: Theme) -> String {
 <text x="440" y="63" text-anchor="end" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="10" fill="{ts}">DATE</text>
 {rows}
 </svg>"#,
-        bg = c.bg, border = c.border, title = c.title,
-        sep = c.separator, ts = c.text_secondary, rain = rain, rows = rows,
+        bg = c.bg,
+        border = c.border,
+        title = c.title,
+        sep = c.separator,
+        ts = c.text_secondary,
+        rain = rain,
+        rows = rows,
         lc_accent = "#ffa116",
         total = total_str,
     )

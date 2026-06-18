@@ -4,7 +4,6 @@ use readme_stuff_api::codeforce::Verdict;
 
 use crate::models::UserProfile;
 
-
 pub struct GithubVisitorsWidget {
     pub total_views: u64,
     pub total_unique: u64,
@@ -23,9 +22,12 @@ pub fn github_visitors_widget(p: &UserProfile) -> Option<GithubVisitorsWidget> {
         return None;
     }
     let top_repos = v.top_repos_by_views.iter().take(5).cloned().collect();
-    Some(GithubVisitorsWidget { total_views, total_unique, top_repos })
+    Some(GithubVisitorsWidget {
+        total_views,
+        total_unique,
+        top_repos,
+    })
 }
-
 
 pub struct CommitStreakWidget {
     pub total_commits: u64,
@@ -64,7 +66,6 @@ pub fn streak_widget(p: &UserProfile) -> Option<StreakWidget> {
         average_daily: s.average_daily_contributions,
     })
 }
-
 
 pub struct LangBar {
     pub name: String,
@@ -125,17 +126,13 @@ pub fn langs_widget(p: &UserProfile, top_n: usize) -> Option<LangsWidget> {
                     .map(|l| {
                         l.languages
                             .iter()
-                            .filter_map(|ls| {
-                                ls.color.as_deref().map(|c| (ls.name.as_str(), c))
-                            })
+                            .filter_map(|ls| ls.color.as_deref().map(|c| (ls.name.as_str(), c)))
                             .collect()
                     })
                     .unwrap_or_default();
 
-                let mut langs: Vec<(String, u32)> = cbl
-                    .iter()
-                    .map(|(k, v)| (k.clone(), *v))
-                    .collect();
+                let mut langs: Vec<(String, u32)> =
+                    cbl.iter().map(|(k, v)| (k.clone(), *v)).collect();
                 langs.sort_by(|a, b| b.1.cmp(&a.1));
 
                 let top = langs
@@ -154,7 +151,10 @@ pub fn langs_widget(p: &UserProfile, top_n: usize) -> Option<LangsWidget> {
                     })
                     .collect();
 
-                return Some(LangsWidget { top, source: "commits (this year)" });
+                return Some(LangsWidget {
+                    top,
+                    source: "commits (this year)",
+                });
             }
         }
     }
@@ -170,9 +170,11 @@ pub fn langs_widget(p: &UserProfile, top_n: usize) -> Option<LangsWidget> {
             color: lang.color.clone(),
         })
         .collect();
-    Some(LangsWidget { top, source: "bytes" })
+    Some(LangsWidget {
+        top,
+        source: "bytes",
+    })
 }
-
 
 pub struct GithubStatsWidget {
     pub login: String,
@@ -201,7 +203,6 @@ pub fn github_stats_widget(p: &UserProfile) -> Option<GithubStatsWidget> {
     })
 }
 
-
 pub struct GithubReposWidget {
     pub total_repos: u32,
     pub total_stars: u64,
@@ -218,7 +219,6 @@ pub fn github_repos_widget(p: &UserProfile) -> Option<GithubReposWidget> {
         total_watchers: g.repos.total_watchers,
     })
 }
-
 
 pub struct GithubContributionsWidget {
     pub total_commits: u32,
@@ -240,7 +240,6 @@ pub fn github_contributions_widget(p: &UserProfile) -> Option<GithubContribution
     })
 }
 
-
 pub struct GithubSocialWidget {
     pub followers: u32,
     pub following: u32,
@@ -253,7 +252,6 @@ pub fn github_social_widget(p: &UserProfile) -> Option<GithubSocialWidget> {
         following: g.metadata.following,
     })
 }
-
 
 pub struct GithubHeatmapWidget {
     pub weekday_distribution: [u32; 7],
@@ -268,7 +266,6 @@ pub fn github_heatmap_widget(p: &UserProfile) -> Option<GithubHeatmapWidget> {
         weekday_distribution: s.weekday_distribution,
     })
 }
-
 
 pub struct GithubMonthlyWidget {
     pub months: Vec<(String, u32)>,
@@ -295,9 +292,18 @@ pub fn github_monthly_widget(p: &UserProfile) -> Option<GithubMonthlyWidget> {
             let parts: Vec<&str> = key.split('-').collect();
             let label = if parts.len() == 2 {
                 let m = match parts[1] {
-                    "01" => "Jan", "02" => "Feb", "03" => "Mar", "04" => "Apr",
-                    "05" => "May", "06" => "Jun", "07" => "Jul", "08" => "Aug",
-                    "09" => "Sep", "10" => "Oct", "11" => "Nov", "12" => "Dec",
+                    "01" => "Jan",
+                    "02" => "Feb",
+                    "03" => "Mar",
+                    "04" => "Apr",
+                    "05" => "May",
+                    "06" => "Jun",
+                    "07" => "Jul",
+                    "08" => "Aug",
+                    "09" => "Sep",
+                    "10" => "Oct",
+                    "11" => "Nov",
+                    "12" => "Dec",
                     _ => "?",
                 };
                 format!("{} {}", m, &parts[0][2..])
@@ -310,7 +316,6 @@ pub fn github_monthly_widget(p: &UserProfile) -> Option<GithubMonthlyWidget> {
 
     Some(GithubMonthlyWidget { months })
 }
-
 
 pub struct CfRatingWidget {
     pub rating: i32,
@@ -330,7 +335,6 @@ pub fn cf_rating_widget(p: &UserProfile) -> Option<CfRatingWidget> {
         contest_count: cf.rating_history.len(),
     })
 }
-
 
 pub struct CfStatsWidget {
     pub problems_solved: usize,
@@ -357,7 +361,6 @@ pub fn cf_stats_widget(p: &UserProfile) -> Option<CfStatsWidget> {
     })
 }
 
-
 pub struct CwRankWidget {
     pub rank_name: String,
     pub rank_color: String,
@@ -378,7 +381,6 @@ pub fn cw_rank_widget(p: &UserProfile) -> Option<CwRankWidget> {
         clan: cw.clan.clone(),
     })
 }
-
 
 pub struct CwKataWidget {
     pub total_completed: u32,
@@ -441,7 +443,6 @@ pub fn lc_solved_widget(p: &UserProfile) -> Option<LcSolvedWidget> {
     })
 }
 
-
 pub struct SkillEntry {
     pub name: String,
     pub amount: u32,
@@ -457,7 +458,11 @@ pub fn lc_skills_widget(p: &UserProfile) -> Option<LcSkillsWidget> {
     let mut all: Vec<SkillEntry> = lc
         .skills_advanced
         .iter()
-        .map(|s| SkillEntry { name: s.name.clone(), amount: s.amount, category: "adv" })
+        .map(|s| SkillEntry {
+            name: s.name.clone(),
+            amount: s.amount,
+            category: "adv",
+        })
         .chain(lc.skills_intermediate.iter().map(|s| SkillEntry {
             name: s.name.clone(),
             amount: s.amount,
@@ -477,7 +482,6 @@ pub fn lc_skills_widget(p: &UserProfile) -> Option<LcSkillsWidget> {
     Some(LcSkillsWidget { skills: all })
 }
 
-
 pub struct LcLangEntry {
     pub name: String,
     pub solved: u32,
@@ -495,7 +499,10 @@ pub fn lc_languages_widget(p: &UserProfile) -> Option<LcLanguagesWidget> {
     let mut languages: Vec<LcLangEntry> = lc
         .languages
         .iter()
-        .map(|l| LcLangEntry { name: l.name.clone(), solved: l.solved_amount })
+        .map(|l| LcLangEntry {
+            name: l.name.clone(),
+            solved: l.solved_amount,
+        })
         .collect();
     languages.sort_by(|a, b| b.solved.cmp(&a.solved));
     Some(LcLanguagesWidget { languages })
@@ -528,7 +535,6 @@ pub fn lc_badges_widget(p: &UserProfile) -> Option<LcBadgesWidget> {
         .collect();
     Some(LcBadgesWidget { badges, total })
 }
-
 
 pub struct CompetitiveWidget {
     pub cf_rating: Option<i32>,

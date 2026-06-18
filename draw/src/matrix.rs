@@ -1,12 +1,9 @@
 // Half-width katakana + digits for the Matrix effect
 const CHARS: &[char] = &[
-    'ｦ', 'ｧ', 'ｨ', 'ｩ', 'ｪ', 'ｫ', 'ｬ', 'ｭ', 'ｮ', 'ｯ',
-    'ｱ', 'ｲ', 'ｳ', 'ｴ', 'ｵ', 'ｶ', 'ｷ', 'ｸ', 'ｹ', 'ｺ',
-    'ｻ', 'ｼ', 'ｽ', 'ｾ', 'ｿ', 'ﾀ', 'ﾁ', 'ﾂ', 'ﾃ', 'ﾄ',
-    'ﾅ', 'ﾆ', 'ﾇ', 'ﾈ', 'ﾉ', 'ﾊ', 'ﾋ', 'ﾌ', 'ﾍ', 'ﾎ',
-    'ﾏ', 'ﾐ', 'ﾑ', 'ﾒ', 'ﾓ', 'ﾔ', 'ﾕ', 'ﾖ', 'ﾗ', 'ﾘ',
-    'ﾙ', 'ﾚ', 'ﾛ', 'ﾜ', 'ﾝ',
-    '0', '1', '0', '1', '4', '8', '6', '5', '2', '7', '3', '9',
+    'ｦ', 'ｧ', 'ｨ', 'ｩ', 'ｪ', 'ｫ', 'ｬ', 'ｭ', 'ｮ', 'ｯ', 'ｱ', 'ｲ', 'ｳ', 'ｴ', 'ｵ', 'ｶ', 'ｷ', 'ｸ', 'ｹ',
+    'ｺ', 'ｻ', 'ｼ', 'ｽ', 'ｾ', 'ｿ', 'ﾀ', 'ﾁ', 'ﾂ', 'ﾃ', 'ﾄ', 'ﾅ', 'ﾆ', 'ﾇ', 'ﾈ', 'ﾉ', 'ﾊ', 'ﾋ', 'ﾌ',
+    'ﾍ', 'ﾎ', 'ﾏ', 'ﾐ', 'ﾑ', 'ﾒ', 'ﾓ', 'ﾔ', 'ﾕ', 'ﾖ', 'ﾗ', 'ﾘ', 'ﾙ', 'ﾚ', 'ﾛ', 'ﾜ', 'ﾝ', '0', '1',
+    '0', '1', '4', '8', '6', '5', '2', '7', '3', '9',
 ];
 
 struct Lcg(u64);
@@ -37,7 +34,14 @@ impl Lcg {
     }
 }
 
-pub fn generate(width: u32, height: u32, color: &str, opacity: f64, seed: u64, prefix: &str) -> String {
+pub fn generate(
+    width: u32,
+    height: u32,
+    color: &str,
+    opacity: f64,
+    seed: u64,
+    prefix: &str,
+) -> String {
     let mut rng = Lcg::new(seed);
     let char_h: i32 = 14;
     let num_drops = ((width / 24).max(8)) as usize;
@@ -80,7 +84,5 @@ pub fn generate(width: u32, height: u32, color: &str, opacity: f64, seed: u64, p
         drops.push_str("</g>");
     }
 
-    format!(
-        "<g opacity=\"{opacity:.2}\"><style>{css}</style>{drops}</g>"
-    )
+    format!("<g opacity=\"{opacity:.2}\"><style>{css}</style>{drops}</g>")
 }

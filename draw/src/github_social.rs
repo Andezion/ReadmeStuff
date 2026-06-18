@@ -40,7 +40,12 @@ pub fn render_github_social(w: &GithubSocialWidget, theme: Theme) -> String {
 <line x1="25" y1="52" x2="285" y2="52" stroke="{sep}" stroke-width="1"/>
 {stat_svg}
 </svg>"#,
-        bg = c.bg, border = c.border, accent = c.accent, title = c.title,
-        sep = c.separator, rain = rain, stat_svg = stat_svg,
+        bg = c.bg,
+        border = c.border,
+        accent = c.accent,
+        title = c.title,
+        sep = c.separator,
+        rain = rain,
+        stat_svg = stat_svg,
     )
 }

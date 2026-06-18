@@ -11,9 +11,9 @@ pub fn render_github_repos(w: &GithubReposWidget, theme: Theme) -> String {
     let col_x = [25u32, 145, 265, 385];
     let stats: [(&str, String); 4] = [
         ("Repositories", fmt_num(w.total_repos as u64)),
-        ("Stars",        fmt_num(w.total_stars)),
-        ("Forks",        fmt_num(w.total_forks)),
-        ("Watchers",     fmt_num(w.total_watchers)),
+        ("Stars", fmt_num(w.total_stars)),
+        ("Forks", fmt_num(w.total_forks)),
+        ("Watchers", fmt_num(w.total_watchers)),
     ];
 
     let mut stat_svg = String::new();
@@ -47,7 +47,12 @@ pub fn render_github_repos(w: &GithubReposWidget, theme: Theme) -> String {
 <line x1="25" y1="52" x2="470" y2="52" stroke="{sep}" stroke-width="1"/>
 {stat_svg}
 </svg>"#,
-        bg = c.bg, border = c.border, accent = c.accent, title = c.title,
-        sep = c.separator, rain = rain, stat_svg = stat_svg,
+        bg = c.bg,
+        border = c.border,
+        accent = c.accent,
+        title = c.title,
+        sep = c.separator,
+        rain = rain,
+        stat_svg = stat_svg,
     )
 }

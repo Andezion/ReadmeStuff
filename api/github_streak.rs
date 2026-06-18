@@ -485,10 +485,7 @@ mod tests {
     #[test]
     fn skipped_year_breaks_streak() {
         let d = |y, m, day| NaiveDate::from_ymd_opt(y, m, day).unwrap();
-        let days = vec![
-            make_day(d(2021, 12, 31), 5),
-            make_day(d(2024, 1, 1), 5),
-        ];
+        let days = vec![make_day(d(2021, 12, 31), 5), make_day(d(2024, 1, 1), 5)];
         let (longest, start, end) = calc_longest_streak(&days);
         assert_eq!(longest, 1);
         assert_eq!(start, Some(d(2021, 12, 31)));
@@ -506,7 +503,10 @@ mod tests {
         ];
         let stats = compute_streak_stats(days);
         assert_eq!(stats.current_streak, 2);
-        assert_eq!(stats.current_streak_start, Some(yesterday - Duration::days(1)));
+        assert_eq!(
+            stats.current_streak_start,
+            Some(yesterday - Duration::days(1))
+        );
     }
 
     #[tokio::test]

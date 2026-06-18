@@ -4,9 +4,9 @@ use readme_stuff_aggregator::widgets::LcSolvedWidget;
 const W: u32 = 495;
 const H: u32 = 175;
 
-const LC_EASY:   &str = "#00b8a3";
+const LC_EASY: &str = "#00b8a3";
 const LC_MEDIUM: &str = "#ffc01e";
-const LC_HARD:   &str = "#ff375f";
+const LC_HARD: &str = "#ff375f";
 const LC_ORANGE: &str = "#ffa116";
 
 pub fn render_lc_solved(w: &LcSolvedWidget, theme: Theme) -> String {
@@ -17,14 +17,14 @@ pub fn render_lc_solved(w: &LcSolvedWidget, theme: Theme) -> String {
 
     let total_shown = (w.easy + w.medium + w.hard).max(1);
     let bar_total_w: u32 = 420;
-    let easy_w = (w.easy  as f64 / total_shown as f64 * bar_total_w as f64) as u32;
-    let med_w  = (w.medium as f64 / total_shown as f64 * bar_total_w as f64) as u32;
+    let easy_w = (w.easy as f64 / total_shown as f64 * bar_total_w as f64) as u32;
+    let med_w = (w.medium as f64 / total_shown as f64 * bar_total_w as f64) as u32;
     let hard_w = bar_total_w.saturating_sub(easy_w + med_w);
 
     let stats = [
-        ("Easy",   w.easy,   LC_EASY),
+        ("Easy", w.easy, LC_EASY),
         ("Medium", w.medium, LC_MEDIUM),
-        ("Hard",   w.hard,   LC_HARD),
+        ("Hard", w.hard, LC_HARD),
     ];
     let col_x = [25u32, 185, 345];
 
@@ -61,9 +61,14 @@ pub fn render_lc_solved(w: &LcSolvedWidget, theme: Theme) -> String {
 <line x1="25" y1="113" x2="470" y2="113" stroke="{sep}" stroke-width="1"/>
 {stat_svg}
 </svg>"#,
-        bg = c.bg, border = c.border, title = c.title,
-        sep = c.separator, rain = rain, stat_svg = stat_svg,
-        tv = c.text_primary, ts = c.text_secondary,
+        bg = c.bg,
+        border = c.border,
+        title = c.title,
+        sep = c.separator,
+        rain = rain,
+        stat_svg = stat_svg,
+        tv = c.text_primary,
+        ts = c.text_secondary,
         lc_accent = LC_ORANGE,
         total = total_str,
         easy_w = easy_w,
@@ -71,6 +76,8 @@ pub fn render_lc_solved(w: &LcSolvedWidget, theme: Theme) -> String {
         med_w = med_w,
         hard_x = 25 + easy_w + med_w,
         hard_w = hard_w,
-        lc_easy = LC_EASY, lc_medium = LC_MEDIUM, lc_hard = LC_HARD,
+        lc_easy = LC_EASY,
+        lc_medium = LC_MEDIUM,
+        lc_hard = LC_HARD,
     )
 }

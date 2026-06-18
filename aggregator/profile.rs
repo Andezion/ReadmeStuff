@@ -142,9 +142,12 @@ pub async fn build_profile(
             .map_err(|e| e.to_string())?;
         let languages = api.languages(&lc).map_err(|e| e.to_string())?;
         let skills = api.skills(&lc).map_err(|e| e.to_string())?;
-        let badges = api.badges(&lc).unwrap_or_else(|_| {
-            readme_stuff_api::leetcode::BadgesResponse { badges_count: 0, badges: vec![] }
-        });
+        let badges =
+            api.badges(&lc)
+                .unwrap_or_else(|_| readme_stuff_api::leetcode::BadgesResponse {
+                    badges_count: 0,
+                    badges: vec![],
+                });
         Ok::<LeetcodeData, String>(LeetcodeData {
             solved,
             languages,
@@ -155,8 +158,25 @@ pub async fn build_profile(
         })
     });
 
-    let (github_res, streak_res, langs_res, commit_streak_res, visitors_res, cf_join, cw_join, lc_join) =
-        tokio::join!(github_fut, streak_fut, langs_fut, commit_streak_fut, visitors_fut, cf_fut, cw_fut, lc_fut);
+    let (
+        github_res,
+        streak_res,
+        langs_res,
+        commit_streak_res,
+        visitors_res,
+        cf_join,
+        cw_join,
+        lc_join,
+    ) = tokio::join!(
+        github_fut,
+        streak_fut,
+        langs_fut,
+        commit_streak_fut,
+        visitors_fut,
+        cf_fut,
+        cw_fut,
+        lc_fut
+    );
 
     let cf_res = cf_join.unwrap_or_else(|e| Err(e.to_string()));
     let cw_res = cw_join.unwrap_or_else(|e| Err(e.to_string()));
@@ -169,7 +189,10 @@ pub async fn build_profile(
             codewars: cw_res.as_ref().map(|_| ()).map_err(|e| e.clone()),
             leetcode: lc_res.as_ref().map(|_| ()).map_err(|e| e.clone()),
             visitors: visitors_res.as_ref().map(|_| ()).map_err(|e| e.clone()),
-            commit_streak: commit_streak_res.as_ref().map(|_| ()).map_err(|e| e.clone()),
+            commit_streak: commit_streak_res
+                .as_ref()
+                .map(|_| ())
+                .map_err(|e| e.clone()),
         },
         github: github_res.ok(),
         streak: streak_res.ok(),

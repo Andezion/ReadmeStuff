@@ -16,9 +16,9 @@ pub fn render_cf_stats(w: &CfStatsWidget, theme: Theme) -> String {
 
     let stats: [(&str, String); 4] = [
         ("Problems Solved", fmt_num(w.problems_solved as u64)),
-        ("Contests",        w.contest_count.to_string()),
-        ("Friends",         fmt_num(w.friend_of_count as u64)),
-        ("Contribution",    contribution_str),
+        ("Contests", w.contest_count.to_string()),
+        ("Friends", fmt_num(w.friend_of_count as u64)),
+        ("Contribution", contribution_str),
     ];
     let col_x = [25u32, 145, 265, 385];
 
@@ -48,7 +48,12 @@ pub fn render_cf_stats(w: &CfStatsWidget, theme: Theme) -> String {
 <line x1="25" y1="52" x2="470" y2="52" stroke="{sep}" stroke-width="1"/>
 {stat_svg}
 </svg>"#,
-        bg = c.bg, border = c.border, accent = c.accent, title = c.title,
-        sep = c.separator, rain = rain, stat_svg = stat_svg,
+        bg = c.bg,
+        border = c.border,
+        accent = c.accent,
+        title = c.title,
+        sep = c.separator,
+        rain = rain,
+        stat_svg = stat_svg,
     )
 }

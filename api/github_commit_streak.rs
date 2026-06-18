@@ -31,7 +31,6 @@ impl Default for CommitStreakStats {
     }
 }
 
-
 #[derive(Deserialize)]
 struct RepoListRoot {
     user: RepoListUser,
@@ -77,7 +76,6 @@ struct RestCommitAuthor {
     date: Option<String>,
 }
 
-
 const REPO_LIST_QUERY: &str = r#"
 query($login: String!, $after: String) {
   user(login: $login) {
@@ -94,7 +92,6 @@ query($login: String!, $after: String) {
   }
 }
 "#;
-
 
 pub struct GitHubCommitStreakApi {
     client: GitHubClient,
@@ -175,9 +172,7 @@ async fn fetch_repo_dates(
     let mut page = 1u32;
 
     loop {
-        let path = format!(
-            "/repos/{login}/{repo}/commits?author={login}&per_page=100&page={page}"
-        );
+        let path = format!("/repos/{login}/{repo}/commits?author={login}&per_page=100&page={page}");
 
         let commits: Vec<RestCommit> = match client.rest_get(&path).await {
             Ok(c) => c,
@@ -212,7 +207,7 @@ pub fn compute_stats(dates: HashMap<NaiveDate, u64>, today: NaiveDate) -> Commit
 
     let mut run = 0u32;
     let mut run_start: Option<NaiveDate> = None;
-    let mut run_end: Option<NaiveDate> = None; 
+    let mut run_end: Option<NaiveDate> = None;
 
     let mut longest = 0u32;
     let mut longest_start: Option<NaiveDate> = None;
@@ -254,8 +249,7 @@ pub fn compute_stats(dates: HashMap<NaiveDate, u64>, today: NaiveDate) -> Commit
         }
     }
 
-    let (current_streak, current_streak_start) =
-        calc_current_streak(&dates, today);
+    let (current_streak, current_streak_start) = calc_current_streak(&dates, today);
 
     CommitStreakStats {
         total_commits,
@@ -304,7 +298,6 @@ fn calc_current_streak(
     (streak, streak_start)
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -344,10 +337,7 @@ mod tests {
     #[test]
     fn current_streak_uses_yesterday_when_today_empty() {
         let today = NaiveDate::from_ymd_opt(2024, 6, 10).unwrap();
-        let d = dates(&[
-            ("2024-06-08", 1),
-            ("2024-06-09", 2),
-        ]);
+        let d = dates(&[("2024-06-08", 1), ("2024-06-09", 2)]);
         let s = compute_stats(d, today);
         assert_eq!(s.current_streak, 2);
         assert_eq!(s.current_streak_start, NaiveDate::from_ymd_opt(2024, 6, 8));

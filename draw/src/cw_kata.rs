@@ -10,7 +10,7 @@ pub fn render_cw_kata(w: &CwKataWidget, theme: Theme) -> String {
 
     let stats: [(&str, String); 2] = [
         ("Kata Completed", fmt_num(w.total_completed as u64)),
-        ("Kata Authored",  fmt_num(w.total_authored as u64)),
+        ("Kata Authored", fmt_num(w.total_authored as u64)),
     ];
     let col_x = [25u32, 160];
 
@@ -40,7 +40,12 @@ pub fn render_cw_kata(w: &CwKataWidget, theme: Theme) -> String {
 <line x1="25" y1="52" x2="285" y2="52" stroke="{sep}" stroke-width="1"/>
 {stat_svg}
 </svg>"#,
-        bg = c.bg, border = c.border, accent = c.accent, title = c.title,
-        sep = c.separator, rain = rain, stat_svg = stat_svg,
+        bg = c.bg,
+        border = c.border,
+        accent = c.accent,
+        title = c.title,
+        sep = c.separator,
+        rain = rain,
+        stat_svg = stat_svg,
     )
 }

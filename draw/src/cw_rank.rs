@@ -15,11 +15,14 @@ pub fn render_cw_rank(w: &CwRankWidget, theme: Theme) -> String {
     let kyu_css_color = cw_color(&w.rank_color);
 
     let stats: [(&str, String); 3] = [
-        ("Honor",        fmt_num(w.honor as u64)),
-        ("Score",        fmt_num(w.score as u64)),
-        ("Leaderboard",  w.leaderboard_position
-            .map(|p| format!("#{}", fmt_num(p as u64)))
-            .unwrap_or_else(|| "—".into())),
+        ("Honor", fmt_num(w.honor as u64)),
+        ("Score", fmt_num(w.score as u64)),
+        (
+            "Leaderboard",
+            w.leaderboard_position
+                .map(|p| format!("#{}", fmt_num(p as u64)))
+                .unwrap_or_else(|| "—".into()),
+        ),
     ];
     let col_x = [185u32, 305, 395];
 
@@ -63,8 +66,12 @@ pub fn render_cw_rank(w: &CwRankWidget, theme: Theme) -> String {
 {stat_svg}
 {clan_svg}
 </svg>"#,
-        bg = c.bg, border = c.border, accent = c.accent, title = c.title,
-        sep = c.separator, rain = rain,
+        bg = c.bg,
+        border = c.border,
+        accent = c.accent,
+        title = c.title,
+        sep = c.separator,
+        rain = rain,
         kyu_color = kyu_css_color,
         rank = xml_escape(&w.rank_name),
         stat_svg = stat_svg,

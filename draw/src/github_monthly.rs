@@ -69,7 +69,12 @@ pub fn render_github_monthly(w: &GithubMonthlyWidget, theme: Theme) -> String {
 <line x1="25" y1="52" x2="470" y2="52" stroke="{sep}" stroke-width="1"/>
 {bars}
 </svg>"#,
-        bg = c.bg, border = c.border, accent = c.accent, title = c.title,
-        sep = c.separator, rain = rain, bars = bars,
+        bg = c.bg,
+        border = c.border,
+        accent = c.accent,
+        title = c.title,
+        sep = c.separator,
+        rain = rain,
+        bars = bars,
     )
 }

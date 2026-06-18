@@ -9,9 +9,9 @@ pub fn render_streak(w: &StreakWidget, theme: Theme) -> String {
     let rain = matrix::generate(W, H, c.matrix_color, c.matrix_opacity, 0xBEEF_1337, "sk");
 
     let cols: [(&str, String); 3] = [
-        ("Current Streak",        format!("{} days", w.current_streak)),
-        ("Longest Streak",        format!("{} days", w.longest_streak)),
-        ("Total Contributions",   fmt_num(w.total_contributions as u64)),
+        ("Current Streak", format!("{} days", w.current_streak)),
+        ("Longest Streak", format!("{} days", w.longest_streak)),
+        ("Total Contributions", fmt_num(w.total_contributions as u64)),
     ];
     let col_x = [25u32, 181, 337];
 
