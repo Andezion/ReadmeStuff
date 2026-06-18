@@ -212,10 +212,9 @@ fn load_dotenv() {
             if std::env::var(key).is_err() {
                 unsafe { std::env::set_var(key, val.trim()) };
             }
-        } else if line.starts_with("ghp_") || line.starts_with("github_pat_") {
-            if std::env::var("GITHUB_TOKEN").is_err() {
+        } else if (line.starts_with("ghp_") || line.starts_with("github_pat_"))
+            && std::env::var("GITHUB_TOKEN").is_err() {
                 unsafe { std::env::set_var("GITHUB_TOKEN", line) };
             }
-        }
     }
 }
