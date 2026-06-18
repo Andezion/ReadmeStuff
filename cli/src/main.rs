@@ -2,10 +2,12 @@ use readme_stuff_aggregator::{
     profile::build_profile,
     widgets::{
         cf_rating_widget, cf_stats_widget,
+        commit_streak_widget,
         competitive_widget,
         cw_kata_widget, cw_languages_widget, cw_rank_widget,
         github_contributions_widget, github_heatmap_widget, github_monthly_widget,
         github_repos_widget, github_social_widget, github_stats_widget,
+        github_visitors_widget,
         langs_widget,
         lc_badges_widget, lc_languages_widget, lc_skills_widget, lc_solved_widget,
         streak_widget,
@@ -15,8 +17,9 @@ use readme_stuff_draw::{
     render_cf_rating, render_cf_stats,
     render_competitive,
     render_cw_kata, render_cw_languages, render_cw_rank,
-    render_github_contributions, render_github_heatmap, render_github_monthly,
-    render_github_repos, render_github_social, render_github_stats,
+    render_github_commit_streak, render_github_contributions, render_github_heatmap,
+    render_github_monthly, render_github_repos, render_github_social, render_github_stats,
+    render_github_visitors,
     render_langs,
     render_lc_badges, render_lc_languages, render_lc_skills, render_lc_solved,
     render_streak,
@@ -61,6 +64,9 @@ async fn main() {
     render_card("lc-badges",    lc_badges_widget(&profile),    |w| render_lc_badges(&w, Theme::Dark),    &out_dir);
 
     render_card("competitive", competitive_widget(&profile), |w| render_competitive(&w, Theme::Dark), &out_dir);
+
+    render_card("github-visitors",     github_visitors_widget(&profile),  |w| render_github_visitors(&w, Theme::Dark),      &out_dir);
+    render_card("github-commit-streak", commit_streak_widget(&profile),   |w| render_github_commit_streak(&w, Theme::Dark), &out_dir);
 
     eprintln!("Done - {}", out_dir.display());
 }
