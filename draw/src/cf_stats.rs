@@ -26,8 +26,8 @@ pub fn render_cf_stats(w: &CfStatsWidget, theme: Theme) -> String {
     for (i, (label, value)) in stats.iter().enumerate() {
         let x = col_x[i];
         stat_svg.push_str(&format!(
-            "<text x=\"{x}\" y=\"88\" font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"18\" font-weight=\"700\" fill=\"{tv}\">{value}</text>\
-             <text x=\"{x}\" y=\"104\" font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"11\" fill=\"{tl}\">{label}</text>",
+            "<text x=\"{x}\" y=\"88\" font-family=\"monospace\" font-size=\"18\" font-weight=\"700\" fill=\"{tv}\">{value}</text>\
+             <text x=\"{x}\" y=\"104\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">{label}</text>",
             tv = c.text_primary, tl = c.text_secondary,
         ));
     }
@@ -44,7 +44,7 @@ pub fn render_cf_stats(w: &CfStatsWidget, theme: Theme) -> String {
 <rect width="{W}" height="3" rx="1.5" fill="{accent}"/>
 <rect width="{W}" height="{H}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
 <circle cx="25" cy="30" r="6" fill="{accent}"/>
-<text x="38" y="35" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="14" font-weight="600" fill="{title}">Codeforces Stats</text>
+<text x="38" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">Codeforces Stats</text>
 <line x1="25" y1="52" x2="470" y2="52" stroke="{sep}" stroke-width="1"/>
 {stat_svg}
 </svg>"#,
