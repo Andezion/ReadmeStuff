@@ -30,10 +30,10 @@ pub fn render_cf_rating(w: &CfRatingWidget, theme: Theme) -> String {
         let x = col_x[i];
         stat_svg.push_str(&format!(
             "<text x=\"{x}\" y=\"98\" \
-                font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"24\" font-weight=\"700\" \
+                font-family=\"monospace\" font-size=\"24\" font-weight=\"700\" \
                 fill=\"{color}\">{value}</text>\
              <text x=\"{x}\" y=\"117\" \
-                font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"11\" \
+                font-family=\"monospace\" font-size=\"11\" \
                 fill=\"{tl}\">{label}</text>",
             tl = c.text_secondary,
         ));
@@ -41,10 +41,10 @@ pub fn render_cf_rating(w: &CfRatingWidget, theme: Theme) -> String {
 
     stat_svg.push_str(&format!(
         "<text x=\"25\" y=\"136\" \
-            font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"12\" font-weight=\"600\" \
+            font-family=\"monospace\" font-size=\"12\" font-weight=\"600\" \
             fill=\"{rank_color}\">{rank}</text>\
          <text x=\"185\" y=\"136\" \
-            font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"12\" font-weight=\"600\" \
+            font-family=\"monospace\" font-size=\"12\" font-weight=\"600\" \
             fill=\"{max_rank_color}\">{max_rank}</text>",
         rank = xml_escape(&w.rank),
         max_rank = xml_escape(&w.max_rank),
@@ -62,7 +62,7 @@ pub fn render_cf_rating(w: &CfRatingWidget, theme: Theme) -> String {
 <rect width="{W}" height="3" rx="1.5" fill="{accent}"/>
 <rect width="{W}" height="{H}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
 <circle cx="25" cy="30" r="6" fill="{accent}"/>
-<text x="38" y="35" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="14" font-weight="600" fill="{title}">Codeforces Rating</text>
+<text x="38" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">My Codeforces Rating</text>
 <line x1="25" y1="52" x2="470" y2="52" stroke="{sep}" stroke-width="1"/>
 <line x1="177" y1="58" x2="177" y2="155" stroke="{sep}" stroke-width="1"/>
 <line x1="337" y1="58" x2="337" y2="155" stroke="{sep}" stroke-width="1"/>
