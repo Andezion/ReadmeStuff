@@ -44,6 +44,9 @@ pub fn render_cf_stats(w: &CfStatsWidget, theme: Theme) -> String {
 <rect width="{W}" height="{H}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
 <text x="38" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">Codeforces Stats</text>
 <line x1="25" y1="52" x2="470" y2="52" stroke="{sep}" stroke-width="1"/>
+<line x1="177" y1="58" x2="177" y2="155" stroke="{sep}" stroke-width="1"/>
+<line x1="237" y1="58" x2="337" y2="155" stroke="{sep}" stroke-width="1"/>
+<line x1="337" y1="58" x2="337" y2="155" stroke="{sep}" stroke-width="1"/>
 {stat_svg}
 </svg>"#,
         bg = c.bg,
