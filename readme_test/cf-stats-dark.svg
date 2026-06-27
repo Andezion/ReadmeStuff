@@ -10,7 +10,7 @@
 <text x="35" y="35" font-family="monospace" font-size="14" font-weight="600" fill="#58a6ff">My Codeforces Stats</text>
 <line x1="25" y1="52" x2="470" y2="52" stroke="#21262d" stroke-width="1"/>
 <line x1="137" y1="58" x2="137" y2="118" stroke="#21262d" stroke-width="1"/>
-<line x1="197" y1="58" x2="197" y2="118" stroke="#21262d" stroke-width="1"/>
+<line x1="211" y1="58" x2="211" y2="118" stroke="#21262d" stroke-width="1"/>
 <line x1="337" y1="58" x2="337" y2="118" stroke="#21262d" stroke-width="1"/>
 <text x="25" y="88" font-family="monospace" font-size="18" font-weight="700" fill="#e6edf3">202</text><text x="25" y="104" font-family="monospace" font-size="11" fill="#8b949e">Problems Solved</text><text x="145" y="88" font-family="monospace" font-size="18" font-weight="700" fill="#e6edf3">5</text><text x="145" y="104" font-family="monospace" font-size="11" fill="#8b949e">Contests</text><text x="265" y="88" font-family="monospace" font-size="18" font-weight="700" fill="#e6edf3">0</text><text x="265" y="104" font-family="monospace" font-size="11" fill="#8b949e">Friends</text><text x="385" y="88" font-family="monospace" font-size="18" font-weight="700" fill="#e6edf3">+0</text><text x="385" y="104" font-family="monospace" font-size="11" fill="#8b949e">Contribution</text>
 </svg>
