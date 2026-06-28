@@ -60,7 +60,7 @@ pub fn render_cf_rating(w: &CfRatingWidget, theme: Theme) -> String {
 <rect width="{W}" height="{H}" rx="6" fill="{bg}"/>
 <g clip-path="url(#cfr-clip)">{rain}</g>
 <rect width="{W}" height="{H}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<text x="38" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">My Codeforces Rating</text>
+<text x="25" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">My Codeforces Rating</text>
 <line x1="25" y1="52" x2="470" y2="52" stroke="{sep}" stroke-width="1"/>
 <line x1="167" y1="58" x2="167" y2="155" stroke="{sep}" stroke-width="1"/>
 <line x1="327" y1="58" x2="327" y2="155" stroke="{sep}" stroke-width="1"/>

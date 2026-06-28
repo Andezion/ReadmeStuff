@@ -34,9 +34,9 @@ pub fn render_cw_kata(w: &CwKataWidget, theme: Theme) -> String {
 <rect width="{W}" height="{H}" rx="6" fill="{bg}"/>
 <g clip-path="url(#cwk-clip)">{rain}</g>
 <rect width="{W}" height="{H}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<text x="35" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">Kata Challenges</text>
+<text x="25" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">Kata Challenges</text>
 <line x1="25" y1="52" x2="285" y2="52" stroke="{sep}" stroke-width="1"/>
-<line x1="100" y1="58" x2="100" y2="98" stroke="{sep}" stroke-width="1"/>
+<line x1="130" y1="58" x2="130" y2="128" stroke="{sep}" stroke-width="1"/>
 {stat_svg}
 </svg>"#,
         bg = c.bg,
