@@ -30,15 +30,15 @@ pub fn render_cw_rank(w: &CwRankWidget, theme: Theme) -> String {
     for (i, (label, value)) in stats.iter().enumerate() {
         let x = col_x[i];
         stat_svg.push_str(&format!(
-            "<text x=\"{x}\" y=\"98\" font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"18\" font-weight=\"700\" fill=\"{tv}\">{value}</text>\
-             <text x=\"{x}\" y=\"116\" font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"11\" fill=\"{tl}\">{label}</text>",
+            "<text x=\"{x}\" y=\"98\" font-family=\"monospace\" font-size=\"18\" font-weight=\"700\" fill=\"{tv}\">{value}</text>\
+             <text x=\"{x}\" y=\"116\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">{label}</text>",
             tv = c.text_primary, tl = c.text_secondary,
         ));
     }
 
     let clan_svg = if let Some(clan) = &w.clan {
         format!(
-            "<text x=\"25\" y=\"145\" font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"11\" fill=\"{ts}\">clan: {clan}</text>",
+            "<text x=\"25\" y=\"145\" font-family=\"monospace\" font-size=\"11\" fill=\"{ts}\">clan: {clan}</text>",
             ts = c.text_secondary,
             clan = xml_escape(clan),
         )
@@ -57,12 +57,11 @@ pub fn render_cw_rank(w: &CwRankWidget, theme: Theme) -> String {
 <g clip-path="url(#cwr-clip)">{rain}</g>
 <rect width="{W}" height="3" rx="1.5" fill="{accent}"/>
 <rect width="{W}" height="{H}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<circle cx="25" cy="30" r="6" fill="{accent}"/>
-<text x="38" y="35" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="14" font-weight="600" fill="{title}">Codewars Rank</text>
+<text x="38" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">Codewars Rank</text>
 <line x1="25" y1="52" x2="470" y2="52" stroke="{sep}" stroke-width="1"/>
 <line x1="177" y1="58" x2="177" y2="155" stroke="{sep}" stroke-width="1"/>
-<text x="25" y="100" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="32" font-weight="700" fill="{kyu_color}">{rank}</text>
-<text x="25" y="120" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="12" fill="{kyu_color}">Codewars</text>
+<text x="25" y="100" font-family="monospace" font-size="32" font-weight="700" fill="{kyu_color}">{rank}</text>
+<text x="25" y="120" font-family="monospace " font-size="12" fill="{kyu_color}">Codewars</text>
 {stat_svg}
 {clan_svg}
 </svg>"#,
