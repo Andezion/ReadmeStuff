@@ -37,11 +37,11 @@ pub fn render_cw_languages(w: &CwLanguagesWidget, theme: Theme) -> String {
         let kyu_css = cw_color(&entry.rank_color);
 
         rows.push_str(&format!(
-            "<text x=\"25\" y=\"{y}\" font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"12\" fill=\"{tv}\">{lang}</text>\
-             <text x=\"{RANK_X}\" y=\"{y}\" font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"11\" font-weight=\"600\" fill=\"{kyu_css}\">{rank}</text>\
+            "<text x=\"25\" y=\"{y}\" font-family=\"monospace\" font-size=\"12\" fill=\"{tv}\">{lang}</text>\
+             <text x=\"{RANK_X}\" y=\"{y}\" font-family=\"monospace\" font-size=\"11\" font-weight=\"600\" fill=\"{kyu_css}\">{rank}</text>\
              <rect x=\"{BAR_X}\" y=\"{bar_y}\" width=\"{BAR_MAX_W}\" height=\"9\" rx=\"4\" fill=\"{bar_bg}\"/>\
              <rect x=\"{BAR_X}\" y=\"{bar_y}\" width=\"{fill_w}\" height=\"9\" rx=\"4\" fill=\"{kyu_css}\"/>\
-             <text x=\"{SCORE_X}\" y=\"{y}\" font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"11\" fill=\"{ts}\">{score}</text>",
+             <text x=\"{SCORE_X}\" y=\"{y}\" font-family=\"monospace\" font-size=\"11\" fill=\"{ts}\">{score}</text>",
             lang = xml_escape(&entry.lang),
             rank = xml_escape(&entry.rank_name),
             score = fmt_num(entry.score as u64),
@@ -60,19 +60,16 @@ pub fn render_cw_languages(w: &CwLanguagesWidget, theme: Theme) -> String {
 </defs>
 <rect width="{W}" height="{h}" rx="6" fill="{bg}"/>
 <g clip-path="url(#cwl-clip)">{rain}</g>
-<rect width="{W}" height="3" rx="1.5" fill="{accent}"/>
 <rect width="{W}" height="{h}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<circle cx="25" cy="30" r="6" fill="{accent}"/>
-<text x="38" y="35" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="14" font-weight="600" fill="{title}">Codewars by Language</text>
+<text x="25" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">Codewars by Language</text>
 <line x1="25" y1="52" x2="470" y2="52" stroke="{sep}" stroke-width="1"/>
-<text x="25" y="67" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="10" fill="{ts}">LANGUAGE</text>
-<text x="130" y="67" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="10" fill="{ts}">RANK</text>
-<text x="220" y="67" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="10" fill="{ts}">SCORE</text>
+<text x="25" y="67" font-family="monospace" font-size="10" fill="{ts}">Language</text>
+<text x="130" y="67" font-family="monospace" font-size="10" fill="{ts}">Rank</text>
+<text x="220" y="67" font-family="monospace" font-size="10" fill="{ts}">Score</text>
 {rows}
 </svg>"#,
         bg = c.bg,
         border = c.border,
-        accent = c.accent,
         title = c.title,
         sep = c.separator,
         ts = c.text_secondary,
