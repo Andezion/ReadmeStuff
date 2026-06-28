@@ -12,8 +12,8 @@ const H: u32 = 195;
 const CF_X: u32 = 25;
 const CW_X: u32 = 185;
 const LC_X: u32 = 345;
-const DIV1: u32 = 177;
-const DIV2: u32 = 337;
+const DIV1: u32 = 167;
+const DIV2: u32 = 327;
 
 pub fn render_competitive(w: &CompetitiveWidget, theme: Theme) -> String {
     let c = theme.colors();
@@ -32,10 +32,8 @@ pub fn render_competitive(w: &CompetitiveWidget, theme: Theme) -> String {
 </defs>
 <rect width="{W}" height="{H}" rx="6" fill="{bg}"/>
 <g clip-path="url(#cp-clip)">{rain}</g>
-<rect width="{W}" height="3" rx="1.5" fill="{accent}"/>
 <rect width="{W}" height="{H}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<circle cx="25" cy="30" r="6" fill="{accent}"/>
-<text x="38" y="35" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="14" font-weight="600" fill="{title}">Competitive Programming</text>
+<text x="38" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">Competitive Programming</text>
 <line x1="25" y1="52" x2="470" y2="52" stroke="{sep}" stroke-width="1"/>
 <line x1="{DIV1}" y1="58" x2="{DIV1}" y2="185" stroke="{sep}" stroke-width="1"/>
 <line x1="{DIV2}" y1="58" x2="{DIV2}" y2="185" stroke="{sep}" stroke-width="1"/>
@@ -45,7 +43,6 @@ pub fn render_competitive(w: &CompetitiveWidget, theme: Theme) -> String {
         H = H,
         bg = c.bg,
         border = c.border,
-        accent = c.accent,
         title = c.title,
         sep = c.separator,
         DIV1 = DIV1,
@@ -60,7 +57,7 @@ pub fn render_competitive(w: &CompetitiveWidget, theme: Theme) -> String {
 fn platform_label(x: u32, label: &str, color: &str) -> String {
     format!(
         "<text x=\"{x}\" y=\"72\" \
-            font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"10\" font-weight=\"600\" \
+            font-family=\"monospace\" font-size=\"10\" font-weight=\"600\" \
             fill=\"{color}\" letter-spacing=\"1\">{label}</text>",
         label = label.to_uppercase(),
     )
@@ -69,7 +66,7 @@ fn platform_label(x: u32, label: &str, color: &str) -> String {
 fn stat_line(x: u32, y: u32, text: &str, size: u32, weight: &str, color: &str) -> String {
     format!(
         "<text x=\"{x}\" y=\"{y}\" \
-            font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"{size}\" font-weight=\"{weight}\" \
+            font-family=\"monospace\" font-size=\"{size}\" font-weight=\"{weight}\" \
             fill=\"{color}\">{text}</text>",
         text = xml_escape(text),
     )
