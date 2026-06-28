@@ -2,7 +2,7 @@ use crate::{helpers::fmt_num, matrix, theme::Theme};
 use readme_stuff_aggregator::widgets::GithubContributionsWidget;
 
 const W: u32 = 495;
-const H: u32 = 155;
+const H: u32 = 175;
 
 pub fn render_github_contributions(w: &GithubContributionsWidget, theme: Theme) -> String {
     let c = theme.colors();
@@ -23,16 +23,16 @@ pub fn render_github_contributions(w: &GithubContributionsWidget, theme: Theme) 
     for (i, (label, value)) in row1.iter().enumerate() {
         let x = col_x[i];
         stat_svg.push_str(&format!(
-            "<text x=\"{x}\" y=\"90\" font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"18\" font-weight=\"700\" fill=\"{tv}\">{value}</text>\
-             <text x=\"{x}\" y=\"106\" font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"11\" fill=\"{tl}\">{label}</text>",
+            "<text x=\"{x}\" y=\"90\" font-family=\"monospace\" font-size=\"18\" font-weight=\"700\" fill=\"{tv}\">{value}</text>\
+             <text x=\"{x}\" y=\"106\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">{label}</text>",
             tv = c.text_primary, tl = c.text_secondary,
         ));
     }
     for (i, (label, value)) in row2.iter().enumerate() {
         let x = col_x[i];
         stat_svg.push_str(&format!(
-            "<text x=\"{x}\" y=\"136\" font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"18\" font-weight=\"700\" fill=\"{tv}\">{value}</text>\
-             <text x=\"{x}\" y=\"150\" font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"11\" fill=\"{tl}\">{label}</text>",
+            "<text x=\"{x}\" y=\"136\" font-family=\"monospace\" font-size=\"18\" font-weight=\"700\" fill=\"{tv}\">{value}</text>\
+             <text x=\"{x}\" y=\"150\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">{label}</text>",
             tv = c.text_primary, tl = c.text_secondary,
         ));
     }
@@ -46,16 +46,13 @@ pub fn render_github_contributions(w: &GithubContributionsWidget, theme: Theme) 
 </defs>
 <rect width="{W}" height="{H}" rx="6" fill="{bg}"/>
 <g clip-path="url(#gc-clip)">{rain}</g>
-<rect width="{W}" height="3" rx="1.5" fill="{accent}"/>
 <rect width="{W}" height="{H}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<circle cx="25" cy="30" r="6" fill="{accent}"/>
-<text x="38" y="35" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="14" font-weight="600" fill="{title}">Contributions (This Year)</text>
+<text x="38" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">Contributions (This Year)</text>
 <line x1="25" y1="52" x2="470" y2="52" stroke="{sep}" stroke-width="1"/>
 {stat_svg}
 </svg>"#,
         bg = c.bg,
         border = c.border,
-        accent = c.accent,
         title = c.title,
         sep = c.separator,
         rain = rain,
