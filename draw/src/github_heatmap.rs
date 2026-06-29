@@ -26,14 +26,14 @@ pub fn render_github_heatmap(w: &GithubHeatmapWidget, theme: Theme) -> String {
 
         bars.push_str(&format!(
             "<text x=\"{LABEL_X}\" y=\"{y}\" \
-                font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"11\" \
+                font-family=\"monospace\" font-size=\"11\" \
                 fill=\"{tl}\">{day}</text>\
              <rect x=\"{BAR_X}\" y=\"{bar_y}\" width=\"{BAR_MAX_W}\" height=\"10\" rx=\"5\" \
                 fill=\"{bar_bg}\"/>\
              <rect x=\"{BAR_X}\" y=\"{bar_y}\" width=\"{fill_w}\" height=\"10\" rx=\"5\" \
                 fill=\"{accent}\"/>\
              <text x=\"{COUNT_X}\" y=\"{y}\" text-anchor=\"end\" \
-                font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"11\" \
+                font-family=\"monospace\" font-size=\"11\" \
                 fill=\"{tv}\">{count}</text>",
             day = DAYS[i],
             bar_bg = c.separator,
@@ -53,7 +53,7 @@ pub fn render_github_heatmap(w: &GithubHeatmapWidget, theme: Theme) -> String {
 <rect width="{W}" height="{H}" rx="6" fill="{bg}"/>
 <g clip-path="url(#ghm-clip)">{rain}</g>
 <rect width="{W}" height="{H}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<text x="25" y="35" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="14" font-weight="600" fill="{title}">Activity by Day of Week</text>
+<text x="25" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">Activity by Day of Week</text>
 <line x1="25" y1="52" x2="470" y2="52" stroke="{sep}" stroke-width="1"/>
 {bars}
 </svg>"#,

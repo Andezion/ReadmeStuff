@@ -38,7 +38,7 @@ pub fn render_github_monthly(w: &GithubMonthlyWidget, theme: Theme) -> String {
         let label_x = x + bar_w / 2;
         bars.push_str(&format!(
             "<text x=\"{label_x}\" y=\"{LABEL_Y}\" text-anchor=\"middle\" \
-                font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"9\" \
+                font-family=\"monospace\" font-size=\"9\" \
                 fill=\"{ts}\">{label}</text>",
             ts = c.text_secondary,
         ));
@@ -46,7 +46,7 @@ pub fn render_github_monthly(w: &GithubMonthlyWidget, theme: Theme) -> String {
             let val_y = bar_y + 11;
             bars.push_str(&format!(
                 "<text x=\"{label_x}\" y=\"{val_y}\" text-anchor=\"middle\" \
-                    font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"9\" \
+                    font-family=\"monospace\" font-size=\"9\" \
                     fill=\"{bg}\">{count}</text>",
                 bg = c.bg,
             ));
@@ -62,16 +62,13 @@ pub fn render_github_monthly(w: &GithubMonthlyWidget, theme: Theme) -> String {
 </defs>
 <rect width="{W}" height="{H}" rx="6" fill="{bg}"/>
 <g clip-path="url(#gmo-clip)">{rain}</g>
-<rect width="{W}" height="3" rx="1.5" fill="{accent}"/>
 <rect width="{W}" height="{H}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<circle cx="25" cy="30" r="6" fill="{accent}"/>
-<text x="38" y="35" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="14" font-weight="600" fill="{title}">Monthly Contributions</text>
+<text x="25" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">Monthly Contributions</text>
 <line x1="25" y1="52" x2="470" y2="52" stroke="{sep}" stroke-width="1"/>
 {bars}
 </svg>"#,
         bg = c.bg,
         border = c.border,
-        accent = c.accent,
         title = c.title,
         sep = c.separator,
         rain = rain,
