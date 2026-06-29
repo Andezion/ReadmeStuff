@@ -4,7 +4,7 @@ use readme_stuff_aggregator::widgets::LangsWidget;
 const W: u32 = 300;
 const H: u32 = 205;
 const PAD: u32 = 15;
-const BAR_X: u32 = 110;
+const BAR_X: u32 = 100;
 const BAR_W: u32 = 145;
 const PCT_X: u32 = W - PAD;
 
@@ -55,7 +55,7 @@ pub fn render_langs(w: &LangsWidget, theme: Theme) -> String {
 <rect width="{W}" height="{H}" rx="6" fill="{bg}"/>
 <g clip-path="url(#ln-clip)">{rain}</g>
 <rect width="{W}" height="{H}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<text x="28" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">Top Languages</text>
+<text x="15" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">Top Languages</text>
 <line x1="15" y1="52" x2="285" y2="52" stroke="{sep}" stroke-width="1"/>
 {bars}
 </svg>"#,
