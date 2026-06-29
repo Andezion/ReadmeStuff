@@ -24,8 +24,8 @@ pub fn render_github_visitors(w: &GithubVisitorsWidget, theme: Theme) -> String 
     );
 
     let mut repos_svg = String::new();
-    for (i, (repo, views)) in w.top_repos.iter().take(5).enumerate() {
-        let y = 122 + i as u32 * 14;
+    for (i, (repo, views)) in w.top_repos.iter().take(10).enumerate() {
+        let y = 122 + i as u32 * 14 + 5;
         let short = repo.trim_start_matches('/');
         repos_svg.push_str(&format!(
             "<text x=\"25\" y=\"{y}\" font-family=\"monospace\" font-size=\"10\" fill=\"{tl}\">{repo}</text>\
