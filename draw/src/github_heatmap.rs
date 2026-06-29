@@ -1,8 +1,8 @@
 use crate::{matrix, theme::Theme};
 use readme_stuff_aggregator::widgets::GithubHeatmapWidget;
 
-const W: u32 = 520;
-const H: u32 = 218;
+const W: u32 = 515;
+const H: u32 = 214;
 const LABEL_X: u32 = 25;
 const BAR_X: u32 = 65;
 const BAR_MAX_W: u32 = 370;
