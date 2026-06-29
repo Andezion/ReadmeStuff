@@ -20,7 +20,7 @@ pub fn render_langs(w: &LangsWidget, theme: Theme) -> String {
         let y = row_y[i];
         let color = lang.color.as_deref().unwrap_or(c.accent);
         let fill_w = ((lang.percentage / 100.0) * BAR_W as f64).round() as u32;
-        let bar_y = y - 11;
+        let bar_y = y;
 
         bars.push_str(&format!(
             "<circle cx=\"{dot_x}\" cy=\"{dot_y}\" r=\"4\" fill=\"{color}\"/>\
