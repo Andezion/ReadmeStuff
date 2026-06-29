@@ -1,8 +1,8 @@
 use crate::{matrix, theme::Theme};
 use readme_stuff_aggregator::widgets::GithubHeatmapWidget;
 
-const W: u32 = 495;
-const H: u32 = 192;
+const W: u32 = 545;
+const H: u32 = 242;
 const LABEL_X: u32 = 25;
 const BAR_X: u32 = 65;
 const BAR_MAX_W: u32 = 370;
@@ -52,16 +52,13 @@ pub fn render_github_heatmap(w: &GithubHeatmapWidget, theme: Theme) -> String {
 </defs>
 <rect width="{W}" height="{H}" rx="6" fill="{bg}"/>
 <g clip-path="url(#ghm-clip)">{rain}</g>
-<rect width="{W}" height="3" rx="1.5" fill="{accent}"/>
 <rect width="{W}" height="{H}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<circle cx="25" cy="30" r="6" fill="{accent}"/>
-<text x="38" y="35" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="14" font-weight="600" fill="{title}">Activity by Day of Week</text>
+<text x="25" y="35" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="14" font-weight="600" fill="{title}">Activity by Day of Week</text>
 <line x1="25" y1="52" x2="470" y2="52" stroke="{sep}" stroke-width="1"/>
 {bars}
 </svg>"#,
         bg = c.bg,
         border = c.border,
-        accent = c.accent,
         title = c.title,
         sep = c.separator,
         rain = rain,
