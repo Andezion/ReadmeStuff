@@ -47,10 +47,8 @@ pub fn render_github_visitors(w: &GithubVisitorsWidget, theme: Theme) -> String 
 </defs>
 <rect width="{W}" height="{H}" rx="6" fill="{bg}"/>
 <g clip-path="url(#gvs-clip)">{rain}</g>
-<rect width="{W}" height="3" rx="1.5" fill="{accent}"/>
 <rect width="{W}" height="{H}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<circle cx="25" cy="30" r="6" fill="{accent}"/>
-<text x="38" y="35" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="14" font-weight="600" fill="{title}">GitHub Traffic</text>
+<text x="25" y="35" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="14" font-weight="600" fill="{title}">GitHub Traffic</text>
 <line x1="25" y1="52" x2="{lx2}" y2="52" stroke="{sep}" stroke-width="1"/>
 {stats}
 <line x1="25" y1="113" x2="{lx2}" y2="113" stroke="{sep}" stroke-width="1"/>
@@ -58,7 +56,6 @@ pub fn render_github_visitors(w: &GithubVisitorsWidget, theme: Theme) -> String 
 </svg>"#,
         bg = c.bg,
         border = c.border,
-        accent = c.accent,
         title = c.title,
         sep = c.separator,
         lx2 = W - 15,
@@ -84,17 +81,17 @@ pub fn render_github_commit_streak(
 
     let fmt_date = |d: Option<chrono::NaiveDate>| {
         d.map(|dt| dt.format("%b %d %Y").to_string())
-            .unwrap_or_else(|| "—".to_string())
+            .unwrap_or_else(|| "-".to_string())
     };
 
     let streak_range = if w.longest_streak_start.is_some() || w.longest_streak_end.is_some() {
         format!(
-            "{} → {}",
+            "{} -> {}",
             fmt_date(w.longest_streak_start),
             fmt_date(w.longest_streak_end)
         )
     } else {
-        "—".to_string()
+        "-".to_string()
     };
 
     let stats_svg = format!(
@@ -122,16 +119,13 @@ pub fn render_github_commit_streak(
 </defs>
 <rect width="400" height="150" rx="6" fill="{bg}"/>
 <g clip-path="url(#gcs-clip)">{rain}</g>
-<rect width="400" height="3" rx="1.5" fill="{accent}"/>
 <rect width="400" height="150" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<circle cx="25" cy="30" r="6" fill="{accent}"/>
-<text x="38" y="35" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="14" font-weight="600" fill="{title}">Commit Streak</text>
+<text x="25" y="35" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="14" font-weight="600" fill="{title}">Commit Streak</text>
 <line x1="25" y1="48" x2="385" y2="48" stroke="{sep}" stroke-width="1"/>
 {stats}
 </svg>"#,
         bg = c.bg,
         border = c.border,
-        accent = c.accent,
         title = c.title,
         sep = c.separator,
         rain = rain,
