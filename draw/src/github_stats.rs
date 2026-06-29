@@ -34,7 +34,7 @@ pub fn render_github_stats(w: &GithubStatsWidget, theme: Theme) -> String {
         let lbl_y = if idx < 3 { 108u32 } else { 168 };
         stat_svg.push_str(&format!(
             "<text x=\"{x}\" y=\"{val_y}\" \
-                font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"18\" font-weight=\"700\" \
+                font-family=\"monospace\" font-size=\"18\" font-weight=\"700\" \
                 fill=\"{tv}\">{value}</text>\
              <text x=\"{x}\" y=\"{lbl_y}\" \
                 font-family=\"monospace\" font-size=\"11\" \
@@ -59,7 +59,7 @@ pub fn render_github_stats(w: &GithubStatsWidget, theme: Theme) -> String {
 <text x="25" y="47" font-family="monospace" font-size="11" fill="{text2}">@{login}</text>
 <g transform="translate(456,35)">
   <circle r="22" fill="{bg}" stroke="{rcolor}" stroke-width="2.5"/>
-  <text text-anchor="middle" dy="6" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="15" font-weight="700" fill="{rcolor}">{rank}</text>
+  <text text-anchor="middle" dy="6" font-family="monospace" font-size="15" font-weight="700" fill="{rcolor}">{rank}</text>
 </g>
 <line x1="25" y1="62" x2="430" y2="62" stroke="{sep}" stroke-width="1"/>
 {stat_svg}
