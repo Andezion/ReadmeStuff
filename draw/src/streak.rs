@@ -20,10 +20,10 @@ pub fn render_streak(w: &StreakWidget, theme: Theme) -> String {
         let x = col_x[i];
         stat_svg.push_str(&format!(
             "<text x=\"{x}\" y=\"98\" \
-                font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"20\" font-weight=\"700\" \
+                font-family=\"monospace\" font-size=\"20\" font-weight=\"700\" \
                 fill=\"{tv}\">{value}</text>\
              <text x=\"{x}\" y=\"115\" \
-                font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"11\" \
+                font-family=\"monospace\" font-size=\"11\" \
                 fill=\"{tl}\">{label}</text>",
             tv = c.text_primary,
             tl = c.text_secondary,
@@ -41,19 +41,16 @@ pub fn render_streak(w: &StreakWidget, theme: Theme) -> String {
 </defs>
 <rect width="{W}" height="{H}" rx="6" fill="{bg}"/>
 <g clip-path="url(#sk-clip)">{rain}</g>
-<rect width="{W}" height="3" rx="1.5" fill="{accent}"/>
 <rect width="{W}" height="{H}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<circle cx="25" cy="30" r="6" fill="{accent}"/>
-<text x="38" y="35" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="14" font-weight="600" fill="{title}">GitHub Streak</text>
+<text x="25" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">GitHub Streak</text>
 <line x1="25" y1="52" x2="470" y2="52" stroke="{sep}" stroke-width="1"/>
 {stat_svg}
-<text x="25" y="143" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="11" fill="{text2}">{avg}</text>
+<text x="25" y="143" font-family="monospace" font-size="11" fill="{text2}">{avg}</text>
 </svg>"#,
         W = W,
         H = H,
         bg = c.bg,
         border = c.border,
-        accent = c.accent,
         title = c.title,
         text2 = c.text_secondary,
         sep = c.separator,
