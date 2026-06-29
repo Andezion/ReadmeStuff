@@ -20,9 +20,9 @@ pub fn render_github_heatmap(w: &GithubHeatmapWidget, theme: Theme) -> String {
 
     let mut bars = String::new();
     for (i, &count) in w.weekday_distribution.iter().enumerate() {
-        let y = FIRST_Y + i as u32 * ROW_H;
+        let y = FIRST_Y + i as u32 * ROW_H - 1;
         let fill_w = (count as f64 / max_val as f64 * BAR_MAX_W as f64).round() as u32;
-        let bar_y = y - 11;
+        let bar_y = y - 11 + 2;
 
         bars.push_str(&format!(
             "<text x=\"{LABEL_X}\" y=\"{y}\" \
