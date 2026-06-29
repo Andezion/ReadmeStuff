@@ -7,7 +7,6 @@ const H: u32 = 175;
 const LC_EASY: &str = "#00b8a3";
 const LC_MEDIUM: &str = "#ffc01e";
 const LC_HARD: &str = "#ff375f";
-const LC_ORANGE: &str = "#ffa116";
 
 pub fn render_lc_solved(w: &LcSolvedWidget, theme: Theme) -> String {
     let c = theme.colors();
@@ -32,8 +31,8 @@ pub fn render_lc_solved(w: &LcSolvedWidget, theme: Theme) -> String {
     for (i, (label, count, color)) in stats.iter().enumerate() {
         let x = col_x[i];
         stat_svg.push_str(&format!(
-            "<text x=\"{x}\" y=\"138\" font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"20\" font-weight=\"700\" fill=\"{color}\">{val}</text>\
-             <text x=\"{x}\" y=\"155\" font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"11\" fill=\"{tl}\">{label}</text>",
+            "<text x=\"{x}\" y=\"138\" font-family=\"monospace\" font-size=\"20\" font-weight=\"700\" fill=\"{color}\">{val}</text>\
+             <text x=\"{x}\" y=\"155\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">{label}</text>",
             val = fmt_num(*count as u64),
             tl = c.text_secondary,
         ));
@@ -48,13 +47,11 @@ pub fn render_lc_solved(w: &LcSolvedWidget, theme: Theme) -> String {
 </defs>
 <rect width="{W}" height="{H}" rx="6" fill="{bg}"/>
 <g clip-path="url(#lcs-clip)">{rain}</g>
-<rect width="{W}" height="3" rx="1.5" fill="{lc_accent}"/>
 <rect width="{W}" height="{H}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<circle cx="25" cy="30" r="6" fill="{lc_accent}"/>
-<text x="38" y="35" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="14" font-weight="600" fill="{title}">LeetCode &#8212; Problems Solved</text>
+<text x="25" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">LeetCode &#8212; Problems Solved</text>
 <line x1="25" y1="52" x2="470" y2="52" stroke="{sep}" stroke-width="1"/>
-<text x="25" y="88" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="36" font-weight="700" fill="{tv}">{total}</text>
-<text x="108" y="88" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="14" fill="{ts}">solved</text>
+<text x="25" y="88" font-family="monospace" font-size="36" font-weight="700" fill="{tv}">{total}</text>
+<text x="108" y="88" font-family="monospace" font-size="14" fill="{ts}">solved</text>
 <rect x="25" y="98" width="{easy_w}" height="6" rx="3" fill="{lc_easy}"/>
 <rect x="{med_x}" y="98" width="{med_w}" height="6" fill="{lc_medium}"/>
 <rect x="{hard_x}" y="98" width="{hard_w}" height="6" rx="3" fill="{lc_hard}"/>
@@ -69,7 +66,6 @@ pub fn render_lc_solved(w: &LcSolvedWidget, theme: Theme) -> String {
         stat_svg = stat_svg,
         tv = c.text_primary,
         ts = c.text_secondary,
-        lc_accent = LC_ORANGE,
         total = total_str,
         easy_w = easy_w,
         med_x = 25 + easy_w,
