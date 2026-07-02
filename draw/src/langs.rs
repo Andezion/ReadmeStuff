@@ -2,7 +2,7 @@ use crate::{helpers::xml_escape, matrix, theme::Theme};
 use readme_stuff_aggregator::widgets::LangsWidget;
 
 const W: u32 = 300;
-const H: u32 = 200;
+const H: u32 = 185;
 const PAD: u32 = 15;
 const BAR_X: u32 = 100;
 const BAR_W: u32 = 145;

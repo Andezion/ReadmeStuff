@@ -100,8 +100,8 @@ pub fn render_github_commit_streak(
          <text x=\"160\" y=\"80\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{cs}</text>\
          <text x=\"160\" y=\"96\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Current Streak</text>\
          <text x=\"290\" y=\"80\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{ls}</text>\
-         <text x=\"290\" y\":\"96\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Longest Streak</text>\
-         <text x=\"25\" y\":\"128\" font-family=\"monospace\" font-size\":\"10\" fill=\"{tl}\">Best streak: {range}</text>",
+         <text x=\"290\" y=\"96\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Longest Streak</text>\
+         <text x=\"25\" y=\"128\" font-family=\"monospace\" font-size=\"10\" fill=\"{tl}\">Best streak: {range}</text>",
         tc = fmt_num(w.total_commits),
         cs = format!("{}d", w.current_streak),
         ls = format!("{}d", w.longest_streak),
