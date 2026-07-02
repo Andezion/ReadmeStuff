@@ -30,7 +30,7 @@ pub fn render_lc_skills(w: &LcSkillsWidget, theme: Theme) -> String {
     let mut rows = String::new();
     for (i, skill) in w.skills.iter().enumerate() {
         let y = FIRST_Y + i as u32 * ROW_H + ROW_H - 4;
-        let bar_y = y - 9;
+        let bar_y = y - 8;
         let fill_w = (skill.amount as f64 / max_amount as f64 * BAR_MAX_W as f64).round() as u32;
         let color = cat_color(skill.category);
 
