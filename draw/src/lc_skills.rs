@@ -3,9 +3,9 @@ use readme_stuff_aggregator::widgets::LcSkillsWidget;
 
 const W: u32 = 495;
 const PAD_X: u32 = 25;
-const BAR_X: u32 = 270;
+const BAR_X: u32 = 265;
 const BAR_MAX_W: u32 = 160;
-const COUNT_X: u32 = 448;
+const COUNT_X: u32 = 452;
 const ROW_H: u32 = 18;
 const FIRST_Y: u32 = 70;
 
@@ -30,7 +30,7 @@ pub fn render_lc_skills(w: &LcSkillsWidget, theme: Theme) -> String {
     let mut rows = String::new();
     for (i, skill) in w.skills.iter().enumerate() {
         let y = FIRST_Y + i as u32 * ROW_H + ROW_H - 4;
-        let bar_y = y - 11;
+        let bar_y = y - 10;
         let fill_w = (skill.amount as f64 / max_amount as f64 * BAR_MAX_W as f64).round() as u32;
         let color = cat_color(skill.category);
 
