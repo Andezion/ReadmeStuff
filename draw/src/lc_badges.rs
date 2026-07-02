@@ -46,9 +46,7 @@ pub fn render_lc_badges(w: &LcBadgesWidget, theme: Theme) -> String {
 </defs>
 <rect width="{W}" height="{h}" rx="6" fill="{bg}"/>
 <g clip-path="url(#lcb-clip)">{rain}</g>
-<rect width="{W}" height="3" rx="1.5" fill="{lc_accent}"/>
 <rect width="{W}" height="{h}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<circle cx="25" cy="30" r="6" fill="{lc_accent}"/>
 <text x="38" y="35" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="14" font-weight="600" fill="{title}">LeetCode Badges</text>
 <text x="440" y="35" text-anchor="end" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="12" fill="{ts}">{total} total</text>
 <line x1="25" y1="48" x2="470" y2="48" stroke="{sep}" stroke-width="1"/>
@@ -63,7 +61,6 @@ pub fn render_lc_badges(w: &LcBadgesWidget, theme: Theme) -> String {
         ts = c.text_secondary,
         rain = rain,
         rows = rows,
-        lc_accent = "#ffa116",
         total = total_str,
     )
 }
