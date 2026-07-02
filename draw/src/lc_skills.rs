@@ -5,7 +5,7 @@ const W: u32 = 495;
 const PAD_X: u32 = 25;
 const BAR_X: u32 = 270;
 const BAR_MAX_W: u32 = 160;
-const COUNT_X: u32 = 438;
+const COUNT_X: u32 = 448;
 const ROW_H: u32 = 18;
 const FIRST_Y: u32 = 70;
 
