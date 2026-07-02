@@ -47,7 +47,7 @@ pub fn render_lc_badges(w: &LcBadgesWidget, theme: Theme) -> String {
 <rect width="{W}" height="{h}" rx="6" fill="{bg}"/>
 <g clip-path="url(#lcb-clip)">{rain}</g>
 <rect width="{W}" height="{h}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<text x="38" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">LeetCode Badges</text>
+<text x="25" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">LeetCode Badges</text>
 <text x="440" y="35" text-anchor="end" font-family="monospace" font-size="12" fill="{ts}">{total} total</text>
 <line x1="25" y1="48" x2="470" y2="48" stroke="{sep}" stroke-width="1"/>
 <text x="44" y="63" font-family="monospace" font-size="10" fill="{ts}">BADGE</text>
