@@ -9,11 +9,12 @@ use readme_stuff_aggregator::{
     },
 };
 use readme_stuff_draw::{
-    Theme, render_cf_rating, render_cf_stats, render_competitive, render_cw_kata,
-    render_cw_languages, render_cw_rank, render_github_commit_streak, render_github_contributions,
-    render_github_heatmap, render_github_monthly, render_github_repos, render_github_social,
-    render_github_stats, render_github_visitors, render_langs, render_lc_badges,
-    render_lc_languages, render_lc_skills, render_lc_solved, render_streak,
+    Align, Theme, parse_lines, render_cf_rating, render_cf_stats, render_competitive,
+    render_cw_kata, render_cw_languages, render_cw_rank, render_github_commit_streak,
+    render_github_contributions, render_github_heatmap, render_github_monthly,
+    render_github_repos, render_github_social, render_github_stats, render_github_visitors,
+    render_langs, render_lc_badges, render_lc_languages, render_lc_skills, render_lc_solved,
+    render_streak, render_text_card,
 };
 use std::path::{Path, PathBuf};
 
@@ -158,6 +159,8 @@ async fn main() {
         &out_dir,
     );
 
+    render_custom_text_card(&out_dir);
+
     eprintln!("Done - {}", out_dir.display());
 }
 
@@ -177,6 +180,46 @@ where
 
 fn env(key: &str, default: &str) -> String {
     std::env::var(key).unwrap_or_else(|_| default.to_owned())
+}
+
+fn cli_flag(name: &str) -> Option<String> {
+    let args: Vec<String> = std::env::args().collect();
+    args.iter()
+        .position(|a| a == name)
+        .and_then(|i| args.get(i + 1))
+        .cloned()
+}
+
+fn render_custom_text_card(out_dir: &Path) {
+    let Some(path) = cli_flag("--text-file").or_else(|| std::env::var("TEXT_FILE").ok()) else {
+        return;
+    };
+
+    let align_str = cli_flag("--text-align")
+        .or_else(|| std::env::var("TEXT_ALIGN").ok())
+        .unwrap_or_else(|| "left".to_owned());
+    let align = Align::parse(&align_str).unwrap_or_else(|| {
+        eprintln!("  custom-text: unknown align {align_str:?}, defaulting to left");
+        Align::Left
+    });
+
+    let content = match std::fs::read_to_string(&path) {
+        Ok(content) => content,
+        Err(e) => {
+            eprintln!("  custom-text SKIP (cannot read {path}: {e})");
+            return;
+        }
+    };
+
+    let lines = parse_lines(&content);
+    if lines.is_empty() {
+        eprintln!("  custom-text SKIP (no text lines in {path})");
+        return;
+    }
+
+    let svg = render_text_card(&lines, align, Theme::Dark);
+    write_svg(out_dir, "custom-text-dark.svg", &svg);
+    eprintln!("  custom-text OK ({path}, align={align_str})");
 }
 
 fn write_svg(dir: &Path, name: &str, content: &str) {
