@@ -29,7 +29,7 @@ pub fn render_lc_badges(w: &LcBadgesWidget, theme: Theme) -> String {
              <text x=\"44\" y=\"{y}\" font-family=\"monospace\" font-size=\"12\" fill=\"{tv}\">{name}</text>\
              <text x=\"440\" y=\"{y}\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"11\" fill=\"{ts}\">{date}</text>",
             row_y = FIRST_ROW_Y + i as u32 * ROW_H,
-            dot_y = FIRST_ROW_Y + i as u32 * ROW_H + ROW_H / 2,
+            dot_y = FIRST_ROW_Y + i as u32 * ROW_H + ROW_H / 2 + 1,
             name = xml_escape(&badge.name),
             date = xml_escape(&badge.date),
             tv = c.text_primary,
