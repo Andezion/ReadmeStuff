@@ -2,6 +2,11 @@ mod helpers;
 mod matrix;
 pub mod theme;
 
+// Custom text-to-SVG rendering
+mod text_card;
+mod text_glyph;
+mod text_input;
+
 // GitHub
 mod github_contributions;
 mod github_heatmap;
@@ -64,3 +69,8 @@ pub use lc_solved::render_lc_solved;
 
 // Legacy
 pub use competitive::render_competitive;
+
+// Custom text-to-SVG rendering
+pub use text_card::render_text_card;
+pub use text_glyph::{Align, TextLine};
+pub use text_input::parse_lines;
