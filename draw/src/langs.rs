@@ -2,7 +2,7 @@ use crate::{helpers::xml_escape, matrix, theme::Theme};
 use readme_stuff_aggregator::widgets::LangsWidget;
 
 const W: u32 = 300;
-const H: u32 = 205;
+const H: u32 = 200;
 const PAD: u32 = 15;
 const BAR_X: u32 = 100;
 const BAR_W: u32 = 145;
@@ -12,11 +12,11 @@ pub fn render_langs(w: &LangsWidget, theme: Theme) -> String {
     let c = theme.colors();
     let rain = matrix::generate(W, H, c.matrix_color, c.matrix_opacity, 0xFACE_FEED, "ln");
 
-    // Row baseline positions for up to 6 languages
-    let row_y: [u32; 6] = [75, 99, 123, 147, 171, 195];
+    // Row baseline positions for up to 5 languages
+    let row_y: [u32; 5] = [75, 99, 123, 147, 171];
 
     let mut bars = String::new();
-    for (i, lang) in w.top.iter().take(6).enumerate() {
+    for (i, lang) in w.top.iter().take(5).enumerate() {
         let y = row_y[i];
         let color = lang.color.as_deref().unwrap_or(c.accent);
         let fill_w = ((lang.percentage / 100.0) * BAR_W as f64).round() as u32;
