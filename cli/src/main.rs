@@ -22,13 +22,22 @@ use std::path::{Path, PathBuf};
 async fn main() {
     load_dotenv();
 
+    let out_dir = PathBuf::from(std::env::var("OUTPUT_DIR").unwrap_or_else(|_| "profile".into()));
+    std::fs::create_dir_all(&out_dir).expect("cannot create output dir");
+
+
+    let text_only = cli_flag("--text-only").is_some()
+        || matches!(std::env::var("TEXT_ONLY").as_deref(), Ok("1") | Ok("true"));
+    if text_only {
+        render_custom_text_card(&out_dir);
+        eprintln!("Done - {}", out_dir.display());
+        return;
+    }
+
     let gh_login = env("GH_LOGIN", "Andezion");
     let cf_handle = env("CF_HANDLE", "Andezion");
     let cw_user = env("CW_USER", "Andezion");
     let lc_user = env("LC_USER", "Andezion");
-    let out_dir = PathBuf::from(std::env::var("OUTPUT_DIR").unwrap_or_else(|_| "profile".into()));
-
-    std::fs::create_dir_all(&out_dir).expect("cannot create output dir");
 
     eprintln!("Fetching profile for {gh_login}...");
     let profile = build_profile(&gh_login, &cf_handle, &cw_user, &lc_user).await;
