@@ -83,7 +83,7 @@ pub fn render_lc_languages(w: &LcLanguagesWidget, theme: Theme) -> String {
 <rect width="{W}" height="{h}" rx="6" fill="{bg}"/>
 <g clip-path="url(#lcl-clip)">{rain}</g>
 <rect width="{W}" height="{h}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<text x="25" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">LeetCode Languages</text>
+<text x="15" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">LeetCode Languages</text>
 <line x1="15" y1="48" x2="285" y2="48" stroke="{sep}" stroke-width="1"/>
 {rows}
 </svg>"#,

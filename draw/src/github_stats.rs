@@ -53,7 +53,6 @@ pub fn render_github_stats(w: &GithubStatsWidget, theme: Theme) -> String {
 </defs>
 <rect width="{W}" height="{H}" rx="6" fill="{bg}"/>
 <g clip-path="url(#gs-clip)">{rain}</g>
-<rect width="{W}" height="3" rx="1.5" fill="{accent}"/>
 <rect width="{W}" height="{H}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
 <text x="25" y="30" font-family="monospace" font-size="14" font-weight="600" fill="{title}">{dname}</text>
 <text x="25" y="47" font-family="monospace" font-size="11" fill="{text2}">@{login}</text>
@@ -68,7 +67,6 @@ pub fn render_github_stats(w: &GithubStatsWidget, theme: Theme) -> String {
         H = H,
         bg = c.bg,
         border = c.border,
-        accent = c.accent,
         title = c.title,
         text2 = c.text_secondary,
         sep = c.separator,
