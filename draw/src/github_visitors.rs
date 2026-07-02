@@ -6,7 +6,7 @@ use crate::{
 use readme_stuff_aggregator::widgets::GithubVisitorsWidget;
 
 const W: u32 = 400;
-const H: u32 = 320;
+const H: u32 = 300;
 
 pub fn render_github_visitors(w: &GithubVisitorsWidget, theme: Theme) -> String {
     let c = theme.colors();
