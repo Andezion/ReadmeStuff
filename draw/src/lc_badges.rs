@@ -25,9 +25,9 @@ pub fn render_lc_badges(w: &LcBadgesWidget, theme: Theme) -> String {
 
         rows.push_str(&format!(
             "<rect x=\"20\" y=\"{row_y}\" width=\"455\" height=\"{ROW_H}\" fill=\"{stripe_color}\" rx=\"2\"/>\
-             <circle cx=\"32\" cy=\"{dot_y}\" r=\"3\" fill=\"#ffa116\"/>\
-             <text x=\"44\" y=\"{y}\" font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"12\" fill=\"{tv}\">{name}</text>\
-             <text x=\"440\" y=\"{y}\" text-anchor=\"end\" font-family=\"'Segoe UI',Ubuntu,sans-serif\" font-size=\"11\" fill=\"{ts}\">{date}</text>",
+             <circle cx=\"32\" cy=\"{dot_y}\" r=\"3\" fill=\"#2fde1b\"/>\
+             <text x=\"44\" y=\"{y}\" font-family=\"monospace\" font-size=\"12\" fill=\"{tv}\">{name}</text>\
+             <text x=\"440\" y=\"{y}\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"11\" fill=\"{ts}\">{date}</text>",
             row_y = FIRST_ROW_Y + i as u32 * ROW_H,
             dot_y = FIRST_ROW_Y + i as u32 * ROW_H + ROW_H / 2,
             name = xml_escape(&badge.name),
@@ -47,11 +47,11 @@ pub fn render_lc_badges(w: &LcBadgesWidget, theme: Theme) -> String {
 <rect width="{W}" height="{h}" rx="6" fill="{bg}"/>
 <g clip-path="url(#lcb-clip)">{rain}</g>
 <rect width="{W}" height="{h}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<text x="38" y="35" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="14" font-weight="600" fill="{title}">LeetCode Badges</text>
-<text x="440" y="35" text-anchor="end" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="12" fill="{ts}">{total} total</text>
+<text x="38" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">LeetCode Badges</text>
+<text x="440" y="35" text-anchor="end" font-family="monospace" font-size="12" fill="{ts}">{total} total</text>
 <line x1="25" y1="48" x2="470" y2="48" stroke="{sep}" stroke-width="1"/>
-<text x="44" y="63" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="10" fill="{ts}">BADGE</text>
-<text x="440" y="63" text-anchor="end" font-family="'Segoe UI',Ubuntu,sans-serif" font-size="10" fill="{ts}">DATE</text>
+<text x="44" y="63" font-family="monospace" font-size="10" fill="{ts}">BADGE</text>
+<text x="440" y="63" text-anchor="end" font-family="monospace" font-size="10" fill="{ts}">DATE</text>
 {rows}
 </svg>"#,
         bg = c.bg,
