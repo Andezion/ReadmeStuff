@@ -21,7 +21,7 @@ pub fn github_visitors_widget(p: &UserProfile) -> Option<GithubVisitorsWidget> {
     if total_views == 0 {
         return None;
     }
-    let top_repos = v.top_repos_by_views.iter().take(5).cloned().collect();
+    let top_repos = v.top_repos_by_views.iter().take(10).cloned().collect();
     Some(GithubVisitorsWidget {
         total_views,
         total_unique,
