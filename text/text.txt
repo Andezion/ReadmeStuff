@@ -1,2 +1,2 @@
-Hello World(50)
-and random guests(20)
+Hello World(60)
+and random guests(40)
