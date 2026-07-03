@@ -1,1 +1,1 @@
-OUTPUT_DIR=/tmp/readme_test cargo run -p readme-stuff-cli
+cargo run -p readme-stuff-cli
