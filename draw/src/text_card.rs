@@ -1,6 +1,6 @@
 use crate::{
     matrix,
-    text_glyph::{Align, Font, TextLine},
+    text_glyph::{Align, Font, HAlign, TextLine, VAlign},
     theme::Theme,
 };
 
@@ -23,15 +23,36 @@ pub fn render_text_card(
     let c = theme.colors();
     let font = Font::from_bytes(FONT_BYTES);
 
+    struct LineMetric {
+        ascent: f32,
+        descent: f32,
+        width: f32,
+    }
+    let metrics: Vec<LineMetric> = lines
+        .iter()
+        .map(|line| LineMetric {
+            ascent: font.ascent(line.size),
+            descent: font.descent(line.size),
+            width: font.measure_line(&line.text, line.size),
+        })
+        .collect();
+    let text_height: f32 = metrics.iter().map(|m| m.ascent + m.descent).sum();
+
+    let h = ((text_height + PAD_TOP + PAD_BOTTOM).ceil() as u32).max(min_height);
+
+    let mut y = match align.v {
+        VAlign::Top => PAD_TOP,
+        VAlign::Center => ((h as f32 - text_height) / 2.0).max(PAD_TOP),
+        VAlign::Bottom => (h as f32 - PAD_BOTTOM - text_height).max(PAD_TOP),
+    };
+
     let mut paths = String::new();
-    let mut y = PAD_TOP;
-    for line in lines {
-        y += font.ascent(line.size);
-        let line_width = font.measure_line(&line.text, line.size);
-        let x0 = match align {
-            Align::Left => PAD_X,
-            Align::Center => ((width as f32 - line_width) / 2.0).max(PAD_X),
-            Align::Right => (width as f32 - PAD_X - line_width).max(PAD_X),
+    for (line, m) in lines.iter().zip(metrics.iter()) {
+        y += m.ascent;
+        let x0 = match align.h {
+            HAlign::Left => PAD_X,
+            HAlign::Center => ((width as f32 - m.width) / 2.0).max(PAD_X),
+            HAlign::Right => (width as f32 - PAD_X - m.width).max(PAD_X),
         };
         let d = font.line_path(&line.text, line.size, x0, y);
         if !d.is_empty() {
@@ -40,9 +61,8 @@ pub fn render_text_card(
                 fill = c.text_primary
             ));
         }
-        y += font.descent(line.size);
+        y += m.descent;
     }
-    let h = ((y + PAD_BOTTOM).ceil() as u32).max(min_height);
 
     let rain = matrix::generate(width, h, c.matrix_color, c.matrix_opacity, 0x7EA7_7EA7, "tx");
 

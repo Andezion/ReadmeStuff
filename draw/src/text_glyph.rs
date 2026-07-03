@@ -1,18 +1,55 @@
 use ttf_parser::{Face, OutlineBuilder};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum Align {
+pub enum HAlign {
     Left,
     Center,
     Right,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum VAlign {
+    Top,
+    Center,
+    Bottom,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct Align {
+    pub h: HAlign,
+    pub v: VAlign,
+}
+
 impl Align {
-    pub fn parse(s: &str) -> Option<Align> {
-        match s.trim().to_lowercase().as_str() {
-            "left" => Some(Align::Left),
-            "center" | "centre" => Some(Align::Center),
-            "right" => Some(Align::Right),
+    pub const DEFAULT: Align = Align {
+        h: HAlign::Left,
+        v: VAlign::Top,
+    };
+
+    /// `word` is one of left/right/top/down/center; `centered` is the `-c`
+    /// flag, which centers whichever axis `word` doesn't already pin down.
+    pub fn parse(word: &str, centered: bool) -> Option<Align> {
+        match word.trim().to_lowercase().as_str() {
+            "left" => Some(Align {
+                h: HAlign::Left,
+                v: if centered { VAlign::Center } else { VAlign::Top },
+            }),
+            "right" => Some(Align {
+                h: HAlign::Right,
+                v: if centered { VAlign::Center } else { VAlign::Top },
+            }),
+            "top" => Some(Align {
+                h: if centered { HAlign::Center } else { HAlign::Left },
+                v: VAlign::Top,
+            }),
+            "down" | "bottom" => Some(Align {
+                h: if centered { HAlign::Center } else { HAlign::Left },
+                v: VAlign::Bottom,
+            }),
+            "center" | "centre" => Some(Align {
+                h: HAlign::Center,
+                v: VAlign::Center,
+            }),
             _ => None,
         }
     }

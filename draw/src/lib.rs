@@ -72,5 +72,5 @@ pub use competitive::render_competitive;
 
 // Custom text-to-SVG rendering
 pub use text_card::{DEFAULT_HEIGHT, DEFAULT_WIDTH, render_text_card};
-pub use text_glyph::{Align, TextLine};
+pub use text_glyph::{Align, HAlign, TextLine, VAlign};
 pub use text_input::parse_lines;

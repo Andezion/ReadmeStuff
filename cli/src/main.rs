@@ -199,9 +199,13 @@ fn cli_flag(name: &str) -> Option<String> {
         .cloned()
 }
 
+fn cli_bool_flag(name: &str) -> bool {
+    std::env::args().any(|a| a == name)
+}
+
 fn positional_args() -> Vec<String> {
     const VALUE_FLAGS: &[&str] = &["--text-file", "--text-align"];
-    const BOOL_FLAGS: &[&str] = &["--text-only"];
+    const BOOL_FLAGS: &[&str] = &["--text-only", "-c"];
 
     let args: Vec<String> = std::env::args().skip(1).collect();
     let mut positional = Vec::new();
@@ -228,9 +232,11 @@ fn render_custom_text_card(out_dir: &Path) {
     let align_str = cli_flag("--text-align")
         .or_else(|| std::env::var("TEXT_ALIGN").ok())
         .unwrap_or_else(|| "left".to_owned());
-    let align = Align::parse(&align_str).unwrap_or_else(|| {
+    let centered = cli_bool_flag("-c")
+        || matches!(std::env::var("TEXT_ALIGN_CENTER").as_deref(), Ok("1") | Ok("true"));
+    let align = Align::parse(&align_str, centered).unwrap_or_else(|| {
         eprintln!("  custom-text: unknown align {align_str:?}, defaulting to left");
-        Align::Left
+        Align::DEFAULT
     });
 
     let positional = positional_args();
@@ -263,7 +269,10 @@ fn render_custom_text_card(out_dir: &Path) {
 
     let svg = render_text_card(&lines, align, Theme::Dark, width, height);
     write_svg(out_dir, &svg_name, &svg);
-    eprintln!("  custom-text OK ({path}, align={align_str}, size={width}x{height}, file={svg_name})");
+    eprintln!(
+        "  custom-text OK ({path}, align={align_str}{c}, size={width}x{height}, file={svg_name})",
+        c = if centered { " -c" } else { "" }
+    );
 }
 
 fn write_svg(dir: &Path, name: &str, content: &str) {
