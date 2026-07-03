@@ -8,8 +8,6 @@ use readme_stuff_aggregator::widgets::GithubStatsWidget;
 const W: u32 = 495;
 const H: u32 = 195;
 
-
-
 pub fn render_github_stats(w: &GithubStatsWidget, theme: Theme) -> String {
     let c = theme.colors();
     let rain = matrix::generate(W, H, c.matrix_color, c.matrix_opacity, 0x1337_DEAD, "gs");

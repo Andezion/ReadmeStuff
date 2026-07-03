@@ -25,7 +25,6 @@ async fn main() {
     let out_dir = PathBuf::from(std::env::var("OUTPUT_DIR").unwrap_or_else(|_| "profile".into()));
     std::fs::create_dir_all(&out_dir).expect("cannot create output dir");
 
-
     let text_only = cli_flag("--text-only").is_some()
         || matches!(std::env::var("TEXT_ONLY").as_deref(), Ok("1") | Ok("true"));
     if text_only {
@@ -233,7 +232,10 @@ fn render_custom_text_card(out_dir: &Path) {
         .or_else(|| std::env::var("TEXT_ALIGN").ok())
         .unwrap_or_else(|| "left".to_owned());
     let centered = cli_bool_flag("-c")
-        || matches!(std::env::var("TEXT_ALIGN_CENTER").as_deref(), Ok("1") | Ok("true"));
+        || matches!(
+            std::env::var("TEXT_ALIGN_CENTER").as_deref(),
+            Ok("1") | Ok("true")
+        );
     let align = Align::parse(&align_str, centered).unwrap_or_else(|| {
         eprintln!("  custom-text: unknown align {align_str:?}, defaulting to left");
         Align::DEFAULT
@@ -309,8 +311,9 @@ fn load_dotenv() {
                 unsafe { std::env::set_var(key, val.trim()) };
             }
         } else if (line.starts_with("ghp_") || line.starts_with("github_pat_"))
-            && std::env::var("GITHUB_TOKEN").is_err() {
-                unsafe { std::env::set_var("GITHUB_TOKEN", line) };
-            }
+            && std::env::var("GITHUB_TOKEN").is_err()
+        {
+            unsafe { std::env::set_var("GITHUB_TOKEN", line) };
+        }
     }
 }

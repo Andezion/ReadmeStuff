@@ -26,24 +26,38 @@ impl Align {
         v: VAlign::Top,
     };
 
-    /// `word` is one of left/right/top/down/center; `centered` is the `-c`
-    /// flag, which centers whichever axis `word` doesn't already pin down.
     pub fn parse(word: &str, centered: bool) -> Option<Align> {
         match word.trim().to_lowercase().as_str() {
             "left" => Some(Align {
                 h: HAlign::Left,
-                v: if centered { VAlign::Center } else { VAlign::Top },
+                v: if centered {
+                    VAlign::Center
+                } else {
+                    VAlign::Top
+                },
             }),
             "right" => Some(Align {
                 h: HAlign::Right,
-                v: if centered { VAlign::Center } else { VAlign::Top },
+                v: if centered {
+                    VAlign::Center
+                } else {
+                    VAlign::Top
+                },
             }),
             "top" => Some(Align {
-                h: if centered { HAlign::Center } else { HAlign::Left },
+                h: if centered {
+                    HAlign::Center
+                } else {
+                    HAlign::Left
+                },
                 v: VAlign::Top,
             }),
             "down" | "bottom" => Some(Align {
-                h: if centered { HAlign::Center } else { HAlign::Left },
+                h: if centered {
+                    HAlign::Center
+                } else {
+                    HAlign::Left
+                },
                 v: VAlign::Bottom,
             }),
             "center" | "centre" => Some(Align {
@@ -132,7 +146,7 @@ impl<'a> Font<'a> {
     fn advance(&self, ch: char) -> f32 {
         match self.face.glyph_index(ch) {
             Some(id) => self.face.glyph_hor_advance(id).unwrap_or(0) as f32,
-            
+
             None => self.units_per_em() * 0.4,
         }
     }

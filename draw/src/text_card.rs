@@ -64,7 +64,14 @@ pub fn render_text_card(
         y += m.descent;
     }
 
-    let rain = matrix::generate(width, h, c.matrix_color, c.matrix_opacity, 0x7EA7_7EA7, "tx");
+    let rain = matrix::generate(
+        width,
+        h,
+        c.matrix_color,
+        c.matrix_opacity,
+        0x7EA7_7EA7,
+        "tx",
+    );
 
     format!(
         r#"<svg width="{width}" height="{h}" viewBox="0 0 {width} {h}" xmlns="http://www.w3.org/2000/svg">

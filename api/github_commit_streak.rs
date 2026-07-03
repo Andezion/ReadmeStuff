@@ -6,8 +6,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::task::JoinSet;
 
-#[derive(Debug, Clone)]
-#[derive(Default)]
+#[derive(Debug, Clone, Default)]
 pub struct CommitStreakStats {
     pub total_commits: u64,
     pub days_with_commits: u32,
@@ -17,7 +16,6 @@ pub struct CommitStreakStats {
     pub longest_streak_start: Option<NaiveDate>,
     pub longest_streak_end: Option<NaiveDate>,
 }
-
 
 #[derive(Deserialize)]
 struct RepoListRoot {
@@ -170,9 +168,10 @@ async fn fetch_repo_dates(
         let done = commits.len() < 100;
         for c in commits {
             if let Some(date_str) = c.commit.author.date.as_deref()
-                && let Ok(dt) = chrono::DateTime::parse_from_rfc3339(date_str) {
-                    *map.entry(dt.date_naive()).or_insert(0) += 1;
-                }
+                && let Ok(dt) = chrono::DateTime::parse_from_rfc3339(date_str)
+            {
+                *map.entry(dt.date_naive()).or_insert(0) += 1;
+            }
         }
 
         if done {

@@ -3,10 +3,7 @@ use crate::text_glyph::TextLine;
 const DEFAULT_SIZE: f32 = 16.0;
 
 pub fn parse_lines(content: &str) -> Vec<TextLine> {
-    content
-        .lines()
-        .filter_map(|raw| parse_line(raw))
-        .collect()
+    content.lines().filter_map(|raw| parse_line(raw)).collect()
 }
 
 fn parse_line(raw: &str) -> Option<TextLine> {
