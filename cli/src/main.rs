@@ -9,12 +9,12 @@ use readme_stuff_aggregator::{
     },
 };
 use readme_stuff_draw::{
-    Align, Theme, parse_lines, render_cf_rating, render_cf_stats, render_competitive,
-    render_cw_kata, render_cw_languages, render_cw_rank, render_github_commit_streak,
-    render_github_contributions, render_github_heatmap, render_github_monthly,
-    render_github_repos, render_github_social, render_github_stats, render_github_visitors,
-    render_langs, render_lc_badges, render_lc_languages, render_lc_skills, render_lc_solved,
-    render_streak, render_text_card,
+    Align, DEFAULT_HEIGHT, DEFAULT_WIDTH, Theme, parse_lines, render_cf_rating, render_cf_stats,
+    render_competitive, render_cw_kata, render_cw_languages, render_cw_rank,
+    render_github_commit_streak, render_github_contributions, render_github_heatmap,
+    render_github_monthly, render_github_repos, render_github_social, render_github_stats,
+    render_github_visitors, render_langs, render_lc_badges, render_lc_languages, render_lc_skills,
+    render_lc_solved, render_streak, render_text_card,
 };
 use std::path::{Path, PathBuf};
 
@@ -199,6 +199,27 @@ fn cli_flag(name: &str) -> Option<String> {
         .cloned()
 }
 
+fn positional_args() -> Vec<String> {
+    const VALUE_FLAGS: &[&str] = &["--text-file", "--text-align"];
+    const BOOL_FLAGS: &[&str] = &["--text-only"];
+
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    let mut positional = Vec::new();
+    let mut i = 0;
+    while i < args.len() {
+        let a = &args[i];
+        if VALUE_FLAGS.contains(&a.as_str()) {
+            i += 2;
+        } else if BOOL_FLAGS.contains(&a.as_str()) {
+            i += 1;
+        } else {
+            positional.push(a.clone());
+            i += 1;
+        }
+    }
+    positional
+}
+
 fn render_custom_text_card(out_dir: &Path) {
     let Some(path) = cli_flag("--text-file").or_else(|| std::env::var("TEXT_FILE").ok()) else {
         return;
@@ -211,6 +232,20 @@ fn render_custom_text_card(out_dir: &Path) {
         eprintln!("  custom-text: unknown align {align_str:?}, defaulting to left");
         Align::Left
     });
+
+    let positional = positional_args();
+    let svg_name = positional
+        .first()
+        .cloned()
+        .unwrap_or_else(|| "custom-text-dark.svg".to_owned());
+    let width = positional
+        .get(1)
+        .and_then(|s| s.parse::<u32>().ok())
+        .unwrap_or(DEFAULT_WIDTH);
+    let height = positional
+        .get(2)
+        .and_then(|s| s.parse::<u32>().ok())
+        .unwrap_or(DEFAULT_HEIGHT);
 
     let content = match std::fs::read_to_string(&path) {
         Ok(content) => content,
@@ -226,9 +261,9 @@ fn render_custom_text_card(out_dir: &Path) {
         return;
     }
 
-    let svg = render_text_card(&lines, align, Theme::Dark);
-    write_svg(out_dir, "custom-text-dark.svg", &svg);
-    eprintln!("  custom-text OK ({path}, align={align_str})");
+    let svg = render_text_card(&lines, align, Theme::Dark, width, height);
+    write_svg(out_dir, &svg_name, &svg);
+    eprintln!("  custom-text OK ({path}, align={align_str}, size={width}x{height}, file={svg_name})");
 }
 
 fn write_svg(dir: &Path, name: &str, content: &str) {
