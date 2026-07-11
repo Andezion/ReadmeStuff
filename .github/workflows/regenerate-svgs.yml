@@ -1,0 +1,112 @@
+name: Regenerate profile SVGs
+
+on:
+  schedule:
+    - cron: '0 */2 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: regenerate-svgs
+  cancel-in-progress: false
+
+env:
+  OUTPUT_DIR: readme_test
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run generator
+        id: run
+        env:
+          GITHUB_TOKEN: ${{ secrets.PROFILE_GITHUB_TOKEN }}
+        run: |
+          set +e
+          cargo run -p readme-stuff-cli > run.log 2>&1
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Show log
+        if: always()
+        run: cat run.log
+
+      - name: Upload log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: run-log-${{ github.run_id }}
+          path: run.log
+          retention-days: 14
+
+      - name: Fail on generator error
+        if: steps.run.outputs.exit_code != '0'
+        run: |
+          {
+            echo "## Generator failed (exit ${{ steps.run.outputs.exit_code }})"
+            echo '```'
+            tail -c 6000 run.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+      - name: Fail on skipped cards
+        run: |
+          if grep -q 'SKIP' run.log; then
+            {
+              echo "## Some cards were skipped (no data)"
+              echo '```'
+              grep 'SKIP' run.log
+              echo '```'
+              echo "Likely cause: missing/expired PROFILE_GITHUB_TOKEN secret or an upstream API error. Full log is attached as a workflow artifact."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+      - name: Validate generated SVGs
+        run: |
+          shopt -s nullglob
+          fail=0
+          for f in "$OUTPUT_DIR"/*.svg; do
+            if [ ! -s "$f" ]; then
+              echo "::error file=$f::file is empty"
+              fail=1
+              continue
+            fi
+            if ! python3 -c "import xml.dom.minidom,sys; xml.dom.minidom.parse(sys.argv[1])" "$f" 2>/tmp/xmlerr; then
+              echo "::error file=$f::not well-formed XML: $(cat /tmp/xmlerr)"
+              fail=1
+              continue
+            fi
+            if ! grep -q '<svg' "$f"; then
+              echo "::error file=$f::missing <svg> root element"
+              fail=1
+            fi
+          done
+          if [ "$fail" -ne 0 ]; then
+            echo "## SVG validation failed" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          echo "## All SVGs valid ($(ls "$OUTPUT_DIR"/*.svg | wc -l) files)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "$OUTPUT_DIR"
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: regenerate profile SVGs [skip ci]"
+            git push
+          fi
