@@ -130,6 +130,36 @@ impl GitHubClient {
             return Err(GitHubError::NotFound(url));
         }
 
+        if let Some(err) = rate_limit_error(&resp) {
+            return Err(err);
+        }
+
         Ok(resp.error_for_status()?.json().await?)
     }
+}
+
+
+fn rate_limit_error(resp: &reqwest::Response) -> Option<GitHubError> {
+    if resp.status().as_u16() != 403 {
+        return None;
+    }
+
+    let headers = resp.headers();
+    let is_primary = headers
+        .get("x-ratelimit-remaining")
+        .and_then(|v| v.to_str().ok())
+        == Some("0");
+    let is_secondary = headers.contains_key("retry-after");
+
+    if !is_primary && !is_secondary {
+        return None;
+    }
+
+    let reset_at = headers
+        .get("retry-after")
+        .or_else(|| headers.get("x-ratelimit-reset"))
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("unknown")
+        .to_string();
+    Some(GitHubError::RateLimit { reset_at })
 }
