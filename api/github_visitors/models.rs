@@ -203,6 +203,7 @@ pub struct RepositoryTrafficSummary {
     pub total_unique_cloners_all_time: u64,
     pub top_referrers: Vec<TrafficReferrer>,
     pub top_paths: Vec<TrafficPath>,
+    pub trend: TrafficTrend,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -214,6 +215,16 @@ pub struct TrendPoint {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum TrendHighlight {
+    RecordDay { date: NaiveDate, value: u64 },
+    Spike {
+        date: NaiveDate,
+        value: u64,
+        baseline: f64,
+    },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TrafficTrend {
     pub data_points: Vec<TrendPoint>,
     pub growth_rate_pct: f64,
@@ -221,6 +232,7 @@ pub struct TrafficTrend {
     pub average_daily: f64,
     pub peak_day: Option<NaiveDate>,
     pub peak_value: u64,
+    pub highlight: Option<TrendHighlight>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -271,6 +283,8 @@ pub struct VisitorAnalytics {
     pub total_unique_cloners_all_time: u64,
     pub top_referrers: Vec<TrafficReferrer>,
     pub top_paths: Vec<TrafficPath>,
+    pub weekly_views: Vec<(NaiveDate, u64)>,
+    pub referrer_trend: Vec<(String, String, u64)>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
