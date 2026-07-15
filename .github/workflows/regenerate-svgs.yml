@@ -49,31 +49,8 @@ jobs:
           path: run.log
           retention-days: 14
 
-      - name: Fail on generator error
-        if: steps.run.outputs.exit_code != '0'
-        run: |
-          {
-            echo "## Generator failed (exit ${{ steps.run.outputs.exit_code }})"
-            echo '```'
-            tail -c 6000 run.log
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-          exit 1
-
-      - name: Fail on skipped cards
-        run: |
-          if grep -q 'SKIP' run.log; then
-            {
-              echo "## Some cards were skipped (no data)"
-              echo '```'
-              grep 'SKIP' run.log
-              echo '```'
-              echo "Likely cause: missing/expired PROFILE_GITHUB_TOKEN secret or an upstream API error. Full log is attached as a workflow artifact."
-            } >> "$GITHUB_STEP_SUMMARY"
-            exit 1
-          fi
-
       - name: Validate generated SVGs
+        if: always()
         run: |
           shopt -s nullglob
           fail=0
@@ -109,4 +86,29 @@ jobs:
           else
             git commit -m "chore: regenerate profile SVGs [skip ci]"
             git push
+          fi
+
+      - name: Fail on generator error
+        if: always() && steps.run.outputs.exit_code != '0'
+        run: |
+          {
+            echo "## Generator failed (exit ${{ steps.run.outputs.exit_code }})"
+            echo '```'
+            tail -c 6000 run.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+      - name: Fail on skipped cards
+        if: always()
+        run: |
+          if grep -q 'SKIP' run.log; then
+            {
+              echo "## Some cards were skipped (no data)"
+              echo '```'
+              grep 'SKIP' run.log
+              echo '```'
+              echo "Likely cause: missing/expired PROFILE_GITHUB_TOKEN secret or an upstream API error. Full log is attached as a workflow artifact. Cards that succeeded were still committed."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
           fi
