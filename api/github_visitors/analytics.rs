@@ -1,7 +1,7 @@
 use crate::github_visitors::models::{
     FilterReason, FilterSummary, RepositoryTrafficSummary, TrafficDay, TrafficHeatmap,
-    TrafficPath, TrafficReferrer, TrafficSnapshot, TrafficTrend, TrendPoint, UniqueVisitorStats,
-    VisitorAnalytics, VisitorEvent,
+    TrafficPath, TrafficReferrer, TrafficSnapshot, TrafficTrend, TrendHighlight, TrendPoint,
+    UniqueVisitorStats, VisitorAnalytics, VisitorEvent,
 };
 use chrono::{Datelike, NaiveDate, Timelike, Utc};
 use std::collections::{BTreeMap, HashMap};
@@ -32,6 +32,8 @@ pub fn compute_analytics(
 
     let top_referrers = global_top_referrers(&repositories);
     let top_paths = global_top_paths(&repositories);
+    let weekly_views = weekly_totals(&trend.data_points);
+    let referrer_trend = monthly_top_referrer(snapshots);
 
     VisitorAnalytics {
         generated_at: Utc::now(),
@@ -46,7 +48,57 @@ pub fn compute_analytics(
         total_unique_cloners_all_time,
         top_referrers,
         top_paths,
+        weekly_views,
+        referrer_trend,
     }
+}
+
+pub fn weekly_totals(data_points: &[TrendPoint]) -> Vec<(NaiveDate, u64)> {
+    let mut weekly: BTreeMap<NaiveDate, u64> = BTreeMap::new();
+    for p in data_points {
+        let week_start = p.date - chrono::Duration::days(p.date.weekday().num_days_from_monday() as i64);
+        *weekly.entry(week_start).or_insert(0) += p.total;
+    }
+    weekly.into_iter().collect()
+}
+
+pub fn monthly_top_referrer(snapshots: &[TrafficSnapshot]) -> Vec<(String, String, u64)> {
+    let mut representative: HashMap<(String, String), &TrafficSnapshot> = HashMap::new();
+    for snap in snapshots {
+        let month = snap.captured_at.format("%Y-%m").to_string();
+        let key = (snap.repo.clone(), month);
+        representative
+            .entry(key)
+            .and_modify(|existing| {
+                if snap.captured_at > existing.captured_at {
+                    *existing = snap;
+                }
+            })
+            .or_insert(snap);
+    }
+
+    let mut by_month: BTreeMap<String, HashMap<String, u64>> = BTreeMap::new();
+    for ((_, month), snap) in &representative {
+        let entry = by_month.entry(month.clone()).or_default();
+        for r in &snap.referrers {
+            *entry.entry(r.referrer.clone()).or_insert(0) += r.count;
+        }
+    }
+
+    let mut months: Vec<(String, HashMap<String, u64>)> = by_month.into_iter().collect();
+    if months.len() > 12 {
+        months = months.split_off(months.len() - 12);
+    }
+
+    months
+        .into_iter()
+        .filter_map(|(month, referrers)| {
+            referrers
+                .into_iter()
+                .max_by_key(|(_, count)| *count)
+                .map(|(referrer, count)| (month, referrer, count))
+        })
+        .collect()
 }
 
 fn global_top_referrers(repositories: &[RepositoryTrafficSummary]) -> Vec<TrafficReferrer> {
@@ -125,6 +177,8 @@ pub fn aggregate_repo_traffic(snapshots: &[TrafficSnapshot]) -> Vec<RepositoryTr
             top_paths.sort_by_key(|p| std::cmp::Reverse(p.count));
             top_paths.truncate(10);
 
+            let trend = compute_trend_from_snapshots(snaps.iter().copied());
+
             RepositoryTrafficSummary {
                 repo,
                 latest_snapshot: latest,
@@ -134,6 +188,7 @@ pub fn aggregate_repo_traffic(snapshots: &[TrafficSnapshot]) -> Vec<RepositoryTr
                 total_unique_cloners_all_time: total_unique_cloners,
                 top_referrers,
                 top_paths,
+                trend,
             }
         })
         .collect();
@@ -154,7 +209,9 @@ fn dedup_day_totals<'a>(days: impl Iterator<Item = &'a TrafficDay>) -> (u64, u64
         .fold((0, 0), |(tc, tu), (c, u)| (tc + c, tu + u))
 }
 
-pub fn compute_trend_from_snapshots(snapshots: &[TrafficSnapshot]) -> TrafficTrend {
+pub fn compute_trend_from_snapshots<'a>(
+    snapshots: impl IntoIterator<Item = &'a TrafficSnapshot>,
+) -> TrafficTrend {
     let mut daily: BTreeMap<NaiveDate, (u64, u64)> = BTreeMap::new();
     for snap in snapshots {
         for d in &snap.views.days {
@@ -172,6 +229,7 @@ pub fn compute_trend_from_snapshots(snapshots: &[TrafficSnapshot]) -> TrafficTre
             average_daily: 0.0,
             peak_day: None,
             peak_value: 0,
+            highlight: None,
         };
     }
 
@@ -212,6 +270,7 @@ pub fn compute_trend_from_snapshots(snapshots: &[TrafficSnapshot]) -> TrafficTre
     };
 
     let average_daily = data_points.iter().map(|p| p.total).sum::<u64>() as f64 / n as f64;
+    let highlight = detect_highlight(&data_points, peak_value);
 
     TrafficTrend {
         data_points,
@@ -220,7 +279,40 @@ pub fn compute_trend_from_snapshots(snapshots: &[TrafficSnapshot]) -> TrafficTre
         average_daily,
         peak_day,
         peak_value,
+        highlight,
     }
+}
+
+fn detect_highlight(data_points: &[TrendPoint], peak_value: u64) -> Option<TrendHighlight> {
+    let latest = data_points.last()?;
+
+    if peak_value > 0 && latest.total == peak_value {
+        return Some(TrendHighlight::RecordDay {
+            date: latest.date,
+            value: latest.total,
+        });
+    }
+
+    const BASELINE_WINDOW: usize = 14;
+    let end = data_points.len() - 1;
+    let start = end.saturating_sub(BASELINE_WINDOW);
+    let baseline_points = &data_points[start..end];
+    if baseline_points.is_empty() {
+        return None;
+    }
+
+    let baseline =
+        baseline_points.iter().map(|p| p.total as f64).sum::<f64>() / baseline_points.len() as f64;
+
+    if baseline > 0.0 && latest.total as f64 > baseline * 2.0 {
+        return Some(TrendHighlight::Spike {
+            date: latest.date,
+            value: latest.total,
+            baseline,
+        });
+    }
+
+    None
 }
 
 pub fn build_heatmap(events: &[VisitorEvent]) -> TrafficHeatmap {
@@ -443,6 +535,42 @@ mod tests {
     }
 
     #[test]
+    fn per_repo_trend_is_independent_of_other_repos() {
+        let base = NaiveDate::from_ymd_opt(2024, 5, 1).unwrap();
+        let growing_days: Vec<(NaiveDate, u64, u64)> = (0..10i64)
+            .map(|i| (base + chrono::Duration::days(i), (i as u64 + 1) * 10, 0))
+            .collect();
+        let flat_days: Vec<(NaiveDate, u64, u64)> = (0..10i64)
+            .map(|i| (base + chrono::Duration::days(i), 5, 0))
+            .collect();
+
+        let snaps = vec![
+            make_snap(
+                "Andezion/growing",
+                &growing_days,
+                growing_days.iter().map(|(_, c, _)| c).sum(),
+                0,
+            ),
+            make_snap(
+                "Andezion/flat",
+                &flat_days,
+                flat_days.iter().map(|(_, c, _)| c).sum(),
+                0,
+            ),
+        ];
+
+        let summaries = aggregate_repo_traffic(&snaps);
+        let growing = summaries
+            .iter()
+            .find(|s| s.repo == "Andezion/growing")
+            .unwrap();
+        let flat = summaries.iter().find(|s| s.repo == "Andezion/flat").unwrap();
+
+        assert!(growing.trend.is_growing);
+        assert!(growing.trend.growth_rate_pct > flat.trend.growth_rate_pct);
+    }
+
+    #[test]
     fn heatmap_populated_correctly() {
         let events = vec![
             make_event(true, Some("id-1"), 0),
@@ -503,6 +631,38 @@ mod tests {
     }
 
     #[test]
+    fn highlight_flags_record_day() {
+        let base = NaiveDate::from_ymd_opt(2024, 5, 1).unwrap();
+        let days: Vec<(NaiveDate, u64, u64)> = (0..5i64)
+            .map(|i| (base + chrono::Duration::days(i), (i as u64 + 1) * 10, 0))
+            .collect();
+        let snap = make_snap("repo", &days, days.iter().map(|(_, c, _)| c).sum(), 0);
+        let trend = compute_trend_from_snapshots(&[snap]);
+        match trend.highlight {
+            Some(TrendHighlight::RecordDay { value, .. }) => assert_eq!(value, 50),
+            other => panic!("expected RecordDay highlight, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn highlight_flags_spike_without_beating_record() {
+        let base = NaiveDate::from_ymd_opt(2024, 5, 1).unwrap();
+        
+        let mut days: Vec<(NaiveDate, u64, u64)> = (0..14i64)
+            .map(|i| (base + chrono::Duration::days(i), 10, 0))
+            .collect();
+        days[0].1 = 500; // untouchable all-time peak
+        days.push((base + chrono::Duration::days(14), 100, 0));
+
+        let snap = make_snap("repo", &days, days.iter().map(|(_, c, _)| c).sum(), 0);
+        let trend = compute_trend_from_snapshots(&[snap]);
+        match trend.highlight {
+            Some(TrendHighlight::Spike { value, .. }) => assert_eq!(value, 100),
+            other => panic!("expected Spike highlight, got {other:?}"),
+        }
+    }
+
+    #[test]
     fn daily_active_visitors_deduplicates() {
         let d1 = NaiveDate::from_ymd_opt(2024, 5, 1).unwrap();
         let day_start = d1.and_hms_opt(0, 0, 0).unwrap().and_utc().timestamp();
@@ -513,5 +673,75 @@ mod tests {
         ];
         let dav = daily_active_visitors(&events);
         assert_eq!(dav[&d1], 2);
+    }
+
+    #[test]
+    fn weekly_totals_buckets_by_iso_week() {
+        let points = vec![
+            TrendPoint {
+                date: NaiveDate::from_ymd_opt(2024, 4, 29).unwrap(),
+                total: 10,
+                unique: 0,
+                delta: 0,
+            },
+            TrendPoint {
+                date: NaiveDate::from_ymd_opt(2024, 5, 5).unwrap(),
+                total: 20,
+                unique: 0,
+                delta: 0,
+            },
+            TrendPoint {
+                date: NaiveDate::from_ymd_opt(2024, 5, 6).unwrap(),
+                total: 5,
+                unique: 0,
+                delta: 0,
+            },
+        ];
+
+        let weekly = weekly_totals(&points);
+        assert_eq!(weekly.len(), 2);
+        assert_eq!(weekly[0].0, NaiveDate::from_ymd_opt(2024, 4, 29).unwrap());
+        assert_eq!(weekly[0].1, 30);
+        assert_eq!(weekly[1].0, NaiveDate::from_ymd_opt(2024, 5, 6).unwrap());
+        assert_eq!(weekly[1].1, 5);
+    }
+
+    fn make_snap_with_referrers(
+        repo: &str,
+        captured_at: chrono::DateTime<Utc>,
+        referrers: &[(&str, u64)],
+    ) -> TrafficSnapshot {
+        let mut snap = make_snap("repo-placeholder", &[], 0, 0);
+        snap.repo = repo.to_string();
+        snap.captured_at = captured_at;
+        snap.referrers = referrers
+            .iter()
+            .map(|(name, count)| crate::github_visitors::models::TrafficReferrer {
+                referrer: name.to_string(),
+                count: *count,
+                uniques: *count,
+            })
+            .collect();
+        snap
+    }
+
+    #[test]
+    fn monthly_top_referrer_picks_latest_snapshot_per_repo_per_month() {
+        use chrono::TimeZone;
+
+        let may_early = Utc.with_ymd_and_hms(2024, 5, 1, 0, 0, 0).unwrap();
+        let may_late = Utc.with_ymd_and_hms(2024, 5, 20, 0, 0, 0).unwrap();
+        let june = Utc.with_ymd_and_hms(2024, 6, 5, 0, 0, 0).unwrap();
+
+        let snaps = vec![
+            make_snap_with_referrers("A/repo", may_early, &[("old.com", 100)]),
+            make_snap_with_referrers("A/repo", may_late, &[("github.com", 50)]),
+            make_snap_with_referrers("A/repo", june, &[("google.com", 30)]),
+        ];
+
+        let trend = monthly_top_referrer(&snaps);
+        assert_eq!(trend.len(), 2);
+        assert_eq!(trend[0], ("2024-05".to_string(), "github.com".to_string(), 50));
+        assert_eq!(trend[1], ("2024-06".to_string(), "google.com".to_string(), 30));
     }
 }
