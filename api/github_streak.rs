@@ -121,24 +121,38 @@ impl GitHubStreakApi {
 
     pub async fn fetch_current_year_calendar(&self, login: &str) -> Result<ContributionCalendar> {
         let year = Utc::now().year();
-        let data: UserRoot = self
+
+        let first: UserRoot = self
             .client
             .graphql(
                 CALENDAR_QUERY,
                 json!({
                     "login": login,
                     "from": format!("{year}-01-01T00:00:00Z"),
+                    "to":   format!("{year}-06-30T23:59:59Z"),
+                }),
+            )
+            .await?;
+        let second: UserRoot = self
+            .client
+            .graphql(
+                CALENDAR_QUERY,
+                json!({
+                    "login": login,
+                    "from": format!("{year}-07-01T00:00:00Z"),
                     "to":   format!("{year}-12-31T23:59:59Z"),
                 }),
             )
             .await?;
 
-        let cal = data.user.contributions_collection.contribution_calendar;
+        let cal1 = first.user.contributions_collection.contribution_calendar;
+        let cal2 = second.user.contributions_collection.contribution_calendar;
         Ok(ContributionCalendar {
-            total_contributions: cal.total_contributions,
-            weeks: cal
+            total_contributions: cal1.total_contributions + cal2.total_contributions,
+            weeks: cal1
                 .weeks
                 .into_iter()
+                .chain(cal2.weeks)
                 .map(|w| ContributionWeek {
                     contribution_days: w
                         .contribution_days
@@ -153,40 +167,37 @@ impl GitHubStreakApi {
     async fn fetch_all_days(&self, login: &str) -> Result<Vec<ContributionDay>> {
         use tokio::task::JoinSet;
 
-        let now = Utc::now();
-        let current_year = now.year();
-
-        const MIN_YEAR: i32 = 2008;
+        const MIN_YEAR: i32 = 1969;
+        const MAX_YEAR: i32 = 2030;
         let sem = Arc::new(tokio::sync::Semaphore::new(8));
         let mut set: JoinSet<Vec<ContributionDay>> = JoinSet::new();
 
-        for year in MIN_YEAR..=current_year {
-            let client = self.client.clone();
-            let login = login.to_owned();
-            let sem = sem.clone();
-            set.spawn(async move {
-                let Ok(_permit) = sem.acquire_owned().await else {
-                    return vec![];
-                };
-                let Ok(data): Result<UserRoot> = client
-                    .graphql(
-                        CALENDAR_QUERY,
-                        json!({
-                            "login": login,
-                            "from": format!("{year}-01-01T00:00:00Z"),
-                            "to":   format!("{year}-12-31T23:59:59Z"),
-                        }),
-                    )
-                    .await
-                else {
-                    return vec![];
-                };
-                let cal = data.user.contributions_collection.contribution_calendar;
-                if cal.total_contributions == 0 {
-                    return vec![];
-                }
-                flatten_calendar(cal)
-            });
+    
+        for year in MIN_YEAR..=MAX_YEAR {
+            for (from, to) in [
+                (format!("{year}-01-01T00:00:00Z"), format!("{year}-06-30T23:59:59Z")),
+                (format!("{year}-07-01T00:00:00Z"), format!("{year}-12-31T23:59:59Z")),
+            ] {
+                let client = self.client.clone();
+                let login = login.to_owned();
+                let sem = sem.clone();
+                set.spawn(async move {
+                    let Ok(_permit) = sem.acquire_owned().await else {
+                        return vec![];
+                    };
+                    let Ok(data): Result<UserRoot> = client
+                        .graphql(CALENDAR_QUERY, json!({ "login": login, "from": from, "to": to }))
+                        .await
+                    else {
+                        return vec![];
+                    };
+                    let cal = data.user.contributions_collection.contribution_calendar;
+                    if cal.total_contributions == 0 {
+                        return vec![];
+                    }
+                    flatten_calendar(cal)
+                });
+            }
         }
 
         let mut all = Vec::new();
