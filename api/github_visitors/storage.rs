@@ -36,7 +36,23 @@ pub trait VisitorStorage: Send + Sync {
         limit: u32,
     ) -> StorageResult<Vec<TrafficSnapshot>>;
 
+    async fn compact_snapshots(&self) -> StorageResult<u64>;
+
     async fn export_json(&self, path: &Path) -> StorageResult<()>;
+}
+
+fn keep_latest_per_repo_day(snapshots: Vec<TrafficSnapshot>) -> Vec<TrafficSnapshot> {
+    use std::collections::HashMap;
+    let mut by_key: HashMap<(String, chrono::NaiveDate), TrafficSnapshot> = HashMap::new();
+    let mut ordered = snapshots;
+    ordered.sort_by_key(|s| s.captured_at);
+    for s in ordered {
+        let key = (s.repo.clone(), s.captured_at.date_naive());
+        by_key.insert(key, s);
+    }
+    let mut out: Vec<TrafficSnapshot> = by_key.into_values().collect();
+    out.sort_by_key(|s| s.captured_at);
+    out
 }
 
 #[derive(Debug, Default, Clone)]
@@ -113,6 +129,14 @@ impl VisitorStorage for InMemoryStorage {
             .cloned()
             .collect();
         Ok(result)
+    }
+
+    async fn compact_snapshots(&self) -> StorageResult<u64> {
+        let mut snaps = self.snapshots.write().await;
+        let before = snaps.len();
+        let compacted = keep_latest_per_repo_day(std::mem::take(&mut *snaps));
+        *snaps = compacted;
+        Ok((before - snaps.len()) as u64)
     }
 
     async fn export_json(&self, path: &Path) -> StorageResult<()> {
@@ -326,6 +350,26 @@ impl VisitorStorage for SqliteStorage {
         Ok(snaps)
     }
 
+    async fn compact_snapshots(&self) -> StorageResult<u64> {
+        let result = sqlx::query(
+            "DELETE FROM traffic_snapshots
+             WHERE id NOT IN (
+                 SELECT id FROM (
+                     SELECT id,
+                            ROW_NUMBER() OVER (
+                                PARTITION BY repo, date(captured_at)
+                                ORDER BY captured_at DESC
+                            ) AS rn
+                     FROM traffic_snapshots
+                 )
+                 WHERE rn = 1
+             )",
+        )
+        .execute(&self.pool)
+        .await?;
+        Ok(result.rows_affected())
+    }
+
     async fn export_json(&self, path: &Path) -> StorageResult<()> {
         use tokio::io::AsyncWriteExt;
 
@@ -443,6 +487,22 @@ impl VisitorStorage for JsonStorage {
         Ok(snaps)
     }
 
+    async fn compact_snapshots(&self) -> StorageResult<u64> {
+        use tokio::io::AsyncWriteExt;
+
+        let all = self.get_snapshots(None, u32::MAX).await?;
+        let before = all.len();
+        let compacted = keep_latest_per_repo_day(all);
+        let removed = (before - compacted.len()) as u64;
+
+        let mut file = tokio::fs::File::create(&self.snapshots_path).await?;
+        for s in &compacted {
+            let line = serde_json::to_string(s)? + "\n";
+            file.write_all(line.as_bytes()).await?;
+        }
+        Ok(removed)
+    }
+
     async fn export_json(&self, path: &Path) -> StorageResult<()> {
         tokio::fs::copy(&self.events_path, path).await?;
         Ok(())
@@ -536,6 +596,7 @@ mod tests {
     use crate::github_visitors::models::{
         EventSource, FilterResult, TrafficClones, TrafficViews, VisitTarget, VisitorEvent,
     };
+    use chrono::TimeZone;
     use uuid::Uuid;
 
     fn make_event() -> VisitorEvent {
@@ -553,12 +614,20 @@ mod tests {
     }
 
     fn make_snapshot(repo: &str) -> TrafficSnapshot {
+        make_snapshot_at(repo, Utc::now(), 42)
+    }
+
+    fn make_snapshot_at(
+        repo: &str,
+        captured_at: chrono::DateTime<Utc>,
+        views_count: u64,
+    ) -> TrafficSnapshot {
         TrafficSnapshot {
             id: Uuid::new_v4(),
-            captured_at: Utc::now(),
+            captured_at,
             repo: repo.to_string(),
             views: TrafficViews {
-                count: 42,
+                count: views_count,
                 uniques: 20,
                 days: vec![],
             },
@@ -657,5 +726,63 @@ mod tests {
         store.export_json(&tmp).await.unwrap();
         assert!(tmp.exists());
         tokio::fs::remove_file(tmp).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn in_memory_compact_keeps_latest_per_repo_day() {
+        let store = InMemoryStorage::new();
+        let day1 = Utc.with_ymd_and_hms(2024, 5, 1, 0, 0, 0).unwrap();
+        let day1_later = Utc.with_ymd_and_hms(2024, 5, 1, 12, 0, 0).unwrap();
+        let day2 = Utc.with_ymd_and_hms(2024, 5, 2, 0, 0, 0).unwrap();
+
+        store
+            .save_snapshot(&make_snapshot_at("A/repo", day1, 10))
+            .await
+            .unwrap();
+        store
+            .save_snapshot(&make_snapshot_at("A/repo", day1_later, 20))
+            .await
+            .unwrap();
+        store
+            .save_snapshot(&make_snapshot_at("A/repo", day2, 30))
+            .await
+            .unwrap();
+
+        let removed = store.compact_snapshots().await.unwrap();
+        assert_eq!(removed, 1);
+
+        let snaps = store.get_snapshots(None, 10).await.unwrap();
+        assert_eq!(snaps.len(), 2);
+        let day1_snap = snaps.iter().find(|s| s.captured_at == day1_later).unwrap();
+        assert_eq!(day1_snap.views.count, 20, "should keep the later day-1 snapshot");
+    }
+
+    #[tokio::test]
+    async fn sqlite_compact_keeps_latest_per_repo_day() {
+        let store = SqliteStorage::open_in_memory().await.unwrap();
+        let day1 = Utc.with_ymd_and_hms(2024, 5, 1, 0, 0, 0).unwrap();
+        let day1_later = Utc.with_ymd_and_hms(2024, 5, 1, 12, 0, 0).unwrap();
+        let day2 = Utc.with_ymd_and_hms(2024, 5, 2, 0, 0, 0).unwrap();
+
+        store
+            .save_snapshot(&make_snapshot_at("A/repo", day1, 10))
+            .await
+            .unwrap();
+        store
+            .save_snapshot(&make_snapshot_at("A/repo", day1_later, 20))
+            .await
+            .unwrap();
+        store
+            .save_snapshot(&make_snapshot_at("A/repo", day2, 30))
+            .await
+            .unwrap();
+
+        let removed = store.compact_snapshots().await.unwrap();
+        assert_eq!(removed, 1);
+
+        let snaps = store.get_snapshots(None, 10).await.unwrap();
+        assert_eq!(snaps.len(), 2);
+        assert!(snaps.iter().any(|s| s.views.count == 20));
+        assert!(!snaps.iter().any(|s| s.views.count == 10));
     }
 }
