@@ -80,6 +80,15 @@ impl GithubVisitorsService {
             count = snapshots.len(),
             "refreshed traffic snapshots from GitHub"
         );
+
+        match self.storage.compact_snapshots().await {
+            Ok(removed) if removed > 0 => {
+                tracing::info!(removed, "compacted redundant traffic snapshots");
+            }
+            Ok(_) => {}
+            Err(e) => tracing::warn!("snapshot compaction failed: {e}"),
+        }
+
         Ok(snapshots)
     }
 
