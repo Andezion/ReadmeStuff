@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use readme_stuff_api::codeforce::Verdict;
+use readme_stuff_api::github_visitors::models::TrendHighlight;
 
 use crate::models::UserProfile;
 
@@ -9,12 +10,15 @@ pub struct GithubVisitorsWidget {
     pub total_unique: u64,
     pub total_clones: u64,
     pub total_unique_cloners: u64,
-    pub top_repos: Vec<(String, u64)>,
+    pub top_repos: Vec<(String, u64, f64)>,
     pub top_referrer: Option<(String, u64)>,
     pub growth_rate_pct: f64,
     pub is_growing: bool,
     pub peak_day: Option<chrono::NaiveDate>,
     pub peak_value: u64,
+    pub highlight: Option<TrendHighlight>,
+    pub weekly_views: Vec<(chrono::NaiveDate, u64)>,
+    pub referrer_trend: Vec<(String, String, u64)>,
 }
 
 pub fn github_visitors_widget(p: &UserProfile) -> Option<GithubVisitorsWidget> {
@@ -28,12 +32,18 @@ pub fn github_visitors_widget(p: &UserProfile) -> Option<GithubVisitorsWidget> {
     if total_views == 0 {
         return None;
     }
+    let top_repos = v
+        .repositories
+        .iter()
+        .filter(|r| r.total_views_all_time > 0)
+        .map(|r| (r.repo.clone(), r.total_views_all_time, r.trend.growth_rate_pct))
+        .collect();
     Some(GithubVisitorsWidget {
         total_views,
         total_unique,
         total_clones: v.total_clones_all_time,
         total_unique_cloners: v.total_unique_cloners_all_time,
-        top_repos: v.top_repos_by_views.clone(),
+        top_repos,
         top_referrer: v
             .top_referrers
             .first()
@@ -42,6 +52,9 @@ pub fn github_visitors_widget(p: &UserProfile) -> Option<GithubVisitorsWidget> {
         is_growing: v.trend.is_growing,
         peak_day: v.trend.peak_day,
         peak_value: v.trend.peak_value,
+        highlight: v.trend.highlight.clone(),
+        weekly_views: v.weekly_views.clone(),
+        referrer_trend: v.referrer_trend.clone(),
     })
 }
 
