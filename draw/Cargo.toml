@@ -8,5 +8,6 @@ path = "src/lib.rs"
 
 [dependencies]
 readme-stuff-aggregator = { path = "../aggregator" }
+readme-stuff-api = { path = "../api" }
 chrono = { version = "0.4", features = ["serde"] }
 ttf-parser = "0.25.1"
