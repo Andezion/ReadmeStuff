@@ -88,7 +88,19 @@ jobs:
             echo "No changes to commit"
           else
             git commit -m "chore: regenerate profile SVGs [skip ci]"
-            git push
+            for attempt in 1 2 3 4 5; do
+              if git push; then
+                break
+              fi
+              if [ "$attempt" -eq 5 ]; then
+                echo "::error::push failed after $attempt attempts"
+                exit 1
+              fi
+              echo "Push rejected, retrying ($attempt)..."
+              git fetch origin "$(git rev-parse --abbrev-ref HEAD)"
+              git rebase "origin/$(git rev-parse --abbrev-ref HEAD)"
+              sleep $((attempt * 3))
+            done
           fi
 
       - name: Fail on generator error
