@@ -20,7 +20,7 @@ pub enum StorageError {
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
 
-    #[error("Backend not initialised — call `init()` first")]
+    #[error("Backend not initialised - call `init()` first")]
     NotInitialised,
 }
 
@@ -358,6 +358,7 @@ pub struct JsonStorage {
 impl JsonStorage {
     pub fn new(dir: impl AsRef<Path>) -> Self {
         let d = dir.as_ref();
+        let _ = std::fs::create_dir_all(d);
         Self {
             events_path: d.join("visitor_events.jsonl"),
             snapshots_path: d.join("traffic_snapshots.jsonl"),
