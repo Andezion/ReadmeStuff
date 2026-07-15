@@ -58,6 +58,7 @@ impl GitHubClient {
     pub fn new(token: impl Into<String>) -> Result<Self> {
         let client = Client::builder()
             .user_agent("readme-stuff-api/1.0")
+            .timeout(std::time::Duration::from_secs(30))
             .build()
             .map_err(GitHubError::Http)?;
         Ok(Self {
@@ -85,14 +86,8 @@ impl GitHubClient {
             .send()
             .await?;
 
-        if resp.status().as_u16() == 403 {
-            let reset = resp
-                .headers()
-                .get("x-ratelimit-reset")
-                .and_then(|v| v.to_str().ok())
-                .unwrap_or("unknown")
-                .to_string();
-            return Err(GitHubError::RateLimit { reset_at: reset });
+        if let Some(err) = rate_limit_error(&resp) {
+            return Err(err);
         }
 
         let gql: GraphQLResponse<T> = resp.error_for_status()?.json().await?;
@@ -138,9 +133,9 @@ impl GitHubClient {
     }
 }
 
-
 fn rate_limit_error(resp: &reqwest::Response) -> Option<GitHubError> {
-    if resp.status().as_u16() != 403 {
+    let status = resp.status().as_u16();
+    if status != 403 && status != 429 {
         return None;
     }
 
@@ -149,7 +144,7 @@ fn rate_limit_error(resp: &reqwest::Response) -> Option<GitHubError> {
         .get("x-ratelimit-remaining")
         .and_then(|v| v.to_str().ok())
         == Some("0");
-    let is_secondary = headers.contains_key("retry-after");
+    let is_secondary = status == 429 || headers.contains_key("retry-after");
 
     if !is_primary && !is_secondary {
         return None;
