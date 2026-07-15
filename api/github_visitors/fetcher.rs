@@ -111,7 +111,7 @@ impl TrafficFetcher {
                 Err(GitHubError::Http(ref e))
                     if e.status().map(|s| s.as_u16() == 403).unwrap_or(false) =>
                 {
-                    tracing::debug!("no push access to {login}/{name} — skipping traffic fetch");
+                    tracing::debug!("no push access to {login}/{name} - skipping traffic fetch");
                 }
                 Err(e) => return Err(e),
             }
@@ -251,7 +251,7 @@ mod tests {
         println!("Fetched {} repo traffic snapshots", snapshots.len());
         for s in &snapshots {
             println!(
-                "  {} — views: {}  unique: {}",
+                "  {} - views: {}  unique: {}",
                 s.repo, s.views.count, s.views.uniques
             );
         }

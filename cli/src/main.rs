@@ -3,18 +3,19 @@ use readme_stuff_aggregator::{
     widgets::{
         cf_rating_widget, cf_stats_widget, commit_streak_widget, competitive_widget,
         cw_kata_widget, cw_languages_widget, cw_rank_widget, github_contributions_widget,
-        github_heatmap_widget, github_monthly_widget, github_repos_widget, github_social_widget,
-        github_stats_widget, github_visitors_widget, langs_widget, lc_badges_widget,
-        lc_languages_widget, lc_skills_widget, lc_solved_widget, streak_widget,
+        github_engagement_widget, github_heatmap_widget, github_monthly_widget,
+        github_repos_widget, github_social_widget, github_stats_widget, github_visitors_widget,
+        langs_widget, lc_badges_widget, lc_languages_widget, lc_skills_widget, lc_solved_widget,
+        streak_widget,
     },
 };
 use readme_stuff_draw::{
     Align, DEFAULT_HEIGHT, DEFAULT_WIDTH, Theme, parse_lines, render_cf_rating, render_cf_stats,
     render_competitive, render_cw_kata, render_cw_languages, render_cw_rank,
-    render_github_commit_streak, render_github_contributions, render_github_heatmap,
-    render_github_monthly, render_github_repos, render_github_social, render_github_stats,
-    render_github_visitors, render_langs, render_lc_badges, render_lc_languages, render_lc_skills,
-    render_lc_solved, render_streak, render_text_card,
+    render_github_commit_streak, render_github_contributions, render_github_engagement,
+    render_github_heatmap, render_github_monthly, render_github_repos, render_github_social,
+    render_github_stats, render_github_visitors, render_langs, render_lc_badges,
+    render_lc_languages, render_lc_skills, render_lc_solved, render_streak, render_text_card,
 };
 use std::path::{Path, PathBuf};
 
@@ -158,6 +159,12 @@ async fn main() {
         "github-visitors",
         github_visitors_widget(&profile),
         |w| render_github_visitors(&w, Theme::Dark),
+        &out_dir,
+    );
+    render_card(
+        "github-engagement",
+        github_engagement_widget(&profile),
+        |w| render_github_engagement(&w, Theme::Dark),
         &out_dir,
     );
     render_card(

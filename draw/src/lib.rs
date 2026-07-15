@@ -46,6 +46,7 @@ pub use github_repos::render_github_repos;
 pub use github_social::render_github_social;
 pub use github_stats::render_github_stats;
 pub use github_visitors::render_github_commit_streak;
+pub use github_visitors::render_github_engagement;
 pub use github_visitors::render_github_visitors;
 
 // GitHub streak / langs (kept)

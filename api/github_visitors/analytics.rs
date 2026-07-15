@@ -1,6 +1,7 @@
 use crate::github_visitors::models::{
-    FilterReason, FilterSummary, RepositoryTrafficSummary, TrafficHeatmap, TrafficSnapshot,
-    TrafficTrend, TrendPoint, UniqueVisitorStats, VisitorAnalytics, VisitorEvent,
+    FilterReason, FilterSummary, RepositoryTrafficSummary, TrafficDay, TrafficHeatmap,
+    TrafficPath, TrafficReferrer, TrafficSnapshot, TrafficTrend, TrendPoint, UniqueVisitorStats,
+    VisitorAnalytics, VisitorEvent,
 };
 use chrono::{Datelike, NaiveDate, Timelike, Utc};
 use std::collections::{BTreeMap, HashMap};
@@ -18,9 +19,19 @@ pub fn compute_analytics(
 
     let mut top_repos: Vec<(String, u64)> = repositories
         .iter()
+        .filter(|r| r.total_views_all_time > 0)
         .map(|r| (r.repo.clone(), r.total_views_all_time))
         .collect();
     top_repos.sort_by_key(|b| std::cmp::Reverse(b.1));
+
+    let total_clones_all_time = repositories.iter().map(|r| r.total_clones_all_time).sum();
+    let total_unique_cloners_all_time = repositories
+        .iter()
+        .map(|r| r.total_unique_cloners_all_time)
+        .sum();
+
+    let top_referrers = global_top_referrers(&repositories);
+    let top_paths = global_top_paths(&repositories);
 
     VisitorAnalytics {
         generated_at: Utc::now(),
@@ -30,8 +41,58 @@ pub fn compute_analytics(
         heatmap,
         filter_summary,
         returning_visitor_ratio: returning,
-        top_repos_by_views: top_repos.into_iter().take(10).collect(),
+        top_repos_by_views: top_repos,
+        total_clones_all_time,
+        total_unique_cloners_all_time,
+        top_referrers,
+        top_paths,
     }
+}
+
+fn global_top_referrers(repositories: &[RepositoryTrafficSummary]) -> Vec<TrafficReferrer> {
+    let mut merged: HashMap<String, (u64, u64)> = HashMap::new();
+    for repo in repositories {
+        for r in &repo.top_referrers {
+            let e = merged.entry(r.referrer.clone()).or_default();
+            e.0 += r.count;
+            e.1 += r.uniques;
+        }
+    }
+    let mut out: Vec<_> = merged
+        .into_iter()
+        .map(|(referrer, (count, uniques))| TrafficReferrer {
+            referrer,
+            count,
+            uniques,
+        })
+        .collect();
+    out.sort_by_key(|r| std::cmp::Reverse(r.count));
+    out.truncate(10);
+    out
+}
+
+fn global_top_paths(repositories: &[RepositoryTrafficSummary]) -> Vec<TrafficPath> {
+    let mut merged: HashMap<(String, String), (u64, u64)> = HashMap::new();
+    for repo in repositories {
+        for p in &repo.top_paths {
+            let full_path = format!("{}{}", repo.repo, p.path);
+            let e = merged.entry((full_path, p.title.clone())).or_default();
+            e.0 += p.count;
+            e.1 += p.uniques;
+        }
+    }
+    let mut out: Vec<_> = merged
+        .into_iter()
+        .map(|((path, title), (count, uniques))| TrafficPath {
+            path,
+            title,
+            count,
+            uniques,
+        })
+        .collect();
+    out.sort_by_key(|p| std::cmp::Reverse(p.count));
+    out.truncate(10);
+    out
 }
 
 pub fn aggregate_repo_traffic(snapshots: &[TrafficSnapshot]) -> Vec<RepositoryTrafficSummary> {
@@ -43,55 +104,25 @@ pub fn aggregate_repo_traffic(snapshots: &[TrafficSnapshot]) -> Vec<RepositoryTr
     let mut summaries: Vec<RepositoryTrafficSummary> = by_repo
         .into_iter()
         .map(|(repo, snaps)| {
-            let total_views: u64 = snaps.iter().map(|s| s.views.count).sum();
-            let total_unique: u64 = snaps.iter().map(|s| s.views.uniques).sum();
-            let total_clones: u64 = snaps.iter().map(|s| s.clones.count).sum();
+            let (total_views, total_unique) =
+                dedup_day_totals(snaps.iter().flat_map(|s| s.views.days.iter()));
+            let (total_clones, total_unique_cloners) =
+                dedup_day_totals(snaps.iter().flat_map(|s| s.clones.days.iter()));
 
             let latest = snaps.iter().max_by_key(|s| s.captured_at).copied().cloned();
 
-            let mut ref_map: HashMap<String, (u64, u64)> = HashMap::new();
-            for s in &snaps {
-                for r in &s.referrers {
-                    let e = ref_map.entry(r.referrer.clone()).or_default();
-                    e.0 += r.count;
-                    e.1 += r.uniques;
-                }
-            }
-            let mut top_referrers: Vec<_> = ref_map
-                .into_iter()
-                .map(|(referrer, (count, uniques))| {
-                    crate::github_visitors::models::TrafficReferrer {
-                        referrer,
-                        count,
-                        uniques,
-                    }
-                })
-                .collect();
-            top_referrers.sort_by_key(|b| std::cmp::Reverse(b.count));
+            let mut top_referrers = latest
+                .as_ref()
+                .map(|s| s.referrers.clone())
+                .unwrap_or_default();
+            top_referrers.sort_by_key(|r| std::cmp::Reverse(r.count));
             top_referrers.truncate(10);
 
-            let mut path_map: HashMap<String, (String, u64, u64)> = HashMap::new();
-            for s in &snaps {
-                for p in &s.top_paths {
-                    let e = path_map
-                        .entry(p.path.clone())
-                        .or_insert((p.title.clone(), 0, 0));
-                    e.1 += p.count;
-                    e.2 += p.uniques;
-                }
-            }
-            let mut top_paths: Vec<_> = path_map
-                .into_iter()
-                .map(|(path, (title, count, uniques))| {
-                    crate::github_visitors::models::TrafficPath {
-                        path,
-                        title,
-                        count,
-                        uniques,
-                    }
-                })
-                .collect();
-            top_paths.sort_by_key(|b| std::cmp::Reverse(b.count));
+            let mut top_paths = latest
+                .as_ref()
+                .map(|s| s.top_paths.clone())
+                .unwrap_or_default();
+            top_paths.sort_by_key(|p| std::cmp::Reverse(p.count));
             top_paths.truncate(10);
 
             RepositoryTrafficSummary {
@@ -100,6 +131,7 @@ pub fn aggregate_repo_traffic(snapshots: &[TrafficSnapshot]) -> Vec<RepositoryTr
                 total_views_all_time: total_views,
                 total_unique_visitors_all_time: total_unique,
                 total_clones_all_time: total_clones,
+                total_unique_cloners_all_time: total_unique_cloners,
                 top_referrers,
                 top_paths,
             }
@@ -108,6 +140,18 @@ pub fn aggregate_repo_traffic(snapshots: &[TrafficSnapshot]) -> Vec<RepositoryTr
 
     summaries.sort_by_key(|b| std::cmp::Reverse(b.total_views_all_time));
     summaries
+}
+
+fn dedup_day_totals<'a>(days: impl Iterator<Item = &'a TrafficDay>) -> (u64, u64) {
+    let mut by_date: HashMap<NaiveDate, (u64, u64)> = HashMap::new();
+    for d in days {
+        let e = by_date.entry(d.date).or_insert((0, 0));
+        e.0 = e.0.max(d.count);
+        e.1 = e.1.max(d.uniques);
+    }
+    by_date
+        .values()
+        .fold((0, 0), |(tc, tu), (c, u)| (tc + c, tu + u))
 }
 
 pub fn compute_trend_from_snapshots(snapshots: &[TrafficSnapshot]) -> TrafficTrend {

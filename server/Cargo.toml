@@ -9,6 +9,7 @@ path = "src/main.rs"
 
 [dependencies]
 readme-stuff-aggregator = { path = "../aggregator" }
+readme-stuff-api = { path = "../api" }
 readme-stuff-cache = { path = "../cache" }
 axum = "0.7"
 tokio = { version = "1", features = ["full"] }

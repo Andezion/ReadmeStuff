@@ -200,6 +200,7 @@ pub struct RepositoryTrafficSummary {
     pub total_views_all_time: u64,
     pub total_unique_visitors_all_time: u64,
     pub total_clones_all_time: u64,
+    pub total_unique_cloners_all_time: u64,
     pub top_referrers: Vec<TrafficReferrer>,
     pub top_paths: Vec<TrafficPath>,
 }
@@ -266,6 +267,29 @@ pub struct VisitorAnalytics {
     pub filter_summary: FilterSummary,
     pub returning_visitor_ratio: f64,
     pub top_repos_by_views: Vec<(String, u64)>,
+    pub total_clones_all_time: u64,
+    pub total_unique_cloners_all_time: u64,
+    pub top_referrers: Vec<TrafficReferrer>,
+    pub top_paths: Vec<TrafficPath>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RepoEngagement {
+    pub repo: String,
+    pub stargazer_count: u64,
+    pub fork_count: u64,
+    pub watcher_count: u64,
+    pub recent_stargazers: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EngagementSummary {
+    pub generated_at: DateTime<Utc>,
+    pub total_stars: u64,
+    pub total_forks: u64,
+    pub total_watchers: u64,
+    pub repositories: Vec<RepoEngagement>,
+    pub recent_stargazers: Vec<(String, String)>,
 }
 
 #[derive(Debug, Clone, Default)]

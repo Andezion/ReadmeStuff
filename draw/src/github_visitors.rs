@@ -3,29 +3,65 @@ use crate::{
     matrix,
     theme::Theme,
 };
-use readme_stuff_aggregator::widgets::GithubVisitorsWidget;
+use readme_stuff_aggregator::widgets::{EngagementWidget, GithubVisitorsWidget};
 
 const W: u32 = 400;
-const H: u32 = 280;
+const REPO_ROW_H: u32 = 14;
+const REPO_LIST_START_Y: u32 = 222;
 
 pub fn render_github_visitors(w: &GithubVisitorsWidget, theme: Theme) -> String {
     let c = theme.colors();
-    let rain = matrix::generate(W, H, c.matrix_color, c.matrix_opacity, 0xABCD_1234, "gvs");
+    let repo_count = w.top_repos.len() as u32;
+    let height = REPO_LIST_START_Y + repo_count * REPO_ROW_H + 16;
+    let rain = matrix::generate(W, height, c.matrix_color, c.matrix_opacity, 0xABCD_1234, "gvs");
 
     let stats_svg = format!(
         "<text x=\"25\" y=\"88\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{views}</text>\
-         <text x=\"25\" y=\"104\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Total Views (14d)</text>\
+         <text x=\"25\" y=\"104\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Total Views</text>\
          <text x=\"200\" y=\"88\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{unique}</text>\
-         <text x=\"200\" y=\"104\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Unique Visitors</text>",
+         <text x=\"200\" y=\"104\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Unique Visitors</text>\
+         <text x=\"25\" y=\"132\" font-family=\"monospace\" font-size=\"16\" font-weight=\"700\" fill=\"{tv}\">{clones}</text>\
+         <text x=\"25\" y=\"146\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Clones</text>\
+         <text x=\"200\" y=\"132\" font-family=\"monospace\" font-size=\"16\" font-weight=\"700\" fill=\"{tv}\">{cloners}</text>\
+         <text x=\"200\" y=\"146\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Unique Cloners</text>",
         views = fmt_num(w.total_views),
         unique = fmt_num(w.total_unique),
+        clones = fmt_num(w.total_clones),
+        cloners = fmt_num(w.total_unique_cloners),
         tv = c.text_primary,
         tl = c.text_secondary,
     );
 
+    let arrow = if w.growth_rate_pct > 0.0 {
+        "^"
+    } else if w.growth_rate_pct < 0.0 {
+        "v"
+    } else {
+        "-"
+    };
+    let peak = w
+        .peak_day
+        .map(|d| format!("  peak {} on {}", fmt_num(w.peak_value), d.format("%b %d")))
+        .unwrap_or_default();
+    let trend_text = format!("Trend: {arrow} {:+.1}%{peak}", w.growth_rate_pct);
+
+    let mut meta_svg = format!(
+        "<text x=\"25\" y=\"172\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">{trend}</text>",
+        trend = xml_escape(&trend_text),
+        tl = c.text_secondary,
+    );
+    if let Some((referrer, count)) = &w.top_referrer {
+        meta_svg.push_str(&format!(
+            "<text x=\"25\" y=\"188\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Top referrer: {r} ({n})</text>",
+            r = xml_escape(referrer),
+            n = fmt_num(*count),
+            tl = c.text_secondary,
+        ));
+    }
+
     let mut repos_svg = String::new();
-    for (i, (repo, views)) in w.top_repos.iter().take(10).enumerate() {
-        let y = 122 + i as u32 * 14 + 5;
+    for (i, (repo, views)) in w.top_repos.iter().enumerate() {
+        let y = REPO_LIST_START_Y + i as u32 * REPO_ROW_H + 5;
         let short = repo.trim_start_matches('/');
         repos_svg.push_str(&format!(
             "<text x=\"25\" y=\"{y}\" font-family=\"monospace\" font-size=\"10\" fill=\"{tl}\">{repo}</text>\
@@ -39,19 +75,21 @@ pub fn render_github_visitors(w: &GithubVisitorsWidget, theme: Theme) -> String 
     }
 
     format!(
-        r#"<svg width="{W}" height="{H}" viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg">
+        r#"<svg width="{W}" height="{height}" viewBox="0 0 {W} {height}" xmlns="http://www.w3.org/2000/svg">
 <defs>
   <clipPath id="gvs-clip">
-    <rect width="{W}" height="{H}" rx="6"/>
+    <rect width="{W}" height="{height}" rx="6"/>
   </clipPath>
 </defs>
-<rect width="{W}" height="{H}" rx="6" fill="{bg}"/>
+<rect width="{W}" height="{height}" rx="6" fill="{bg}"/>
 <g clip-path="url(#gvs-clip)">{rain}</g>
-<rect width="{W}" height="{H}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
+<rect width="{W}" height="{height}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
 <text x="25" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">GitHub Traffic</text>
 <line x1="25" y1="52" x2="{lx2}" y2="52" stroke="{sep}" stroke-width="1"/>
 {stats}
-<line x1="25" y1="113" x2="{lx2}" y2="113" stroke="{sep}" stroke-width="1"/>
+<line x1="25" y1="158" x2="{lx2}" y2="158" stroke="{sep}" stroke-width="1"/>
+{meta}
+<line x1="25" y1="205" x2="{lx2}" y2="205" stroke="{sep}" stroke-width="1"/>
 {repos}
 </svg>"#,
         bg = c.bg,
@@ -60,7 +98,81 @@ pub fn render_github_visitors(w: &GithubVisitorsWidget, theme: Theme) -> String 
         sep = c.separator,
         lx2 = W - 15,
         stats = stats_svg,
+        meta = meta_svg,
         repos = repos_svg,
+    )
+}
+
+const ENGAGEMENT_ROW_H: u32 = 14;
+const ENGAGEMENT_LIST_START_Y: u32 = 130;
+
+pub fn render_github_engagement(w: &EngagementWidget, theme: Theme) -> String {
+    let c = theme.colors();
+    let row_count = w.recent_stargazers.len() as u32;
+    let height = ENGAGEMENT_LIST_START_Y + row_count * ENGAGEMENT_ROW_H + 16;
+    let rain = matrix::generate(W, height, c.matrix_color, c.matrix_opacity, 0x5EED_1234, "gge");
+
+    let stats_svg = format!(
+        "<text x=\"25\" y=\"80\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{stars}</text>\
+         <text x=\"25\" y=\"96\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Stars</text>\
+         <text x=\"160\" y=\"80\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{forks}</text>\
+         <text x=\"160\" y=\"96\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Forks</text>\
+         <text x=\"290\" y=\"80\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{watchers}</text>\
+         <text x=\"290\" y=\"96\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Watchers</text>",
+        stars = fmt_num(w.total_stars),
+        forks = fmt_num(w.total_forks),
+        watchers = fmt_num(w.total_watchers),
+        tv = c.text_primary,
+        tl = c.text_secondary,
+    );
+
+    let mut rows_svg = String::new();
+    for (i, (login, repo)) in w.recent_stargazers.iter().enumerate() {
+        let y = ENGAGEMENT_LIST_START_Y + i as u32 * ENGAGEMENT_ROW_H + 5;
+        rows_svg.push_str(&format!(
+            "<text x=\"25\" y=\"{y}\" font-family=\"monospace\" font-size=\"10\" fill=\"{tv}\">@{login}</text>\
+             <text x=\"{rx}\" y=\"{y}\" font-family=\"monospace\" font-size=\"10\" fill=\"{tl}\" text-anchor=\"end\">{repo}</text>",
+            login = xml_escape(login),
+            repo = xml_escape(repo.trim_start_matches('/')),
+            rx = W - 15,
+            tv = c.text_primary,
+            tl = c.text_secondary,
+        ));
+    }
+
+    let list_label = if w.recent_stargazers.is_empty() {
+        String::new()
+    } else {
+        format!(
+            "<text x=\"25\" y=\"117\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Recently starred by</text>",
+            tl = c.text_secondary,
+        )
+    };
+
+    format!(
+        r#"<svg width="{W}" height="{height}" viewBox="0 0 {W} {height}" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <clipPath id="gge-clip">
+    <rect width="{W}" height="{height}" rx="6"/>
+  </clipPath>
+</defs>
+<rect width="{W}" height="{height}" rx="6" fill="{bg}"/>
+<g clip-path="url(#gge-clip)">{rain}</g>
+<rect width="{W}" height="{height}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
+<text x="25" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">GitHub Engagement</text>
+<line x1="25" y1="52" x2="{lx2}" y2="52" stroke="{sep}" stroke-width="1"/>
+{stats}
+{list_label}
+{rows}
+</svg>"#,
+        bg = c.bg,
+        border = c.border,
+        title = c.title,
+        sep = c.separator,
+        lx2 = W - 15,
+        stats = stats_svg,
+        list_label = list_label,
+        rows = rows_svg,
     )
 }
 

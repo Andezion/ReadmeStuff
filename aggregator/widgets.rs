@@ -7,7 +7,14 @@ use crate::models::UserProfile;
 pub struct GithubVisitorsWidget {
     pub total_views: u64,
     pub total_unique: u64,
+    pub total_clones: u64,
+    pub total_unique_cloners: u64,
     pub top_repos: Vec<(String, u64)>,
+    pub top_referrer: Option<(String, u64)>,
+    pub growth_rate_pct: f64,
+    pub is_growing: bool,
+    pub peak_day: Option<chrono::NaiveDate>,
+    pub peak_value: u64,
 }
 
 pub fn github_visitors_widget(p: &UserProfile) -> Option<GithubVisitorsWidget> {
@@ -21,11 +28,40 @@ pub fn github_visitors_widget(p: &UserProfile) -> Option<GithubVisitorsWidget> {
     if total_views == 0 {
         return None;
     }
-    let top_repos = v.top_repos_by_views.iter().take(10).cloned().collect();
     Some(GithubVisitorsWidget {
         total_views,
         total_unique,
-        top_repos,
+        total_clones: v.total_clones_all_time,
+        total_unique_cloners: v.total_unique_cloners_all_time,
+        top_repos: v.top_repos_by_views.clone(),
+        top_referrer: v
+            .top_referrers
+            .first()
+            .map(|r| (r.referrer.clone(), r.count)),
+        growth_rate_pct: v.trend.growth_rate_pct,
+        is_growing: v.trend.is_growing,
+        peak_day: v.trend.peak_day,
+        peak_value: v.trend.peak_value,
+    })
+}
+
+pub struct EngagementWidget {
+    pub total_stars: u64,
+    pub total_forks: u64,
+    pub total_watchers: u64,
+    pub recent_stargazers: Vec<(String, String)>,
+}
+
+pub fn github_engagement_widget(p: &UserProfile) -> Option<EngagementWidget> {
+    let e = p.engagement.as_ref()?;
+    if e.total_stars == 0 {
+        return None;
+    }
+    Some(EngagementWidget {
+        total_stars: e.total_stars,
+        total_forks: e.total_forks,
+        total_watchers: e.total_watchers,
+        recent_stargazers: e.recent_stargazers.clone(),
     })
 }
 

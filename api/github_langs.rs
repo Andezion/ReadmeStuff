@@ -352,7 +352,7 @@ mod tests {
     #[tokio::test]
     async fn live_langs_andezion() {
         let Ok(client) = GitHubClient::from_env() else {
-            eprintln!("GITHUB_TOKEN not set — skipping live test");
+            eprintln!("GITHUB_TOKEN not set - skipping live test");
             return;
         };
         let api = GitHubLangsApi::new(client);

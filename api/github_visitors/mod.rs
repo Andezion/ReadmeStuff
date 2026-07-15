@@ -1,71 +1,5 @@
-//! GitHub visitor and traffic analytics system.
-//!
-//! # Architecture overview
-//!
-//! ```text
-//! ┌─────────────────────────────────────────────────────────────────────┐
-//! │                     GithubVisitorsService                           │
-//! │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌───────────┐ │
-//! │  │   fetcher   │  │   filter    │  │  analytics  │  │  storage  │ │
-//! │  │ (GitHub REST│  │ (bot/dedup/ │  │ (trends /   │  │ (SQLite / │ │
-//! │  │  traffic)   │  │  self-visit)│  │  heatmap)   │  │  memory)  │ │
-//! │  └─────────────┘  └─────────────┘  └─────────────┘  └───────────┘ │
-//! └─────────────────────────────────────────────────────────────────────┘
-//! ```
-//!
-//! # Two data sources
-//!
-//! ## 1. GitHub REST Traffic API
-//! Available for repositories **you own** with push-access tokens.
-//! Returns the last 14 days of view/clone/referrer/path data.
-//! GitHub provides real unique-visitor counts (their own dedup, not exposed
-//! further). Use `GithubVisitorsService::refresh_from_github()` to pull a
-//! fresh snapshot and persist it.
-//!
-//! ## 2. Custom Tracking Pixel
-//! Embed the URL returned by `tracking_pixel_url()` in a README SVG badge.
-//! When a visitor loads the profile/README page, their browser (or GitHub's
-//! Camo proxy) fetches the URL, and you can record a `VisitorEvent`.
-//!
-//! ### Camo proxy caveat
-//! GitHub proxies all badge images through **Camo**. Our endpoint sees only
-//! Camo's IP and UA, not the real visitor. Consequences:
-//! - IP-based deduplication is impossible.
-//! - A time-bucket dedup is used instead (configurable via `FilterConfig`).
-//! - The `hashed_identity` field will be `None` for Camo requests.
-//!
-//! ### When does custom tracking add value?
-//! - The pixel is fetched on **every** cache miss (Camo eventually expires).
-//! - Rate-limit filtering catches bulk scraping even from Camo.
-//! - When your server is hit directly (e.g. not via a README badge), you DO
-//!   get real IPs -> hash them with `FilterConfig::hash_ip()` for proper dedup.
-//!
-//! # Usage example
-//!
-//! ```rust,no_run
-//! # use readme_stuff_api::github_client::GitHubClient;
-//! # use readme_stuff_api::github_visitors::{GithubVisitorsService, StorageKind};
-//! # use readme_stuff_api::github_visitors::filter::FilterConfig;
-//! # #[tokio::main]
-//! # async fn main() -> anyhow::Result<()> {
-//! let client = GitHubClient::from_env()?;
-//! let service = GithubVisitorsService::new(
-//!     client,
-//!     StorageKind::InMemory,
-//!     FilterConfig::default(),
-//! ).await?;
-//!
-//! // Pull fresh data from GitHub and store it.
-//! service.refresh_from_github("Andezion").await?;
-//!
-//! // Get full analytics.
-//! let analytics = service.analytics("Andezion").await?;
-//! println!("{analytics:#?}");
-//! # Ok(())
-//! # }
-//! ```
-
 pub mod analytics;
+pub mod engagement;
 pub mod fetcher;
 pub mod filter;
 pub mod models;
@@ -79,6 +13,7 @@ use analytics::{
     compute_analytics, daily_active_visitors, repo_popularity_ranking, unique_visitor_stats,
 };
 use chrono::{NaiveDate, Utc};
+use engagement::EngagementFetcher;
 use fetcher::TrafficFetcher;
 use filter::{FilterConfig, VisitorFilter};
 use std::path::PathBuf;
@@ -103,6 +38,7 @@ pub type Result<T> = std::result::Result<T, VisitorsError>;
 
 pub struct GithubVisitorsService {
     fetcher: TrafficFetcher,
+    engagement_fetcher: EngagementFetcher,
     filter: Arc<Mutex<VisitorFilter>>,
     storage: Arc<dyn VisitorStorage>,
 }
@@ -124,7 +60,8 @@ impl GithubVisitorsService {
         };
 
         Ok(Self {
-            fetcher: TrafficFetcher::new(client),
+            fetcher: TrafficFetcher::new(client.clone()),
+            engagement_fetcher: EngagementFetcher::new(client),
             filter: Arc::new(Mutex::new(VisitorFilter::new(filter_config))),
             storage,
         })
@@ -148,6 +85,10 @@ impl GithubVisitorsService {
 
     pub async fn fetch_repo_snapshot(&self, owner: &str, repo: &str) -> Result<TrafficSnapshot> {
         Ok(self.fetcher.fetch_repo_snapshot(owner, repo).await?)
+    }
+
+    pub async fn engagement(&self, login: &str) -> Result<EngagementSummary> {
+        Ok(self.engagement_fetcher.fetch_engagement(login).await?)
     }
 
     pub async fn record_visit(
@@ -400,7 +341,7 @@ mod tests {
     #[tokio::test]
     async fn live_refresh_from_github_andezion() {
         let Ok(client) = GitHubClient::from_env() else {
-            eprintln!("GITHUB_TOKEN not set — skipping live test");
+            eprintln!("GITHUB_TOKEN not set - skipping live test");
             return;
         };
         let svc =
@@ -419,7 +360,7 @@ mod tests {
     #[tokio::test]
     async fn live_sqlite_persistence() {
         let Ok(client) = GitHubClient::from_env() else {
-            eprintln!("GITHUB_TOKEN not set — skipping live test");
+            eprintln!("GITHUB_TOKEN not set - skipping live test");
             return;
         };
         let db_path = std::env::temp_dir().join("andezion_visitors_test.db");

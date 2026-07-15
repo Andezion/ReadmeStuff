@@ -34,7 +34,6 @@ pub struct ContributionSummary {
     pub total_pull_request_reviews: u32,
     pub repos_contributed_to: u32,
     pub restricted_contributions: u32,
-    /// Commits this year grouped by the repository's primary language.
     pub commits_by_language: HashMap<String, u32>,
 }
 

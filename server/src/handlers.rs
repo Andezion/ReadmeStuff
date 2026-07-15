@@ -1,11 +1,13 @@
 use axum::{
-    extract::{Query, State},
-    http::header,
+    extract::{ConnectInfo, Query, State},
+    http::{HeaderMap, header},
     response::{IntoResponse, Response},
 };
 use readme_stuff_aggregator::{models::UserProfile, profile::build_profile, widgets};
+use readme_stuff_api::github_visitors::{filter::FilterConfig, models::VisitTarget};
 use readme_stuff_cache::{CacheKey, DashboardCache};
 use serde::Deserialize;
+use std::net::SocketAddr;
 use std::sync::Arc;
 
 use crate::AppState;
@@ -195,4 +197,72 @@ pub async fn competitive(State(state): State<AppState>, Query(q): Query<ProfileQ
     )
     .await;
     svg_response(render_competitive(&profile))
+}
+
+#[derive(Deserialize)]
+pub struct TrackQuery {
+    pub u: String,
+    pub repo: Option<String>,
+}
+
+const PIXEL_GIF: &[u8] = &[
+    0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x01, 0x00, 0x01, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0xFF, 0xFF, 0xFF, 0x21, 0xF9, 0x04, 0x01, 0x00, 0x00, 0x00, 0x00, 0x2C, 0x00, 0x00,
+    0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x02, 0x02, 0x44, 0x01, 0x00, 0x3B,
+];
+
+fn pixel_response() -> Response {
+    (
+        [
+            (header::CONTENT_TYPE, "image/gif"),
+            (
+                header::CACHE_CONTROL,
+                "no-store, no-cache, must-revalidate, max-age=0",
+            ),
+        ],
+        PIXEL_GIF,
+    )
+        .into_response()
+}
+
+pub async fn track(
+    State(state): State<AppState>,
+    Query(q): Query<TrackQuery>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
+) -> Response {
+    let Some(svc) = state.visitors.as_ref() else {
+        return pixel_response();
+    };
+
+    let user_agent = headers
+        .get(header::USER_AGENT)
+        .and_then(|v| v.to_str().ok());
+
+    let ip = headers
+        .get("x-forwarded-for")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.split(',').next())
+        .map(|s| s.trim().to_string())
+        .unwrap_or_else(|| addr.ip().to_string());
+    let hashed_identity = FilterConfig::hash_ip(&ip);
+
+    let target = match q.repo.as_deref().and_then(|r| r.split_once('/')) {
+        Some((owner, repo)) => VisitTarget::Repository {
+            owner: owner.to_string(),
+            repo: repo.to_string(),
+        },
+        None => VisitTarget::Profile {
+            username: q.u.clone(),
+        },
+    };
+
+    if let Err(e) = svc
+        .record_visit(target, user_agent, Some(&hashed_identity))
+        .await
+    {
+        tracing::warn!("failed to record visit: {e}");
+    }
+
+    pixel_response()
 }

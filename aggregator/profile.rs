@@ -10,6 +10,13 @@ use readme_stuff_api::{
     github_visitors::{GithubVisitorsService, StorageKind, filter::FilterConfig},
     leetcode::LeetcodeApi,
 };
+use std::path::PathBuf;
+
+fn visitors_data_dir() -> PathBuf {
+    std::env::var("VISITORS_DATA_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| PathBuf::from("data/github_visitors"))
+}
 
 #[cfg(test)]
 fn load_github_token() -> Option<String> {
@@ -99,13 +106,31 @@ pub async fn build_profile(
         let client = gh_client.clone();
         async move {
             let c = client.ok_or_else(|| "GITHUB_TOKEN not set".to_string())?;
-            let svc = GithubVisitorsService::new(c, StorageKind::InMemory, FilterConfig::default())
-                .await
-                .map_err(|e| e.to_string())?;
+            let svc = GithubVisitorsService::new(
+                c,
+                StorageKind::Json {
+                    dir: visitors_data_dir(),
+                },
+                FilterConfig::default(),
+            )
+            .await
+            .map_err(|e| e.to_string())?;
             svc.refresh_from_github(&login)
                 .await
                 .map_err(|e| e.to_string())?;
             svc.analytics(&login).await.map_err(|e| e.to_string())
+        }
+    };
+
+    let engagement_fut = {
+        let login = github_login.to_owned();
+        let client = gh_client.clone();
+        async move {
+            let c = client.ok_or_else(|| "GITHUB_TOKEN not set".to_string())?;
+            let svc = GithubVisitorsService::new(c, StorageKind::InMemory, FilterConfig::default())
+                .await
+                .map_err(|e| e.to_string())?;
+            svc.engagement(&login).await.map_err(|e| e.to_string())
         }
     };
 
@@ -164,6 +189,7 @@ pub async fn build_profile(
         langs_res,
         commit_streak_res,
         visitors_res,
+        engagement_res,
         cf_join,
         cw_join,
         lc_join,
@@ -173,6 +199,7 @@ pub async fn build_profile(
         langs_fut,
         commit_streak_fut,
         visitors_fut,
+        engagement_fut,
         cf_fut,
         cw_fut,
         lc_fut
@@ -193,6 +220,7 @@ pub async fn build_profile(
                 .as_ref()
                 .map(|_| ())
                 .map_err(|e| e.clone()),
+            engagement: engagement_res.as_ref().map(|_| ()).map_err(|e| e.clone()),
         },
         github: github_res.ok(),
         streak: streak_res.ok(),
@@ -202,6 +230,7 @@ pub async fn build_profile(
         codewars: cw_res.ok(),
         leetcode: lc_res.ok(),
         visitors: visitors_res.ok(),
+        engagement: engagement_res.ok(),
     }
 }
 

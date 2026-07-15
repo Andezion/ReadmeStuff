@@ -5,7 +5,7 @@ use readme_stuff_api::{
     github_langs::AggregatedLangStats,
     github_statistic::ProfileStats,
     github_streak::StreakStats,
-    github_visitors::models::VisitorAnalytics,
+    github_visitors::models::{EngagementSummary, VisitorAnalytics},
     leetcode::{BadgesResponse, Language as LeetcodeLanguage, Skill as LeetcodeSkill, Solved},
 };
 
@@ -33,6 +33,7 @@ pub struct UserProfile {
     pub codewars: Option<CodewarsUser>,
     pub leetcode: Option<LeetcodeData>,
     pub visitors: Option<VisitorAnalytics>,
+    pub engagement: Option<EngagementSummary>,
     pub sources: SourceStatus,
 }
 
@@ -43,4 +44,5 @@ pub struct SourceStatus {
     pub leetcode: Result<(), String>,
     pub visitors: Result<(), String>,
     pub commit_streak: Result<(), String>,
+    pub engagement: Result<(), String>,
 }
