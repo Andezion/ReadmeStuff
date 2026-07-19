@@ -1,7 +1,7 @@
 use crate::{helpers::fmt_num, matrix, theme::Theme};
 use readme_stuff_aggregator::widgets::GithubSocialWidget;
 
-const W: u32 = 300;
+const W: u32 = 495;
 const H: u32 = 120;
 
 pub fn render_github_social(w: &GithubSocialWidget, theme: Theme) -> String {
@@ -12,7 +12,7 @@ pub fn render_github_social(w: &GithubSocialWidget, theme: Theme) -> String {
         ("Followers", fmt_num(w.followers as u64)),
         ("Following", fmt_num(w.following as u64)),
     ];
-    let col_x = [25u32, 160];
+    let col_x = [25u32, 260];
 
     let mut stat_svg = String::new();
     for (i, (label, value)) in stats.iter().enumerate() {
@@ -36,7 +36,7 @@ pub fn render_github_social(w: &GithubSocialWidget, theme: Theme) -> String {
 <rect width="{W}" height="{H}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
 
 <text x="25" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">GitHub Network</text>
-<line x1="25" y1="52" x2="285" y2="52" stroke="{sep}" stroke-width="1"/>
+<line x1="25" y1="52" x2="470" y2="52" stroke="{sep}" stroke-width="1"/>
 {stat_svg}
 </svg>"#,
         bg = c.bg,

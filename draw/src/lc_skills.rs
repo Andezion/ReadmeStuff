@@ -8,6 +8,7 @@ const BAR_MAX_W: u32 = 160;
 const COUNT_X: u32 = 452;
 const ROW_H: u32 = 18;
 const FIRST_Y: u32 = 70;
+const MAX_ROWS: usize = 15;
 
 const CAT_COLORS: [(&str, &str); 3] = [("adv", "#ff6e96"), ("int", "#58a6ff"), ("fun", "#3fb950")];
 
@@ -21,14 +22,15 @@ fn cat_color(cat: &str) -> &'static str {
 
 pub fn render_lc_skills(w: &LcSkillsWidget, theme: Theme) -> String {
     let c = theme.colors();
-    let n = w.skills.len() as u32;
-    let h: u32 = FIRST_Y + n * ROW_H + 15;
+    // Fixed height regardless of skill count, so this tile keeps its target
+    // size in the grid even if the account has fewer than MAX_ROWS skills.
+    let h: u32 = FIRST_Y + MAX_ROWS as u32 * ROW_H + 15;
 
     let rain = matrix::generate(W, h, c.matrix_color, c.matrix_opacity, 0x1C00_0002, "lcsk");
     let max_amount = w.skills.iter().map(|s| s.amount).max().unwrap_or(1).max(1);
 
     let mut rows = String::new();
-    for (i, skill) in w.skills.iter().enumerate() {
+    for (i, skill) in w.skills.iter().take(MAX_ROWS).enumerate() {
         let y = FIRST_Y + i as u32 * ROW_H + ROW_H - 4;
         let bar_y = y - 8;
         let fill_w = (skill.amount as f64 / max_amount as f64 * BAR_MAX_W as f64).round() as u32;

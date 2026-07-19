@@ -1,7 +1,7 @@
-<svg width="300" height="185" viewBox="0 0 300 185" xmlns="http://www.w3.org/2000/svg">
+<svg width="495" height="195" viewBox="0 0 495 195" xmlns="http://www.w3.org/2000/svg">
 <defs>
   <clipPath id="ln-clip">
-    <rect width="300" height="185" rx="6"/>
+    <rect width="495" height="195" rx="6"/>
   </clipPath>
 </defs>
 <rect width="300" height="185" rx="6" fill="#0d1117"/>

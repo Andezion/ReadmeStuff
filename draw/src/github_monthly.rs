@@ -2,11 +2,11 @@ use crate::{matrix, theme::Theme};
 use readme_stuff_aggregator::widgets::GithubMonthlyWidget;
 
 const W: u32 = 495;
-const H: u32 = 200;
+const H: u32 = 210;
 const PAD: u32 = 25;
 const BAR_AREA_TOP: u32 = 65;
-const BAR_AREA_BOTTOM: u32 = 158;
-const LABEL_Y: u32 = 173;
+const BAR_AREA_BOTTOM: u32 = 166;
+const LABEL_Y: u32 = 181;
 
 pub fn render_github_monthly(w: &GithubMonthlyWidget, theme: Theme) -> String {
     let c = theme.colors();

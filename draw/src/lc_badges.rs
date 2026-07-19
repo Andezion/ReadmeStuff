@@ -8,18 +8,20 @@ use readme_stuff_aggregator::widgets::LcBadgesWidget;
 const W: u32 = 495;
 const ROW_H: u32 = 22;
 const FIRST_ROW_Y: u32 = 68;
+const MAX_ROWS: usize = 8;
 
 pub fn render_lc_badges(w: &LcBadgesWidget, theme: Theme) -> String {
     let c = theme.colors();
-    let n = w.badges.len() as u32;
-    let h: u32 = FIRST_ROW_Y + n * ROW_H + 10;
+    // Fixed height regardless of badge count, so this tile keeps its target
+    // size in the grid even as more badges are earned over time.
+    let h: u32 = FIRST_ROW_Y + MAX_ROWS as u32 * ROW_H + 10;
 
     let rain = matrix::generate(W, h, c.matrix_color, c.matrix_opacity, 0x1C00_0004, "lcb");
 
     let total_str = fmt_num(w.total as u64);
 
     let mut rows = String::new();
-    for (i, badge) in w.badges.iter().enumerate() {
+    for (i, badge) in w.badges.iter().take(MAX_ROWS).enumerate() {
         let y = FIRST_ROW_Y + i as u32 * ROW_H + ROW_H - 5;
         let stripe_color = if i % 2 == 1 { c.separator } else { "none" };
 

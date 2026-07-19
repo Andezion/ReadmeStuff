@@ -5,14 +5,14 @@ use crate::{
 };
 use readme_stuff_aggregator::widgets::LcLanguagesWidget;
 
-const W: u32 = 300;
-const PAD: u32 = 15;
-const BAR_X: u32 = 110;
-const BAR_W: u32 = 130;
+const W: u32 = 495;
+const PAD: u32 = 25;
+const BAR_X: u32 = 260;
+const BAR_W: u32 = 180;
 const PCT_X: u32 = W - PAD;
 const ROW_H: u32 = 22;
-const FIRST_ROW_Y: u32 = 60;
-const MAX_ROWS: usize = 8;
+const FIRST_ROW_Y: u32 = 75;
+const MAX_ROWS: usize = 6;
 
 const LC_LANG_COLORS: &[(&str, &str)] = &[
     ("C++", "#f34b7d"),
@@ -37,8 +37,9 @@ fn lc_lang_color(name: &str) -> &'static str {
 
 pub fn render_lc_languages(w: &LcLanguagesWidget, theme: Theme) -> String {
     let c = theme.colors();
-    let n = w.languages.len().min(MAX_ROWS);
-    let h: u32 = FIRST_ROW_Y + n as u32 * ROW_H + 10;
+    // Fixed height regardless of language count, so this tile keeps its
+    // target size in the grid even as new languages get solved.
+    let h: u32 = FIRST_ROW_Y + MAX_ROWS as u32 * ROW_H + 10;
 
     let rain = matrix::generate(W, h, c.matrix_color, c.matrix_opacity, 0x1C00_0003, "lcl");
     let max_solved = w
@@ -83,8 +84,8 @@ pub fn render_lc_languages(w: &LcLanguagesWidget, theme: Theme) -> String {
 <rect width="{W}" height="{h}" rx="6" fill="{bg}"/>
 <g clip-path="url(#lcl-clip)">{rain}</g>
 <rect width="{W}" height="{h}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<text x="15" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">LeetCode Languages</text>
-<line x1="15" y1="48" x2="285" y2="48" stroke="{sep}" stroke-width="1"/>
+<text x="25" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">LeetCode Languages</text>
+<line x1="25" y1="48" x2="470" y2="48" stroke="{sep}" stroke-width="1"/>
 {rows}
 </svg>"#,
         bg = c.bg,

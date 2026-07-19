@@ -6,21 +6,29 @@ use crate::{
 use readme_stuff_aggregator::widgets::{EngagementWidget, GithubVisitorsWidget};
 use readme_stuff_api::github_visitors::models::TrendHighlight;
 
-const W: u32 = 400;
+const W: u32 = 495;
 const REPO_ROW_H: u32 = 14;
 const REPO_LIST_START_Y: u32 = 238;
+const MAX_REPOS: usize = 25;
 
 const SPARK_CHART_H: u32 = 40;
 
 fn render_sparkline(w: &GithubVisitorsWidget, top_y: u32, c: &crate::theme::Colors) -> (String, u32) {
-    if w.weekly_views.len() < 2 {
-        return (String::new(), 0);
-    }
-
+    // Block height is fixed regardless of whether there's enough weekly data
+    // to draw a line, so the card's total height never depends on live data.
     let sep_y = top_y + 12;
     let label_y = sep_y + 14;
     let chart_top = label_y + 6;
     let block_h = (chart_top - top_y) + SPARK_CHART_H;
+
+    if w.weekly_views.len() < 2 {
+        let svg = format!(
+            "<line x1=\"25\" y1=\"{sep_y}\" x2=\"{lx2}\" y2=\"{sep_y}\" stroke=\"{sep}\" stroke-width=\"1\"/>",
+            lx2 = W - 15,
+            sep = c.separator,
+        );
+        return (svg, block_h);
+    }
 
     let max_v = w.weekly_views.iter().map(|(_, v)| *v).max().unwrap_or(1).max(1);
     let n = w.weekly_views.len();
@@ -58,21 +66,22 @@ fn render_sparkline(w: &GithubVisitorsWidget, top_y: u32, c: &crate::theme::Colo
 
 pub fn render_github_visitors(w: &GithubVisitorsWidget, theme: Theme) -> String {
     let c = theme.colors();
-    let repo_count = w.top_repos.len() as u32;
-    let repo_list_bottom = REPO_LIST_START_Y + repo_count * REPO_ROW_H;
+    // Fixed regardless of how many repos have traffic, so the card keeps
+    // docking with its neighbors even as more repos start getting views.
+    let repo_list_bottom = REPO_LIST_START_Y + MAX_REPOS as u32 * REPO_ROW_H;
     let (spark_svg, spark_h) = render_sparkline(w, repo_list_bottom, &c);
-    let height = repo_list_bottom + if spark_h > 0 { spark_h } else { 0 } + 16;
+    let height = repo_list_bottom + spark_h + 16;
     let rain = matrix::generate(W, height, c.matrix_color, c.matrix_opacity, 0xABCD_1234, "gvs");
 
     let stats_svg = format!(
         "<text x=\"25\" y=\"88\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{views}</text>\
          <text x=\"25\" y=\"104\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Total Views</text>\
-         <text x=\"200\" y=\"88\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{unique}</text>\
-         <text x=\"200\" y=\"104\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Unique Visitors</text>\
+         <text x=\"260\" y=\"88\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{unique}</text>\
+         <text x=\"260\" y=\"104\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Unique Visitors</text>\
          <text x=\"25\" y=\"132\" font-family=\"monospace\" font-size=\"16\" font-weight=\"700\" fill=\"{tv}\">{clones}</text>\
          <text x=\"25\" y=\"146\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Clones</text>\
-         <text x=\"200\" y=\"132\" font-family=\"monospace\" font-size=\"16\" font-weight=\"700\" fill=\"{tv}\">{cloners}</text>\
-         <text x=\"200\" y=\"146\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Unique Cloners</text>",
+         <text x=\"260\" y=\"132\" font-family=\"monospace\" font-size=\"16\" font-weight=\"700\" fill=\"{tv}\">{cloners}</text>\
+         <text x=\"260\" y=\"146\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Unique Cloners</text>",
         views = fmt_num(w.total_views),
         unique = fmt_num(w.total_unique),
         clones = fmt_num(w.total_clones),
@@ -152,7 +161,7 @@ pub fn render_github_visitors(w: &GithubVisitorsWidget, theme: Theme) -> String 
     }
 
     let mut repos_svg = String::new();
-    for (i, (repo, views, growth_pct)) in w.top_repos.iter().enumerate() {
+    for (i, (repo, views, growth_pct)) in w.top_repos.iter().take(MAX_REPOS).enumerate() {
         let y = REPO_LIST_START_Y + i as u32 * REPO_ROW_H + 5;
         let short = repo.trim_start_matches('/');
         let growth_color = if *growth_pct > 0.0 {
@@ -209,21 +218,23 @@ pub fn render_github_visitors(w: &GithubVisitorsWidget, theme: Theme) -> String 
 }
 
 const ENGAGEMENT_ROW_H: u32 = 14;
-const ENGAGEMENT_LIST_START_Y: u32 = 130;
+const ENGAGEMENT_LIST_START_Y: u32 = 156;
+const ENGAGEMENT_MAX_ROWS: usize = 36;
 
 pub fn render_github_engagement(w: &EngagementWidget, theme: Theme) -> String {
     let c = theme.colors();
-    let row_count = w.recent_stargazers.len() as u32;
-    let height = ENGAGEMENT_LIST_START_Y + row_count * ENGAGEMENT_ROW_H + 16;
+    // Fixed height regardless of stargazer count, so the card keeps docking
+    // with its neighbors even as more stars come in.
+    let height = ENGAGEMENT_LIST_START_Y + ENGAGEMENT_MAX_ROWS as u32 * ENGAGEMENT_ROW_H + 16;
     let rain = matrix::generate(W, height, c.matrix_color, c.matrix_opacity, 0x5EED_1234, "gge");
 
     let stats_svg = format!(
         "<text x=\"25\" y=\"80\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{stars}</text>\
          <text x=\"25\" y=\"96\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Stars</text>\
-         <text x=\"160\" y=\"80\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{forks}</text>\
-         <text x=\"160\" y=\"96\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Forks</text>\
-         <text x=\"290\" y=\"80\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{watchers}</text>\
-         <text x=\"290\" y=\"96\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Watchers</text>",
+         <text x=\"181\" y=\"80\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{forks}</text>\
+         <text x=\"181\" y=\"96\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Forks</text>\
+         <text x=\"337\" y=\"80\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{watchers}</text>\
+         <text x=\"337\" y=\"96\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Watchers</text>",
         stars = fmt_num(w.total_stars),
         forks = fmt_num(w.total_forks),
         watchers = fmt_num(w.total_watchers),
@@ -232,7 +243,7 @@ pub fn render_github_engagement(w: &EngagementWidget, theme: Theme) -> String {
     );
 
     let mut rows_svg = String::new();
-    for (i, (login, repo)) in w.recent_stargazers.iter().enumerate() {
+    for (i, (login, repo)) in w.recent_stargazers.iter().take(ENGAGEMENT_MAX_ROWS).enumerate() {
         let y = ENGAGEMENT_LIST_START_Y + i as u32 * ENGAGEMENT_ROW_H + 5;
         rows_svg.push_str(&format!(
             "<text x=\"25\" y=\"{y}\" font-family=\"monospace\" font-size=\"10\" fill=\"{tv}\">@{login}</text>\
@@ -249,7 +260,7 @@ pub fn render_github_engagement(w: &EngagementWidget, theme: Theme) -> String {
         String::new()
     } else {
         format!(
-            "<text x=\"25\" y=\"117\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Recently starred by</text>",
+            "<text x=\"25\" y=\"143\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Recently starred by</text>",
             tl = c.text_secondary,
         )
     };
@@ -288,7 +299,7 @@ pub fn render_github_commit_streak(
     use crate::helpers::fmt_num;
     let c = theme.colors();
     let rain = matrix::generate(
-        400,
+        495,
         150,
         c.matrix_color,
         c.matrix_opacity,
@@ -314,10 +325,10 @@ pub fn render_github_commit_streak(
     let stats_svg = format!(
         "<text x=\"25\" y=\"80\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{tc}</text>\
          <text x=\"25\" y=\"96\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Total Commits</text>\
-         <text x=\"160\" y=\"80\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{cs}</text>\
-         <text x=\"160\" y=\"96\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Current Streak</text>\
-         <text x=\"290\" y=\"80\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{ls}</text>\
-         <text x=\"290\" y=\"96\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Longest Streak</text>\
+         <text x=\"181\" y=\"80\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{cs}</text>\
+         <text x=\"181\" y=\"96\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Current Streak</text>\
+         <text x=\"337\" y=\"80\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{ls}</text>\
+         <text x=\"337\" y=\"96\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Longest Streak</text>\
          <text x=\"25\" y=\"128\" font-family=\"monospace\" font-size=\"10\" fill=\"{tl}\">Best streak: {range}</text>",
         tc = fmt_num(w.total_commits),
         cs = format!("{}d", w.current_streak),
@@ -328,17 +339,17 @@ pub fn render_github_commit_streak(
     );
 
     format!(
-        r#"<svg width="400" height="150" viewBox="0 0 400 150" xmlns="http://www.w3.org/2000/svg">
+        r#"<svg width="495" height="150" viewBox="0 0 495 150" xmlns="http://www.w3.org/2000/svg">
 <defs>
   <clipPath id="gcs-clip">
-    <rect width="400" height="150" rx="6"/>
+    <rect width="495" height="150" rx="6"/>
   </clipPath>
 </defs>
-<rect width="400" height="150" rx="6" fill="{bg}"/>
+<rect width="495" height="150" rx="6" fill="{bg}"/>
 <g clip-path="url(#gcs-clip)">{rain}</g>
-<rect width="400" height="150" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
+<rect width="495" height="150" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
 <text x="25" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">Commit Streak</text>
-<line x1="25" y1="48" x2="385" y2="48" stroke="{sep}" stroke-width="1"/>
+<line x1="25" y1="48" x2="470" y2="48" stroke="{sep}" stroke-width="1"/>
 {stats}
 </svg>"#,
         bg = c.bg,

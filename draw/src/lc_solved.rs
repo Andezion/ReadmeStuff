@@ -2,7 +2,7 @@ use crate::{helpers::fmt_num, matrix, theme::Theme};
 use readme_stuff_aggregator::widgets::LcSolvedWidget;
 
 const W: u32 = 495;
-const H: u32 = 175;
+const H: u32 = 211;
 
 const LC_EASY: &str = "#00b8a3";
 const LC_MEDIUM: &str = "#ffc01e";
@@ -31,8 +31,8 @@ pub fn render_lc_solved(w: &LcSolvedWidget, theme: Theme) -> String {
     for (i, (label, count, color)) in stats.iter().enumerate() {
         let x = col_x[i];
         stat_svg.push_str(&format!(
-            "<text x=\"{x}\" y=\"138\" font-family=\"monospace\" font-size=\"20\" font-weight=\"700\" fill=\"{color}\">{val}</text>\
-             <text x=\"{x}\" y=\"155\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">{label}</text>",
+            "<text x=\"{x}\" y=\"172\" font-family=\"monospace\" font-size=\"20\" font-weight=\"700\" fill=\"{color}\">{val}</text>\
+             <text x=\"{x}\" y=\"189\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">{label}</text>",
             val = fmt_num(*count as u64),
             tl = c.text_secondary,
         ));
@@ -50,12 +50,12 @@ pub fn render_lc_solved(w: &LcSolvedWidget, theme: Theme) -> String {
 <rect width="{W}" height="{H}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
 <text x="25" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">LeetCode &#8212; Problems Solved</text>
 <line x1="25" y1="52" x2="470" y2="52" stroke="{sep}" stroke-width="1"/>
-<text x="25" y="88" font-family="monospace" font-size="36" font-weight="700" fill="{tv}">{total}</text>
-<text x="108" y="88" font-family="monospace" font-size="14" fill="{ts}">solved</text>
-<rect x="25" y="98" width="{easy_w}" height="6" rx="3" fill="{lc_easy}"/>
-<rect x="{med_x}" y="98" width="{med_w}" height="6" fill="{lc_medium}"/>
-<rect x="{hard_x}" y="98" width="{hard_w}" height="6" rx="3" fill="{lc_hard}"/>
-<line x1="25" y1="113" x2="470" y2="113" stroke="{sep}" stroke-width="1"/>
+<text x="25" y="100" font-family="monospace" font-size="36" font-weight="700" fill="{tv}">{total}</text>
+<text x="108" y="100" font-family="monospace" font-size="14" fill="{ts}">solved</text>
+<rect x="25" y="115" width="{easy_w}" height="8" rx="4" fill="{lc_easy}"/>
+<rect x="{med_x}" y="115" width="{med_w}" height="8" fill="{lc_medium}"/>
+<rect x="{hard_x}" y="115" width="{hard_w}" height="8" rx="4" fill="{lc_hard}"/>
+<line x1="25" y1="147" x2="470" y2="147" stroke="{sep}" stroke-width="1"/>
 {stat_svg}
 </svg>"#,
         bg = c.bg,

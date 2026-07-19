@@ -1,8 +1,8 @@
 use crate::{helpers::fmt_num, matrix, theme::Theme};
 use readme_stuff_aggregator::widgets::CwKataWidget;
 
-const W: u32 = 300;
-const H: u32 = 120;
+const W: u32 = 495;
+const H: u32 = 170;
 
 pub fn render_cw_kata(w: &CwKataWidget, theme: Theme) -> String {
     let c = theme.colors();
@@ -12,14 +12,14 @@ pub fn render_cw_kata(w: &CwKataWidget, theme: Theme) -> String {
         ("Kata Completed", fmt_num(w.total_completed as u64)),
         ("Kata Authored", fmt_num(w.total_authored as u64)),
     ];
-    let col_x = [25u32, 160];
+    let col_x = [25u32, 260];
 
     let mut stat_svg = String::new();
     for (i, (label, value)) in stats.iter().enumerate() {
         let x = col_x[i];
         stat_svg.push_str(&format!(
-            "<text x=\"{x}\" y=\"88\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{value}</text>\
-             <text x=\"{x}\" y=\"104\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">{label}</text>",
+            "<text x=\"{x}\" y=\"112\" font-family=\"monospace\" font-size=\"28\" font-weight=\"700\" fill=\"{tv}\">{value}</text>\
+             <text x=\"{x}\" y=\"132\" font-family=\"monospace\" font-size=\"12\" fill=\"{tl}\">{label}</text>",
             tv = c.text_primary, tl = c.text_secondary,
         ));
     }
@@ -35,8 +35,8 @@ pub fn render_cw_kata(w: &CwKataWidget, theme: Theme) -> String {
 <g clip-path="url(#cwk-clip)">{rain}</g>
 <rect width="{W}" height="{H}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
 <text x="25" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">Kata Challenges</text>
-<line x1="25" y1="52" x2="285" y2="52" stroke="{sep}" stroke-width="1"/>
-<line x1="140" y1="58" x2="140" y2="108" stroke="{sep}" stroke-width="1"/>
+<line x1="25" y1="52" x2="470" y2="52" stroke="{sep}" stroke-width="1"/>
+<line x1="245" y1="58" x2="245" y2="150" stroke="{sep}" stroke-width="1"/>
 {stat_svg}
 </svg>"#,
         bg = c.bg,
