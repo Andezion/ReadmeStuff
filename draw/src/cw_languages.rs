@@ -9,11 +9,10 @@ const W: u32 = 495;
 const ROW_H: u32 = 22;
 const FIRST_ROW_Y: u32 = 72;
 const MAX_ROWS: usize = 4;
+pub const SIZE: (u32, u32) = (W, FIRST_ROW_Y + MAX_ROWS as u32 * ROW_H + 10);
 
 pub fn render_cw_languages(w: &CwLanguagesWidget, theme: Theme) -> String {
     let c = theme.colors();
-    // Height is fixed regardless of how many languages the account has, so the
-    // card keeps docking with its neighbors even as Codewars data changes.
     let h: u32 = FIRST_ROW_Y + MAX_ROWS as u32 * ROW_H + 10;
 
     let rain = matrix::generate(W, h, c.matrix_color, c.matrix_opacity, 0xCCCC_0303, "cwl");
