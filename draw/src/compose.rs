@@ -95,13 +95,7 @@ pub fn compose(canvas_w: u32, canvas_h: u32, theme: Theme, tiles: &[Tile]) -> Re
             );
         }
     }
-
-    // A tile whose declared size doesn't match what the layout expected can
-    // still fit inside the canvas bounds (e.g. a banner generated at the
-    // full row width instead of half of it) while still overlapping its
-    // neighbor - that's not caught by the canvas-overflow check above. This
-    // is a hard error rather than a warning: a silently overlapping tile
-    // would still "succeed" and produce a broken-looking mosaic.
+    
     for i in 0..tiles.len() {
         let Some((wi, hi)) = sizes[i] else { continue };
         for j in (i + 1)..tiles.len() {

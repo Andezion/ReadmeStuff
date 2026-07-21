@@ -259,7 +259,28 @@ const ROWS: &[(u32, &[(&str, u32, u32)])] = &[
     ),
 ];
 
+const MOSAIC_ORDER: &[usize] = &[1, 8, 6, 7, 9, 2, 5, 3, 4];
+
+fn validate_mosaic_order(order: &[usize], row_count: usize) -> Result<(), String> {
+    let mut seen = vec![false; row_count];
+    for &row in order {
+        if row == 0 || row > row_count {
+            return Err(format!("MOSAIC_ORDER: row {row} out of range 1..={row_count}"));
+        }
+        if seen[row - 1] {
+            return Err(format!("MOSAIC_ORDER: row {row} listed more than once"));
+        }
+        seen[row - 1] = true;
+    }
+    if let Some(missing) = seen.iter().position(|seen| !seen) {
+        return Err(format!("MOSAIC_ORDER: row {} is missing", missing + 1));
+    }
+    Ok(())
+}
+
 fn compose_mosaic(dir: &Path) -> Result<(), String> {
+    validate_mosaic_order(MOSAIC_ORDER, ROWS.len())?;
+
     let mut row_svgs: Vec<String> = Vec::new();
     let mut row_heights: Vec<u32> = Vec::new();
 
@@ -289,12 +310,16 @@ fn compose_mosaic(dir: &Path) -> Result<(), String> {
     }
 
     let mut y = 0u32;
-    let mosaic_tiles: Vec<Tile> = row_svgs
+    let mosaic_tiles: Vec<Tile> = MOSAIC_ORDER
         .iter()
-        .zip(row_heights.iter())
-        .map(|(svg, h)| {
-            let tile = Tile { svg, x: 0, y };
-            y += h;
+        .map(|&row_num| {
+            let idx = row_num - 1;
+            let tile = Tile {
+                svg: &row_svgs[idx],
+                x: 0,
+                y,
+            };
+            y += row_heights[idx];
             tile
         })
         .collect();
@@ -302,7 +327,10 @@ fn compose_mosaic(dir: &Path) -> Result<(), String> {
 
     let mosaic = compose(CANVAS_W, total_h, Theme::Dark, &mosaic_tiles)?;
     write_svg(dir, "profile-mosaic.svg", &mosaic);
-    eprintln!("  compose OK ({CANVAS_W}x{total_h}, {} rows)", ROWS.len());
+    eprintln!(
+        "  compose OK ({CANVAS_W}x{total_h}, {} rows, order {MOSAIC_ORDER:?})",
+        ROWS.len()
+    );
 
     Ok(())
 }
