@@ -1,3 +1,4 @@
+pub mod compose;
 mod helpers;
 mod matrix;
 pub mod theme;
@@ -36,6 +37,7 @@ mod competitive;
 mod langs;
 mod streak;
 
+pub use compose::{Tile, compose};
 pub use theme::Theme;
 
 // GitHub

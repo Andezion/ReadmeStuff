@@ -10,8 +10,8 @@ use readme_stuff_aggregator::{
     },
 };
 use readme_stuff_draw::{
-    Align, DEFAULT_HEIGHT, DEFAULT_WIDTH, Theme, parse_lines, render_cf_rating, render_cf_stats,
-    render_competitive, render_cw_kata, render_cw_languages, render_cw_rank,
+    Align, DEFAULT_HEIGHT, DEFAULT_WIDTH, Theme, Tile, compose, parse_lines, render_cf_rating,
+    render_cf_stats, render_competitive, render_cw_kata, render_cw_languages, render_cw_rank,
     render_github_commit_streak, render_github_contributions, render_github_engagement,
     render_github_heatmap, render_github_monthly, render_github_repos, render_github_social,
     render_github_stats, render_github_visitors, render_langs, render_lc_badges,
@@ -30,6 +30,15 @@ async fn main() {
         || matches!(std::env::var("TEXT_ONLY").as_deref(), Ok("1") | Ok("true"));
     if text_only {
         render_custom_text_card(&out_dir);
+        eprintln!("Done - {}", out_dir.display());
+        return;
+    }
+
+    if cli_bool_flag("--compose") {
+        if let Err(e) = compose_mosaic(&out_dir) {
+            eprintln!("compose FAILED: {e}");
+            std::process::exit(1);
+        }
         eprintln!("Done - {}", out_dir.display());
         return;
     }
@@ -177,6 +186,125 @@ async fn main() {
     render_custom_text_card(&out_dir);
 
     eprintln!("Done - {}", out_dir.display());
+}
+
+const CANVAS_W: u32 = 990;
+
+
+const ROWS: &[(u32, &[(&str, u32, u32)])] = &[
+    (120, &[("test1_stuff.svg", 0, 0)]),
+    (
+        195,
+        &[("test2_stuff.svg", 0, 0), ("competitive-dark.svg", 495, 0)],
+    ),
+    (
+        285,
+        &[
+            ("codeforce.svg", 0, 0),
+            ("cf-rating-dark.svg", 495, 0),
+            ("cf-stats-dark.svg", 495, 165),
+        ],
+    ),
+    (
+        335,
+        &[
+            ("codewars.svg", 0, 0),
+            ("cw-rank-dark.svg", 495, 0),
+            ("cw-kata-dark.svg", 0, 165),
+            ("cw-languages-dark.svg", 495, 165),
+        ],
+    ),
+    (
+        609,
+        &[
+            ("leetcode.svg", 0, 0),
+            ("lc-languages-dark.svg", 0, 181),
+            ("lc-solved-dark.svg", 0, 398),
+            ("lc-skills-dark.svg", 495, 0),
+            ("lc-badges-dark.svg", 495, 355),
+        ],
+    ),
+    (
+        325,
+        &[
+            ("commits.svg", 0, 0),
+            ("github-commit-streak-dark.svg", 495, 0),
+            ("github-contributions-dark.svg", 495, 150),
+        ],
+    ),
+    (
+        290,
+        &[
+            ("commits_details.svg", 0, 0),
+            ("github-heatmap-dark.svg", 0, 80),
+            ("github-monthly-dark.svg", 495, 80),
+        ],
+    ),
+    (
+        405,
+        &[
+            ("full.svg", 0, 0),
+            ("github-repos-dark.svg", 0, 90),
+            ("github-social-dark.svg", 495, 90),
+            ("github-stats-dark.svg", 0, 210),
+            ("langs-dark.svg", 495, 210),
+        ],
+    ),
+    (
+        676,
+        &[
+            ("github-visitors-dark.svg", 0, 0),
+            ("github-engagement-dark.svg", 495, 0),
+        ],
+    ),
+];
+
+fn compose_mosaic(dir: &Path) -> Result<(), String> {
+    let mut row_svgs: Vec<String> = Vec::new();
+    let mut row_heights: Vec<u32> = Vec::new();
+
+    for (row_idx, (height, tiles)) in ROWS.iter().enumerate() {
+        let files: Vec<String> = tiles
+            .iter()
+            .map(|(name, ..)| {
+                std::fs::read_to_string(dir.join(name))
+                    .map_err(|e| format!("row {}: reading {name}: {e}", row_idx + 1))
+            })
+            .collect::<Result<_, _>>()?;
+
+        let placed: Vec<Tile> = tiles
+            .iter()
+            .zip(files.iter())
+            .map(|((_, x, y), svg)| Tile { svg, x: *x, y: *y })
+            .collect();
+
+        let row_svg = compose(CANVAS_W, *height, Theme::Dark, &placed)
+            .map_err(|e| format!("row {}: {e}", row_idx + 1))?;
+
+        let row_name = format!("row-{}.svg", row_idx + 1);
+        write_svg(dir, &row_name, &row_svg);
+
+        row_svgs.push(row_svg);
+        row_heights.push(*height);
+    }
+
+    let mut y = 0u32;
+    let mosaic_tiles: Vec<Tile> = row_svgs
+        .iter()
+        .zip(row_heights.iter())
+        .map(|(svg, h)| {
+            let tile = Tile { svg, x: 0, y };
+            y += h;
+            tile
+        })
+        .collect();
+    let total_h = y;
+
+    let mosaic = compose(CANVAS_W, total_h, Theme::Dark, &mosaic_tiles)?;
+    write_svg(dir, "profile-mosaic.svg", &mosaic);
+    eprintln!("  compose OK ({CANVAS_W}x{total_h}, {} rows)", ROWS.len());
+
+    Ok(())
 }
 
 fn render_card<W, F>(name: &str, widget: Option<W>, render: F, dir: &Path)
