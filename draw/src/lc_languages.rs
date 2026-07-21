@@ -13,6 +13,7 @@ const PCT_X: u32 = W - PAD;
 const ROW_H: u32 = 22;
 const FIRST_ROW_Y: u32 = 75;
 const MAX_ROWS: usize = 6;
+pub const SIZE: (u32, u32) = (W, FIRST_ROW_Y + MAX_ROWS as u32 * ROW_H + 10);
 
 const LC_LANG_COLORS: &[(&str, &str)] = &[
     ("C++", "#f34b7d"),
@@ -37,8 +38,6 @@ fn lc_lang_color(name: &str) -> &'static str {
 
 pub fn render_lc_languages(w: &LcLanguagesWidget, theme: Theme) -> String {
     let c = theme.colors();
-    // Fixed height regardless of language count, so this tile keeps its
-    // target size in the grid even as new languages get solved.
     let h: u32 = FIRST_ROW_Y + MAX_ROWS as u32 * ROW_H + 10;
 
     let rain = matrix::generate(W, h, c.matrix_color, c.matrix_opacity, 0x1C00_0003, "lcl");
