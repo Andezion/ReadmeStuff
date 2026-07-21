@@ -13,3 +13,4 @@ readme-stuff-catalog = { path = "../catalog" }
 ratatui = "0.29.0"
 crossterm = "0.28"
 tui-textarea = "0.7.0"
+tokio = { version = "1.53.1", features = ["rt-multi-thread"] }
