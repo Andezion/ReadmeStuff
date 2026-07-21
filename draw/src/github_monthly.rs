@@ -3,6 +3,7 @@ use readme_stuff_aggregator::widgets::GithubMonthlyWidget;
 
 const W: u32 = 495;
 const H: u32 = 210;
+pub const SIZE: (u32, u32) = (W, H);
 const PAD: u32 = 25;
 const BAR_AREA_TOP: u32 = 65;
 const BAR_AREA_BOTTOM: u32 = 166;
