@@ -10,7 +10,40 @@ use readme_stuff_api::{
     github_visitors::{GithubVisitorsService, StorageKind, filter::FilterConfig},
     leetcode::LeetcodeApi,
 };
+use readme_stuff_config::{Credential, ProfileConfig};
+use std::collections::HashSet;
 use std::path::PathBuf;
+
+const NOT_SELECTED: &str = "not selected - no placed widget needs this source";
+
+
+#[derive(Clone, Copy)]
+struct SourceGates {
+    github: bool,
+    codeforces: bool,
+    codewars: bool,
+    leetcode: bool,
+}
+
+impl SourceGates {
+    fn all() -> Self {
+        SourceGates {
+            github: true,
+            codeforces: true,
+            codewars: true,
+            leetcode: true,
+        }
+    }
+
+    fn from_needed(needed: &HashSet<Credential>) -> Self {
+        SourceGates {
+            github: needed.contains(&Credential::GitHubToken) || needed.contains(&Credential::GitHubLogin),
+            codeforces: needed.contains(&Credential::CodeforcesHandle),
+            codewars: needed.contains(&Credential::CodewarsUsername),
+            leetcode: needed.contains(&Credential::LeetcodeUsername),
+        }
+    }
+}
 
 fn visitors_data_dir() -> PathBuf {
     std::env::var("VISITORS_DATA_DIR")
@@ -51,12 +84,35 @@ pub async fn build_profile(
     cw_username: &str,
     lc_username: &str,
 ) -> UserProfile {
-    let gh_client = GitHubClient::from_env().ok();
+    build_profile_gated(github_login, cf_handle, cw_username, lc_username, SourceGates::all()).await
+}
+
+pub async fn build_profile_selective(cfg: &ProfileConfig, needed: &HashSet<Credential>) -> UserProfile {
+    let gates = SourceGates::from_needed(needed);
+    let github_login = cfg.github_login.clone().unwrap_or_default();
+    let cf_handle = cfg.codeforces_handle.clone().unwrap_or_default();
+    let cw_username = cfg.codewars_username.clone().unwrap_or_default();
+    let lc_username = cfg.leetcode_username.clone().unwrap_or_default();
+    build_profile_gated(&github_login, &cf_handle, &cw_username, &lc_username, gates).await
+}
+
+async fn build_profile_gated(
+    github_login: &str,
+    cf_handle: &str,
+    cw_username: &str,
+    lc_username: &str,
+    gates: SourceGates,
+) -> UserProfile {
+    let gh_client = if gates.github { GitHubClient::from_env().ok() } else { None };
 
     let github_fut = {
         let login = github_login.to_owned();
         let client = gh_client.clone();
+        let enabled = gates.github;
         async move {
+            if !enabled {
+                return Err(NOT_SELECTED.to_string());
+            }
             let c = client.ok_or_else(|| "GITHUB_TOKEN not set".to_string())?;
             GitHubStatisticApi::new(c)
                 .fetch_profile_stats(&login)
@@ -68,7 +124,11 @@ pub async fn build_profile(
     let streak_fut = {
         let login = github_login.to_owned();
         let client = gh_client.clone();
+        let enabled = gates.github;
         async move {
+            if !enabled {
+                return Err(NOT_SELECTED.to_string());
+            }
             let c = client.ok_or_else(|| "GITHUB_TOKEN not set".to_string())?;
             GitHubStreakApi::new(c)
                 .fetch_streak_stats(&login)
@@ -80,7 +140,11 @@ pub async fn build_profile(
     let langs_fut = {
         let login = github_login.to_owned();
         let client = gh_client.clone();
+        let enabled = gates.github;
         async move {
+            if !enabled {
+                return Err(NOT_SELECTED.to_string());
+            }
             let c = client.ok_or_else(|| "GITHUB_TOKEN not set".to_string())?;
             GitHubLangsApi::new(c)
                 .fetch_lang_stats(&login, &LangQueryOptions::default())
@@ -92,7 +156,11 @@ pub async fn build_profile(
     let commit_streak_fut = {
         let login = github_login.to_owned();
         let client = gh_client.clone();
+        let enabled = gates.github;
         async move {
+            if !enabled {
+                return Err(NOT_SELECTED.to_string());
+            }
             let c = client.ok_or_else(|| "GITHUB_TOKEN not set".to_string())?;
             GitHubCommitStreakApi::new(c)
                 .fetch_stats(&login)
@@ -104,7 +172,11 @@ pub async fn build_profile(
     let visitors_fut = {
         let login = github_login.to_owned();
         let client = gh_client.clone();
+        let enabled = gates.github;
         async move {
+            if !enabled {
+                return Err(NOT_SELECTED.to_string());
+            }
             let c = client.ok_or_else(|| "GITHUB_TOKEN not set".to_string())?;
             let svc = GithubVisitorsService::new(
                 c,
@@ -125,7 +197,11 @@ pub async fn build_profile(
     let engagement_fut = {
         let login = github_login.to_owned();
         let client = gh_client.clone();
+        let enabled = gates.github;
         async move {
+            if !enabled {
+                return Err(NOT_SELECTED.to_string());
+            }
             let c = client.ok_or_else(|| "GITHUB_TOKEN not set".to_string())?;
             let svc = GithubVisitorsService::new(c, StorageKind::InMemory, FilterConfig::default())
                 .await
@@ -135,7 +211,11 @@ pub async fn build_profile(
     };
 
     let cf = cf_handle.to_owned();
+    let cf_enabled = gates.codeforces;
     let cf_fut = tokio::task::spawn_blocking(move || {
+        if !cf_enabled {
+            return Err(NOT_SELECTED.to_string());
+        }
         let api = CodeforcesApi::default();
         let user = api
             .user_info(cf.as_str())
@@ -155,12 +235,20 @@ pub async fn build_profile(
     });
 
     let cw = cw_username.to_owned();
+    let cw_enabled = gates.codewars;
     let cw_fut = tokio::task::spawn_blocking(move || {
+        if !cw_enabled {
+            return Err(NOT_SELECTED.to_string());
+        }
         CodewarsApi::default().user(&cw).map_err(|e| e.to_string())
     });
 
     let lc = lc_username.to_owned();
+    let lc_enabled = gates.leetcode;
     let lc_fut = tokio::task::spawn_blocking(move || {
+        if !lc_enabled {
+            return Err(NOT_SELECTED.to_string());
+        }
         let api = LeetcodeApi::default();
         let solved = api
             .amount_of_solved_problems(&lc)
