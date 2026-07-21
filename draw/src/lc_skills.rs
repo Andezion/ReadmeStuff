@@ -9,6 +9,7 @@ const COUNT_X: u32 = 452;
 const ROW_H: u32 = 18;
 const FIRST_Y: u32 = 70;
 const MAX_ROWS: usize = 15;
+pub const SIZE: (u32, u32) = (W, FIRST_Y + MAX_ROWS as u32 * ROW_H + 15);
 
 const CAT_COLORS: [(&str, &str); 3] = [("adv", "#ff6e96"), ("int", "#58a6ff"), ("fun", "#3fb950")];
 
@@ -22,8 +23,6 @@ fn cat_color(cat: &str) -> &'static str {
 
 pub fn render_lc_skills(w: &LcSkillsWidget, theme: Theme) -> String {
     let c = theme.colors();
-    // Fixed height regardless of skill count, so this tile keeps its target
-    // size in the grid even if the account has fewer than MAX_ROWS skills.
     let h: u32 = FIRST_Y + MAX_ROWS as u32 * ROW_H + 15;
 
     let rain = matrix::generate(W, h, c.matrix_color, c.matrix_opacity, 0x1C00_0002, "lcsk");
