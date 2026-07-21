@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 
 #[tokio::main]
 async fn main() {
-    load_dotenv();
+    config_io::load_dotenv();
 
     let out_dir = PathBuf::from(std::env::var("OUTPUT_DIR").unwrap_or_else(|_| "profile".into()));
     std::fs::create_dir_all(&out_dir).expect("cannot create output dir");
@@ -176,37 +176,3 @@ fn write_svg(dir: &Path, name: &str, content: &str) {
     eprintln!("    - {}", path.display());
 }
 
-fn find_dotenv() -> Option<std::path::PathBuf> {
-    let mut dir = std::env::current_dir().ok()?;
-    loop {
-        let candidate = dir.join(".env");
-        if candidate.exists() {
-            return Some(candidate);
-        }
-        if !dir.pop() {
-            return None;
-        }
-    }
-}
-
-fn load_dotenv() {
-    let Some(path) = find_dotenv() else { return };
-    let Ok(text) = std::fs::read_to_string(path) else {
-        return;
-    };
-    for line in text.lines() {
-        let line = line.trim();
-        if line.is_empty() || line.starts_with('#') {
-            continue;
-        }
-        if let Some((key, val)) = line.split_once('=') {
-            if std::env::var(key).is_err() {
-                unsafe { std::env::set_var(key, val.trim()) };
-            }
-        } else if (line.starts_with("ghp_") || line.starts_with("github_pat_"))
-            && std::env::var("GITHUB_TOKEN").is_err()
-        {
-            unsafe { std::env::set_var("GITHUB_TOKEN", line) };
-        }
-    }
-}
