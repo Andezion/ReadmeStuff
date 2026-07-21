@@ -8,7 +8,7 @@ name = "readmestuff"
 path = "src/main.rs"
 
 [dependencies]
-readme-stuff-api        = { path = "../api" }
-readme-stuff-aggregator = { path = "../aggregator" }
 readme-stuff-draw       = { path = "../draw" }
+readme-stuff-config     = { path = "../config" }
+readme-stuff-catalog    = { path = "../catalog" }
 tokio = { version = "1", features = ["full"] }
