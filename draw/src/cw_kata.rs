@@ -3,6 +3,7 @@ use readme_stuff_aggregator::widgets::CwKataWidget;
 
 const W: u32 = 495;
 const H: u32 = 170;
+pub const SIZE: (u32, u32) = (W, H);
 
 pub fn render_cw_kata(w: &CwKataWidget, theme: Theme) -> String {
     let c = theme.colors();
