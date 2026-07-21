@@ -3,6 +3,7 @@ use readme_stuff_aggregator::widgets::StreakWidget;
 
 const W: u32 = 495;
 const H: u32 = 160;
+pub const SIZE: (u32, u32) = (W, H);
 
 pub fn render_streak(w: &StreakWidget, theme: Theme) -> String {
     let c = theme.colors();
