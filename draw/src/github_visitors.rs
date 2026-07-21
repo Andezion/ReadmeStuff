@@ -13,9 +13,13 @@ const MAX_REPOS: usize = 25;
 
 const SPARK_CHART_H: u32 = 40;
 
+pub const VISITORS_SIZE: (u32, u32) = (
+    W,
+    REPO_LIST_START_Y + MAX_REPOS as u32 * REPO_ROW_H + 32 + SPARK_CHART_H + 16,
+);
+
 fn render_sparkline(w: &GithubVisitorsWidget, top_y: u32, c: &crate::theme::Colors) -> (String, u32) {
-    // Block height is fixed regardless of whether there's enough weekly data
-    // to draw a line, so the card's total height never depends on live data.
+    
     let sep_y = top_y + 12;
     let label_y = sep_y + 14;
     let chart_top = label_y + 6;
@@ -66,8 +70,6 @@ fn render_sparkline(w: &GithubVisitorsWidget, top_y: u32, c: &crate::theme::Colo
 
 pub fn render_github_visitors(w: &GithubVisitorsWidget, theme: Theme) -> String {
     let c = theme.colors();
-    // Fixed regardless of how many repos have traffic, so the card keeps
-    // docking with its neighbors even as more repos start getting views.
     let repo_list_bottom = REPO_LIST_START_Y + MAX_REPOS as u32 * REPO_ROW_H;
     let (spark_svg, spark_h) = render_sparkline(w, repo_list_bottom, &c);
     let height = repo_list_bottom + spark_h + 16;
@@ -220,11 +222,13 @@ pub fn render_github_visitors(w: &GithubVisitorsWidget, theme: Theme) -> String 
 const ENGAGEMENT_ROW_H: u32 = 14;
 const ENGAGEMENT_LIST_START_Y: u32 = 156;
 const ENGAGEMENT_MAX_ROWS: usize = 36;
+pub const ENGAGEMENT_SIZE: (u32, u32) = (
+    W,
+    ENGAGEMENT_LIST_START_Y + ENGAGEMENT_MAX_ROWS as u32 * ENGAGEMENT_ROW_H + 16,
+);
 
 pub fn render_github_engagement(w: &EngagementWidget, theme: Theme) -> String {
     let c = theme.colors();
-    // Fixed height regardless of stargazer count, so the card keeps docking
-    // with its neighbors even as more stars come in.
     let height = ENGAGEMENT_LIST_START_Y + ENGAGEMENT_MAX_ROWS as u32 * ENGAGEMENT_ROW_H + 16;
     let rain = matrix::generate(W, height, c.matrix_color, c.matrix_opacity, 0x5EED_1234, "gge");
 
@@ -291,6 +295,8 @@ pub fn render_github_engagement(w: &EngagementWidget, theme: Theme) -> String {
         rows = rows_svg,
     )
 }
+
+pub const COMMIT_STREAK_SIZE: (u32, u32) = (495, 150);
 
 pub fn render_github_commit_streak(
     w: &readme_stuff_aggregator::widgets::CommitStreakWidget,
