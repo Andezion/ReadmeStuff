@@ -7,6 +7,7 @@ use readme_stuff_aggregator::widgets::GithubStatsWidget;
 
 const W: u32 = 495;
 const H: u32 = 195;
+pub const SIZE: (u32, u32) = (W, H);
 
 pub fn render_github_stats(w: &GithubStatsWidget, theme: Theme) -> String {
     let c = theme.colors();
