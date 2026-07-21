@@ -7,6 +7,7 @@ use readme_stuff_aggregator::widgets::CwRankWidget;
 
 const W: u32 = 495;
 const H: u32 = 165;
+pub const SIZE: (u32, u32) = (W, H);
 
 pub fn render_cw_rank(w: &CwRankWidget, theme: Theme) -> String {
     let c = theme.colors();
