@@ -83,20 +83,48 @@ pub struct Tile<'a> {
 
 pub fn compose(canvas_w: u32, canvas_h: u32, theme: Theme, tiles: &[Tile]) -> Result<String, String> {
     let c = theme.colors();
+    let sizes: Vec<Option<(u32, u32)>> = tiles.iter().map(|t| declared_size(t.svg)).collect();
+
+    for (slot, (tile, size)) in tiles.iter().zip(sizes.iter()).enumerate() {
+        let Some((w, h)) = size else { continue };
+        if tile.x + w > canvas_w || tile.y + h > canvas_h {
+            eprintln!(
+                "compose: warning - tile {slot} is {w}x{h} at ({x},{y}), overflows {canvas_w}x{canvas_h} canvas",
+                x = tile.x,
+                y = tile.y,
+            );
+        }
+    }
+
+    // A tile whose declared size doesn't match what the layout expected can
+    // still fit inside the canvas bounds (e.g. a banner generated at the
+    // full row width instead of half of it) while still overlapping its
+    // neighbor - that's not caught by the canvas-overflow check above. This
+    // is a hard error rather than a warning: a silently overlapping tile
+    // would still "succeed" and produce a broken-looking mosaic.
+    for i in 0..tiles.len() {
+        let Some((wi, hi)) = sizes[i] else { continue };
+        for j in (i + 1)..tiles.len() {
+            let Some((wj, hj)) = sizes[j] else { continue };
+            let (a, b) = (&tiles[i], &tiles[j]);
+            let overlap_x = a.x < b.x + wj && b.x < a.x + wi;
+            let overlap_y = a.y < b.y + hj && b.y < a.y + hi;
+            if overlap_x && overlap_y {
+                return Err(format!(
+                    "tile {i} ({wi}x{hi} at {ax},{ay}) overlaps tile {j} ({wj}x{hj} at {bx},{by}) - one of them was generated at the wrong size",
+                    ax = a.x,
+                    ay = a.y,
+                    bx = b.x,
+                    by = b.y,
+                ));
+            }
+        }
+    }
+
     let mut rain_layer = String::new();
     let mut content_layer = String::new();
 
     for (slot, tile) in tiles.iter().enumerate() {
-        if let Some((w, h)) = declared_size(tile.svg) {
-            if tile.x + w > canvas_w || tile.y + h > canvas_h {
-                eprintln!(
-                    "compose: warning - tile {slot} is {w}x{h} at ({x},{y}), overflows {canvas_w}x{canvas_h} canvas",
-                    x = tile.x,
-                    y = tile.y,
-                );
-            }
-        }
-
         let (rain, content) =
             extract_widget(tile.svg).ok_or_else(|| format!("tile {slot}: could not parse widget svg"))?;
         let rain = namespace_rain(&rain, slot);
@@ -191,6 +219,26 @@ mod tests {
         assert_eq!(out.matches("@keyframes aa0s1{").count(), 1);
         assert_eq!(out.matches("hello aa").count(), 2);
         assert_eq!(out.matches("rx=\"6\"").count(), 3);
+    }
+
+    #[test]
+    fn rejects_tiles_that_overlap() {
+        // "b" was generated at the wrong width (990 instead of its assigned
+        // 495-wide slot) and ends up overlapping "a" placed at x=495 - this
+        // is exactly the class of bug a wrong CLI size argument produces.
+        let a = widget(990, 100, "aa");
+        let b = widget(495, 100, "bb");
+        let err = compose(
+            990,
+            100,
+            Theme::Dark,
+            &[
+                Tile { svg: &a, x: 0, y: 0 },
+                Tile { svg: &b, x: 495, y: 0 },
+            ],
+        )
+        .expect_err("overlapping tiles must be rejected");
+        assert!(err.contains("overlaps"));
     }
 
     #[test]
