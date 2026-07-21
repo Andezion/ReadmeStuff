@@ -1,8 +1,21 @@
 name: Regenerate profile SVGs
 
 on:
-  schedule:
-    - cron: '0 */2 * * *'
+  push:
+    branches:
+      - main
+    paths:
+      - 'api/**'
+      - 'aggregator/**'
+      - 'cache/**'
+      - 'server/**'
+      - 'draw/**'
+      - 'cli/**'
+      - 'config/**'
+      - 'catalog/**'
+      - 'tui/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
   workflow_dispatch: {}
 
 permissions:
@@ -14,7 +27,7 @@ concurrency:
 
 env:
   OUTPUT_DIR: readme_test
-  
+  MOSAIC_FILE: readme_test/profile-mosaic.svg
   VISITORS_DATA_DIR: data/github_visitors
 
 jobs:
@@ -82,12 +95,12 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add "$OUTPUT_DIR"
+          git add "$MOSAIC_FILE"
           git add -f "$VISITORS_DATA_DIR"
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "chore: regenerate profile SVGs [skip ci]"
+            git commit -m "chore: regenerate profile mosaic [skip ci]"
             for attempt in 1 2 3 4 5; do
               if git push; then
                 break
