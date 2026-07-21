@@ -241,13 +241,13 @@ const ROWS: &[(u32, &[(&str, u32, u32)])] = &[
         ],
     ),
     (
-        405,
+        415,
         &[
             ("full.svg", 0, 0),
-            ("github-repos-dark.svg", 0, 90),
-            ("github-social-dark.svg", 495, 90),
-            ("github-stats-dark.svg", 0, 210),
-            ("langs-dark.svg", 495, 210),
+            ("github-repos-dark.svg", 0, 100),
+            ("github-social-dark.svg", 495, 100),
+            ("github-stats-dark.svg", 0, 220),
+            ("langs-dark.svg", 495, 220),
         ],
     ),
     (
