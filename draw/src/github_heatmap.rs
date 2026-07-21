@@ -3,6 +3,7 @@ use readme_stuff_aggregator::widgets::GithubHeatmapWidget;
 
 const W: u32 = 495;
 const H: u32 = 210;
+pub const SIZE: (u32, u32) = (W, H);
 const LABEL_X: u32 = 25;
 const BAR_X: u32 = 65;
 const BAR_MAX_W: u32 = 350;
