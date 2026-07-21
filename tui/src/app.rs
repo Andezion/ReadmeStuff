@@ -1,8 +1,9 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use readme_stuff_catalog::BuildOutput;
 use readme_stuff_catalog::registry::{self, WidgetSpec};
 use readme_stuff_config::{Config, Credential, Layout, PlacedWidget, ProfileConfig, Row, ThemeChoice, io};
 use std::collections::HashSet;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tui_textarea::TextArea;
 
 const CANVAS_WIDTH: u32 = 990;
@@ -11,7 +12,8 @@ const CANVAS_WIDTH: u32 = 990;
 pub enum Screen {
     Welcome,
     Questionnaire,
-    Done,
+    Building,
+    Report,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -55,6 +57,10 @@ pub struct App {
     pub found_config_path: Option<PathBuf>,
     pending_resume: Option<Config>,
 
+    pub pending_build: Option<Config>,
+    pub build_output: Option<Result<BuildOutput, String>>,
+    pub build_tick: u32,
+
     pub github_login: TextArea<'static>,
     pub github_token_env: TextArea<'static>,
     pub codeforces_handle: TextArea<'static>,
@@ -81,6 +87,9 @@ impl App {
             should_quit: false,
             found_config_path: None,
             pending_resume: None,
+            pending_build: None,
+            build_output: None,
+            build_tick: 0,
             github_login: TextArea::default(),
             github_token_env: single_line("GITHUB_TOKEN"),
             codeforces_handle: TextArea::default(),
@@ -193,24 +202,41 @@ pub fn load_into(app: &mut App, cfg: &Config) {
         .collect();
 }
 
-fn save_current_dir(app: &mut App) {
+fn save_and_queue_build(app: &mut App) {
+    let dir = std::env::current_dir().unwrap_or_default();
+    save_and_queue_build_in(app, &dir);
+}
+
+fn save_and_queue_build_in(app: &mut App, dir: &Path) {
     let cfg = to_config(app);
-    let path = std::env::current_dir().unwrap_or_default().join(io::CONFIG_FILE_NAME);
+    let path = dir.join(io::CONFIG_FILE_NAME);
     match io::save(&path, &cfg) {
         Ok(()) => {
             app.saved_path = Some(path);
             app.status = None;
-            app.screen = Screen::Done;
+            app.pending_build = Some(cfg);
+            app.build_tick = 0;
+            app.screen = Screen::Building;
         }
         Err(e) => app.status = Some(format!("save failed: {e}")),
     }
+}
+
+pub fn apply_build_result(app: &mut App, result: Result<BuildOutput, String>) {
+    app.build_output = Some(result);
+    app.screen = Screen::Report;
+}
+
+pub fn tick_building(app: &mut App) {
+    app.build_tick = app.build_tick.wrapping_add(1);
 }
 
 pub fn handle_key(app: &mut App, key: KeyEvent) {
     match app.screen {
         Screen::Welcome => handle_welcome_key(app, key),
         Screen::Questionnaire => handle_questionnaire_key(app, key),
-        Screen::Done => handle_done_key(app, key),
+        Screen::Building => handle_building_key(app, key),
+        Screen::Report => handle_report_key(app, key),
     }
 }
 
@@ -233,7 +259,7 @@ fn handle_welcome_key(app: &mut App, key: KeyEvent) {
 
 fn handle_questionnaire_key(app: &mut App, key: KeyEvent) {
     if key.code == KeyCode::Char('s') && key.modifiers.contains(KeyModifiers::CONTROL) {
-        save_current_dir(app);
+        save_and_queue_build(app);
         return;
     }
     if key.code == KeyCode::Esc {
@@ -295,9 +321,21 @@ fn handle_questionnaire_key(app: &mut App, key: KeyEvent) {
     }
 }
 
-fn handle_done_key(app: &mut App, key: KeyEvent) {
+fn handle_building_key(app: &mut App, key: KeyEvent) {
+    
+    if key.code == KeyCode::Esc {
+        app.should_quit = true;
+    }
+}
+
+fn handle_report_key(app: &mut App, key: KeyEvent) {
     match key.code {
-        KeyCode::Char('b') | KeyCode::Char('B') => app.screen = Screen::Questionnaire,
+        KeyCode::Char('b') | KeyCode::Char('B') => {
+            app.screen = Screen::Questionnaire;
+            app.build_output = None;
+            app.pending_build = None;
+            app.build_tick = 0;
+        }
         KeyCode::Char('q') | KeyCode::Char('Q') | KeyCode::Esc => app.should_quit = true,
         _ => {}
     }
@@ -452,6 +490,69 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn save_and_queue_build_queues_a_build_and_moves_to_building() {
+        let dir = std::env::temp_dir().join(format!("readme-stuff-tui-save-ok-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let mut app = app_with("octocat", "GITHUB_TOKEN");
+        toggle_selected(&mut app, "github-stats");
+
+        save_and_queue_build_in(&mut app, &dir);
+
+        assert_eq!(app.screen, Screen::Building);
+        assert!(app.pending_build.is_some());
+        assert!(app.status.is_none());
+        assert!(dir.join(io::CONFIG_FILE_NAME).exists());
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn save_and_queue_build_reports_an_error_and_does_not_queue_on_write_failure() {
+        let dir = std::env::temp_dir()
+            .join(format!("readme-stuff-tui-save-missing-{}", std::process::id()))
+            .join("nested-that-does-not-exist");
+        let mut app = app_with("octocat", "GITHUB_TOKEN");
+
+        save_and_queue_build_in(&mut app, &dir);
+
+        assert_eq!(app.screen, Screen::Questionnaire);
+        assert!(app.pending_build.is_none());
+        assert!(app.status.is_some());
+    }
+
+    #[test]
+    fn apply_build_result_moves_to_report_with_the_payload() {
+        let mut app = App::new(None);
+        apply_build_result(&mut app, Err("boom".to_string()));
+        assert_eq!(app.screen, Screen::Report);
+        assert!(matches!(app.build_output, Some(Err(ref e)) if e == "boom"));
+    }
+
+    #[test]
+    fn tick_building_increments_and_wraps() {
+        let mut app = App::new(None);
+        assert_eq!(app.build_tick, 0);
+        tick_building(&mut app);
+        assert_eq!(app.build_tick, 1);
+        app.build_tick = u32::MAX;
+        tick_building(&mut app);
+        assert_eq!(app.build_tick, 0);
+    }
+
+    #[test]
+    fn back_from_report_clears_stale_build_state() {
+        let mut app = App::new(None);
+        apply_build_result(&mut app, Err("boom".to_string()));
+        app.pending_build = Some(to_config(&app));
+
+        handle_key(&mut app, KeyEvent::from(KeyCode::Char('b')));
+
+        assert_eq!(app.screen, Screen::Questionnaire);
+        assert!(app.build_output.is_none());
+        assert!(app.pending_build.is_none());
+        assert_eq!(app.build_tick, 0);
     }
 
     #[test]
