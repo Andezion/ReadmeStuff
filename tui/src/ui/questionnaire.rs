@@ -109,7 +109,7 @@ fn draw_fields(frame: &mut Frame, app: &App, area: Rect) {
     );
 
     let help = Paragraph::new(Line::from(
-        "Tab/Shift+Tab: move focus   Ctrl+S: save   Esc: quit",
+        "Tab/Shift+Tab: move focus   Ctrl+S: save & build   Esc: quit",
     ))
     .style(Style::default().fg(PALETTE.text_secondary));
     frame.render_widget(help, rows[5]);
