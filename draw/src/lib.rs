@@ -40,6 +40,35 @@ mod streak;
 pub use compose::{Tile, compose};
 pub use theme::Theme;
 
+pub mod sizes {
+    pub const GITHUB_STATS: (u32, u32) = crate::github_stats::SIZE;
+    pub const GITHUB_REPOS: (u32, u32) = crate::github_repos::SIZE;
+    pub const GITHUB_CONTRIBUTIONS: (u32, u32) = crate::github_contributions::SIZE;
+    pub const GITHUB_SOCIAL: (u32, u32) = crate::github_social::SIZE;
+    pub const GITHUB_HEATMAP: (u32, u32) = crate::github_heatmap::SIZE;
+    pub const GITHUB_MONTHLY: (u32, u32) = crate::github_monthly::SIZE;
+    pub const GITHUB_VISITORS: (u32, u32) = crate::github_visitors::VISITORS_SIZE;
+    pub const GITHUB_ENGAGEMENT: (u32, u32) = crate::github_visitors::ENGAGEMENT_SIZE;
+    pub const GITHUB_COMMIT_STREAK: (u32, u32) = crate::github_visitors::COMMIT_STREAK_SIZE;
+
+    pub const STREAK: (u32, u32) = crate::streak::SIZE;
+    pub const LANGS: (u32, u32) = crate::langs::SIZE;
+
+    pub const CF_RATING: (u32, u32) = crate::cf_rating::SIZE;
+    pub const CF_STATS: (u32, u32) = crate::cf_stats::SIZE;
+
+    pub const CW_RANK: (u32, u32) = crate::cw_rank::SIZE;
+    pub const CW_KATA: (u32, u32) = crate::cw_kata::SIZE;
+    pub const CW_LANGUAGES: (u32, u32) = crate::cw_languages::SIZE;
+
+    pub const LC_SOLVED: (u32, u32) = crate::lc_solved::SIZE;
+    pub const LC_SKILLS: (u32, u32) = crate::lc_skills::SIZE;
+    pub const LC_LANGUAGES: (u32, u32) = crate::lc_languages::SIZE;
+    pub const LC_BADGES: (u32, u32) = crate::lc_badges::SIZE;
+
+    pub const COMPETITIVE: (u32, u32) = crate::competitive::SIZE;
+}
+
 // GitHub
 pub use github_contributions::render_github_contributions;
 pub use github_heatmap::render_github_heatmap;
