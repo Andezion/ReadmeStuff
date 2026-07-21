@@ -1,3 +1,3 @@
-Codewars statistics(40)
-i dont spend much time there(35)
-but overall its a good place to learn(27)
+Leetcode statistics(40)
+there ive spent a lot of time(35)
+but only because of Job hunting(30)
