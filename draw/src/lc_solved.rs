@@ -3,6 +3,7 @@ use readme_stuff_aggregator::widgets::LcSolvedWidget;
 
 const W: u32 = 495;
 const H: u32 = 211;
+pub const SIZE: (u32, u32) = (W, H);
 
 const LC_EASY: &str = "#00b8a3";
 const LC_MEDIUM: &str = "#ffc01e";
