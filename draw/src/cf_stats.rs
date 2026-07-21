@@ -3,6 +3,7 @@ use readme_stuff_aggregator::widgets::CfStatsWidget;
 
 const W: u32 = 495;
 const H: u32 = 120;
+pub const SIZE: (u32, u32) = (W, H);
 
 pub fn render_cf_stats(w: &CfStatsWidget, theme: Theme) -> String {
     let c = theme.colors();
