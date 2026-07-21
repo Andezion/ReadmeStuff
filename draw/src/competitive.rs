@@ -7,8 +7,8 @@ use readme_stuff_aggregator::widgets::CompetitiveWidget;
 
 const W: u32 = 495;
 const H: u32 = 195;
+pub const SIZE: (u32, u32) = (W, H);
 
-// Column x positions (left edges of 3 sections)
 const CF_X: u32 = 25;
 const CW_X: u32 = 185;
 const LC_X: u32 = 345;
