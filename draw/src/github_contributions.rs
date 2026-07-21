@@ -3,6 +3,7 @@ use readme_stuff_aggregator::widgets::GithubContributionsWidget;
 
 const W: u32 = 495;
 const H: u32 = 175;
+pub const SIZE: (u32, u32) = (W, H);
 
 pub fn render_github_contributions(w: &GithubContributionsWidget, theme: Theme) -> String {
     let c = theme.colors();
