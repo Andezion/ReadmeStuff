@@ -129,6 +129,17 @@ pub fn toggle_selected(app: &mut App, id: &'static str) {
     }
 }
 
+pub fn add_selected(app: &mut App, id: &'static str) {
+    let Some(spec) = registry::find(id) else { return };
+    if is_selectable(app, spec) {
+        app.selected.insert(id);
+    }
+}
+
+pub fn remove_selected(app: &mut App, id: &'static str) {
+    app.selected.remove(id);
+}
+
 pub fn pack_layout(selected: &HashSet<&'static str>) -> Layout {
     let mut rows: Vec<Row> = Vec::new();
     let mut current: Vec<PlacedWidget> = Vec::new();
@@ -250,6 +261,16 @@ fn handle_questionnaire_key(app: &mut App, key: KeyEvent) {
             KeyCode::Char(' ') | KeyCode::Enter => {
                 if let Some(spec) = registry::all_widgets().get(app.widget_cursor) {
                     toggle_selected(app, spec.id);
+                }
+            }
+            KeyCode::Char('a') | KeyCode::Char('A') => {
+                if let Some(spec) = registry::all_widgets().get(app.widget_cursor) {
+                    add_selected(app, spec.id);
+                }
+            }
+            KeyCode::Char('d') | KeyCode::Char('D') => {
+                if let Some(spec) = registry::all_widgets().get(app.widget_cursor) {
+                    remove_selected(app, spec.id);
                 }
             }
             _ => {}
@@ -377,6 +398,32 @@ mod tests {
         assert!(app.selected.contains("github-stats"));
         toggle_selected(&mut app, "github-stats");
         assert!(!app.selected.contains("github-stats"));
+    }
+
+    #[test]
+    fn add_selected_is_idempotent_and_never_removes() {
+        let mut app = app_with("octocat", "GITHUB_TOKEN");
+        add_selected(&mut app, "github-stats");
+        assert!(app.selected.contains("github-stats"));
+        add_selected(&mut app, "github-stats");
+        assert!(app.selected.contains("github-stats"), "second Add must not remove it");
+    }
+
+    #[test]
+    fn add_selected_is_a_no_op_when_not_selectable() {
+        let mut app = app_with("", "");
+        add_selected(&mut app, "cf-rating");
+        assert!(!app.selected.contains("cf-rating"));
+    }
+
+    #[test]
+    fn remove_selected_is_idempotent() {
+        let mut app = app_with("octocat", "GITHUB_TOKEN");
+        add_selected(&mut app, "github-stats");
+        remove_selected(&mut app, "github-stats");
+        assert!(!app.selected.contains("github-stats"));
+        remove_selected(&mut app, "github-stats");
+        assert!(!app.selected.contains("github-stats"), "second Delete must stay a no-op");
     }
 
     #[test]
