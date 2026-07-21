@@ -129,7 +129,7 @@ fn render_field(frame: &mut Frame, label: &str, ta: &tui_textarea::TextArea, foc
 
 fn draw_widget_list(frame: &mut Frame, app: &App, area: Rect) {
     let focused = app.focus == Field::WidgetList;
-    let block = theme::focusable_block("Widgets to include (Space/Enter to toggle)", focused);
+    let block = theme::focusable_block("Widgets to include - [A] Add   [D] Delete   (Space/Enter: toggle)", focused);
 
     let items: Vec<ListItem> = registry::all_widgets()
         .iter()
