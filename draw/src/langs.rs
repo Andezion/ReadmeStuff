@@ -3,6 +3,7 @@ use readme_stuff_aggregator::widgets::LangsWidget;
 
 const W: u32 = 495;
 const H: u32 = 195;
+pub const SIZE: (u32, u32) = (W, H);
 const PAD: u32 = 25;
 const BAR_X: u32 = 230;
 const BAR_W: u32 = 200;
