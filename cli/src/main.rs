@@ -1,22 +1,6 @@
-use readme_stuff_aggregator::{
-    profile::build_profile,
-    widgets::{
-        cf_rating_widget, cf_stats_widget, commit_streak_widget, competitive_widget,
-        cw_kata_widget, cw_languages_widget, cw_rank_widget, github_contributions_widget,
-        github_engagement_widget, github_heatmap_widget, github_monthly_widget,
-        github_repos_widget, github_social_widget, github_stats_widget, github_visitors_widget,
-        langs_widget, lc_badges_widget, lc_languages_widget, lc_skills_widget, lc_solved_widget,
-        streak_widget,
-    },
-};
-use readme_stuff_draw::{
-    Align, DEFAULT_HEIGHT, DEFAULT_WIDTH, Theme, Tile, compose, parse_lines, render_cf_rating,
-    render_cf_stats, render_competitive, render_cw_kata, render_cw_languages, render_cw_rank,
-    render_github_commit_streak, render_github_contributions, render_github_engagement,
-    render_github_heatmap, render_github_monthly, render_github_repos, render_github_social,
-    render_github_stats, render_github_visitors, render_langs, render_lc_badges,
-    render_lc_languages, render_lc_skills, render_lc_solved, render_streak, render_text_card,
-};
+use readme_stuff_catalog::{BuildOutput, WidgetOutcome, build as build_pipeline};
+use readme_stuff_config::{Config, defaults, io as config_io};
+use readme_stuff_draw::{Align, DEFAULT_HEIGHT, DEFAULT_WIDTH, Theme, parse_lines, render_text_card};
 use std::path::{Path, PathBuf};
 
 #[tokio::main]
@@ -34,323 +18,68 @@ async fn main() {
         return;
     }
 
-    if cli_bool_flag("--compose") {
-        if let Err(e) = compose_mosaic(&out_dir) {
-            eprintln!("compose FAILED: {e}");
+    let cfg = load_config();
+    let login = cfg.profile.github_login.as_deref().unwrap_or("<none>");
+    eprintln!("Fetching profile for {login}...");
+
+    match build_pipeline(&cfg, &out_dir).await {
+        Ok(output) => report_build(&output),
+        Err(e) => {
+            eprintln!("build FAILED: {e}");
             std::process::exit(1);
         }
-        eprintln!("Done - {}", out_dir.display());
-        return;
     }
-
-    let gh_login = env("GH_LOGIN", "Andezion");
-    let cf_handle = env("CF_HANDLE", "Andezion");
-    let cw_user = env("CW_USER", "Andezion");
-    let lc_user = env("LC_USER", "Andezion");
-
-    eprintln!("Fetching profile for {gh_login}...");
-    let profile = build_profile(&gh_login, &cf_handle, &cw_user, &lc_user).await;
-
-    render_card(
-        "github-stats",
-        github_stats_widget(&profile),
-        |w| render_github_stats(&w, Theme::Dark),
-        &out_dir,
-    );
-    render_card(
-        "github-repos",
-        github_repos_widget(&profile),
-        |w| render_github_repos(&w, Theme::Dark),
-        &out_dir,
-    );
-    render_card(
-        "github-contributions",
-        github_contributions_widget(&profile),
-        |w| render_github_contributions(&w, Theme::Dark),
-        &out_dir,
-    );
-    render_card(
-        "github-social",
-        github_social_widget(&profile),
-        |w| render_github_social(&w, Theme::Dark),
-        &out_dir,
-    );
-    render_card(
-        "github-heatmap",
-        github_heatmap_widget(&profile),
-        |w| render_github_heatmap(&w, Theme::Dark),
-        &out_dir,
-    );
-    render_card(
-        "github-monthly",
-        github_monthly_widget(&profile),
-        |w| render_github_monthly(&w, Theme::Dark),
-        &out_dir,
-    );
-    render_card(
-        "streak",
-        streak_widget(&profile),
-        |w| render_streak(&w, Theme::Dark),
-        &out_dir,
-    );
-    render_card(
-        "langs",
-        langs_widget(&profile, 6),
-        |w| render_langs(&w, Theme::Dark),
-        &out_dir,
-    );
-
-    render_card(
-        "cf-rating",
-        cf_rating_widget(&profile),
-        |w| render_cf_rating(&w, Theme::Dark),
-        &out_dir,
-    );
-    render_card(
-        "cf-stats",
-        cf_stats_widget(&profile),
-        |w| render_cf_stats(&w, Theme::Dark),
-        &out_dir,
-    );
-
-    render_card(
-        "cw-rank",
-        cw_rank_widget(&profile),
-        |w| render_cw_rank(&w, Theme::Dark),
-        &out_dir,
-    );
-    render_card(
-        "cw-kata",
-        cw_kata_widget(&profile),
-        |w| render_cw_kata(&w, Theme::Dark),
-        &out_dir,
-    );
-    render_card(
-        "cw-languages",
-        cw_languages_widget(&profile),
-        |w| render_cw_languages(&w, Theme::Dark),
-        &out_dir,
-    );
-
-    render_card(
-        "lc-solved",
-        lc_solved_widget(&profile),
-        |w| render_lc_solved(&w, Theme::Dark),
-        &out_dir,
-    );
-    render_card(
-        "lc-skills",
-        lc_skills_widget(&profile),
-        |w| render_lc_skills(&w, Theme::Dark),
-        &out_dir,
-    );
-    render_card(
-        "lc-languages",
-        lc_languages_widget(&profile),
-        |w| render_lc_languages(&w, Theme::Dark),
-        &out_dir,
-    );
-    render_card(
-        "lc-badges",
-        lc_badges_widget(&profile),
-        |w| render_lc_badges(&w, Theme::Dark),
-        &out_dir,
-    );
-
-    render_card(
-        "competitive",
-        competitive_widget(&profile),
-        |w| render_competitive(&w, Theme::Dark),
-        &out_dir,
-    );
-
-    render_card(
-        "github-visitors",
-        github_visitors_widget(&profile),
-        |w| render_github_visitors(&w, Theme::Dark),
-        &out_dir,
-    );
-    render_card(
-        "github-engagement",
-        github_engagement_widget(&profile),
-        |w| render_github_engagement(&w, Theme::Dark),
-        &out_dir,
-    );
-    render_card(
-        "github-commit-streak",
-        commit_streak_widget(&profile),
-        |w| render_github_commit_streak(&w, Theme::Dark),
-        &out_dir,
-    );
 
     render_custom_text_card(&out_dir);
 
     eprintln!("Done - {}", out_dir.display());
 }
 
-const CANVAS_W: u32 = 990;
 
-
-const ROWS: &[(u32, &[(&str, u32, u32)])] = &[
-    (120, &[("test1_stuff.svg", 0, 0)]),
-    (
-        195,
-        &[("test2_stuff.svg", 0, 0), ("competitive-dark.svg", 495, 0)],
-    ),
-    (
-        285,
-        &[
-            ("codeforce.svg", 0, 0),
-            ("cf-rating-dark.svg", 495, 0),
-            ("cf-stats-dark.svg", 495, 165),
-        ],
-    ),
-    (
-        335,
-        &[
-            ("codewars.svg", 0, 0),
-            ("cw-rank-dark.svg", 495, 0),
-            ("cw-kata-dark.svg", 0, 165),
-            ("cw-languages-dark.svg", 495, 165),
-        ],
-    ),
-    (
-        609,
-        &[
-            ("leetcode.svg", 0, 0),
-            ("lc-languages-dark.svg", 0, 181),
-            ("lc-solved-dark.svg", 0, 398),
-            ("lc-skills-dark.svg", 495, 0),
-            ("lc-badges-dark.svg", 495, 355),
-        ],
-    ),
-    (
-        325,
-        &[
-            ("commits.svg", 0, 0),
-            ("github-commit-streak-dark.svg", 495, 0),
-            ("github-contributions-dark.svg", 495, 150),
-        ],
-    ),
-    (
-        290,
-        &[
-            ("commits_details.svg", 0, 0),
-            ("github-heatmap-dark.svg", 0, 80),
-            ("github-monthly-dark.svg", 495, 80),
-        ],
-    ),
-    (
-        415,
-        &[
-            ("full.svg", 0, 0),
-            ("github-repos-dark.svg", 0, 100),
-            ("github-social-dark.svg", 495, 100),
-            ("github-stats-dark.svg", 0, 220),
-            ("langs-dark.svg", 495, 220),
-        ],
-    ),
-    (
-        676,
-        &[
-            ("github-visitors-dark.svg", 0, 0),
-            ("github-engagement-dark.svg", 495, 0),
-        ],
-    ),
-];
-
-const MOSAIC_ORDER: &[usize] = &[1, 8, 6, 7, 9, 2, 5, 3, 4];
-
-fn validate_mosaic_order(order: &[usize], row_count: usize) -> Result<(), String> {
-    let mut seen = vec![false; row_count];
-    for &row in order {
-        if row == 0 || row > row_count {
-            return Err(format!("MOSAIC_ORDER: row {row} out of range 1..={row_count}"));
+fn load_config() -> Config {
+    if let Some(path) = config_io::find_config() {
+        match config_io::load(&path) {
+            Ok(cfg) => {
+                eprintln!("  using config: {}", path.display());
+                return cfg;
+            }
+            Err(e) => {
+                eprintln!("  config at {} failed to load ({e}), falling back to defaults", path.display());
+            }
         }
-        if seen[row - 1] {
-            return Err(format!("MOSAIC_ORDER: row {row} listed more than once"));
-        }
-        seen[row - 1] = true;
     }
-    if let Some(missing) = seen.iter().position(|seen| !seen) {
-        return Err(format!("MOSAIC_ORDER: row {} is missing", missing + 1));
-    }
-    Ok(())
+    env_fallback_config()
 }
 
-fn compose_mosaic(dir: &Path) -> Result<(), String> {
-    validate_mosaic_order(MOSAIC_ORDER, ROWS.len())?;
-
-    let mut row_svgs: Vec<String> = Vec::new();
-    let mut row_heights: Vec<u32> = Vec::new();
-
-    for (row_idx, (height, tiles)) in ROWS.iter().enumerate() {
-        let files: Vec<String> = tiles
-            .iter()
-            .map(|(name, ..)| {
-                std::fs::read_to_string(dir.join(name))
-                    .map_err(|e| format!("row {}: reading {name}: {e}", row_idx + 1))
-            })
-            .collect::<Result<_, _>>()?;
-
-        let placed: Vec<Tile> = tiles
-            .iter()
-            .zip(files.iter())
-            .map(|((_, x, y), svg)| Tile { svg, x: *x, y: *y })
-            .collect();
-
-        let row_svg = compose(CANVAS_W, *height, Theme::Dark, &placed)
-            .map_err(|e| format!("row {}: {e}", row_idx + 1))?;
-
-        let row_name = format!("row-{}.svg", row_idx + 1);
-        write_svg(dir, &row_name, &row_svg);
-
-        row_svgs.push(row_svg);
-        row_heights.push(*height);
+fn env_fallback_config() -> Config {
+    let mut cfg = defaults::default_config();
+    if let Ok(v) = std::env::var("GH_LOGIN") {
+        cfg.profile.github_login = Some(v);
     }
-
-    let mut y = 0u32;
-    let mosaic_tiles: Vec<Tile> = MOSAIC_ORDER
-        .iter()
-        .map(|&row_num| {
-            let idx = row_num - 1;
-            let tile = Tile {
-                svg: &row_svgs[idx],
-                x: 0,
-                y,
-            };
-            y += row_heights[idx];
-            tile
-        })
-        .collect();
-    let total_h = y;
-
-    let mosaic = compose(CANVAS_W, total_h, Theme::Dark, &mosaic_tiles)?;
-    write_svg(dir, "profile-mosaic.svg", &mosaic);
-    eprintln!(
-        "  compose OK ({CANVAS_W}x{total_h}, {} rows, order {MOSAIC_ORDER:?})",
-        ROWS.len()
-    );
-
-    Ok(())
+    if let Ok(v) = std::env::var("CF_HANDLE") {
+        cfg.profile.codeforces_handle = Some(v);
+    }
+    if let Ok(v) = std::env::var("CW_USER") {
+        cfg.profile.codewars_username = Some(v);
+    }
+    if let Ok(v) = std::env::var("LC_USER") {
+        cfg.profile.leetcode_username = Some(v);
+    }
+    cfg
 }
 
-fn render_card<W, F>(name: &str, widget: Option<W>, render: F, dir: &Path)
-where
-    F: FnOnce(W) -> String,
-{
-    match widget {
-        Some(w) => {
-            let svg = render(w);
-            write_svg(dir, &format!("{name}-dark.svg"), &svg);
-            eprintln!("  {name} OK");
+fn report_build(output: &BuildOutput) {
+    for outcome in &output.widgets {
+        match outcome {
+            WidgetOutcome::Written { id, path } => eprintln!("  {id} OK -> {}", path.display()),
+            WidgetOutcome::Skipped { id, reason } => eprintln!("  {id} SKIP ({reason})"),
+            WidgetOutcome::Error { id, reason } => eprintln!("  {id} ERROR ({reason})"),
         }
-        None => eprintln!("  {name} SKIP (no data)"),
     }
-}
-
-fn env(key: &str, default: &str) -> String {
-    std::env::var(key).unwrap_or_else(|_| default.to_owned())
+    match &output.mosaic_path {
+        Some(p) => eprintln!("  compose OK -> {}", p.display()),
+        None => eprintln!("  compose SKIP (no rows produced output)"),
+    }
 }
 
 fn cli_flag(name: &str) -> Option<String> {
@@ -367,7 +96,8 @@ fn cli_bool_flag(name: &str) -> bool {
 
 fn positional_args() -> Vec<String> {
     const VALUE_FLAGS: &[&str] = &["--text-file", "--text-align"];
-    const BOOL_FLAGS: &[&str] = &["--text-only", "-c"];
+    
+    const BOOL_FLAGS: &[&str] = &["--text-only", "-c", "--compose"];
 
     let args: Vec<String> = std::env::args().skip(1).collect();
     let mut positional = Vec::new();
