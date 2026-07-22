@@ -1,7 +1,9 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use readme_stuff_catalog::BuildOutput;
 use readme_stuff_catalog::registry::{self, WidgetSpec};
-use readme_stuff_config::{Config, Credential, Layout, PlacedWidget, ProfileConfig, Row, ThemeChoice, io};
+use readme_stuff_config::{
+    Config, Credential, Layout, PlacedWidget, ProfileConfig, Row, ThemeChoice, io,
+};
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use tui_textarea::TextArea;
@@ -80,7 +82,6 @@ fn single_line(text: &str) -> TextArea<'static> {
 }
 
 impl App {
-    
     pub fn new(existing: Option<(PathBuf, Config)>) -> App {
         let mut app = App {
             screen: Screen::Questionnaire,
@@ -132,14 +133,18 @@ pub fn toggle_selected(app: &mut App, id: &'static str) {
         app.selected.remove(id);
         return;
     }
-    let Some(spec) = registry::find(id) else { return };
+    let Some(spec) = registry::find(id) else {
+        return;
+    };
     if is_selectable(app, spec) {
         app.selected.insert(id);
     }
 }
 
 pub fn add_selected(app: &mut App, id: &'static str) {
-    let Some(spec) = registry::find(id) else { return };
+    let Some(spec) = registry::find(id) else {
+        return;
+    };
     if is_selectable(app, spec) {
         app.selected.insert(id);
     }
@@ -160,17 +165,26 @@ pub fn pack_layout(selected: &HashSet<&'static str>) -> Layout {
         }
         let w = spec.size.0;
         if !current.is_empty() && x + w > CANVAS_WIDTH {
-            rows.push(Row { widgets: std::mem::take(&mut current) });
+            rows.push(Row {
+                widgets: std::mem::take(&mut current),
+            });
             x = 0;
         }
-        current.push(PlacedWidget { id: spec.id.to_string(), x, y: 0 });
+        current.push(PlacedWidget {
+            id: spec.id.to_string(),
+            x,
+            y: 0,
+        });
         x += w;
     }
     if !current.is_empty() {
         rows.push(Row { widgets: current });
     }
 
-    Layout { canvas_width: CANVAS_WIDTH, rows }
+    Layout {
+        canvas_width: CANVAS_WIDTH,
+        rows,
+    }
 }
 
 pub fn to_config(app: &App) -> Config {
@@ -189,7 +203,12 @@ pub fn to_config(app: &App) -> Config {
 
 pub fn load_into(app: &mut App, cfg: &Config) {
     app.github_login = single_line(cfg.profile.github_login.as_deref().unwrap_or(""));
-    app.github_token_env = single_line(cfg.profile.github_token_env.as_deref().unwrap_or("GITHUB_TOKEN"));
+    app.github_token_env = single_line(
+        cfg.profile
+            .github_token_env
+            .as_deref()
+            .unwrap_or("GITHUB_TOKEN"),
+    );
     app.codeforces_handle = single_line(cfg.profile.codeforces_handle.as_deref().unwrap_or(""));
     app.codewars_username = single_line(cfg.profile.codewars_username.as_deref().unwrap_or(""));
     app.leetcode_username = single_line(cfg.profile.leetcode_username.as_deref().unwrap_or(""));
@@ -322,7 +341,6 @@ fn handle_questionnaire_key(app: &mut App, key: KeyEvent) {
 }
 
 fn handle_building_key(app: &mut App, key: KeyEvent) {
-    
     if key.code == KeyCode::Esc {
         app.should_quit = true;
     }
@@ -444,7 +462,10 @@ mod tests {
         add_selected(&mut app, "github-stats");
         assert!(app.selected.contains("github-stats"));
         add_selected(&mut app, "github-stats");
-        assert!(app.selected.contains("github-stats"), "second Add must not remove it");
+        assert!(
+            app.selected.contains("github-stats"),
+            "second Add must not remove it"
+        );
     }
 
     #[test]
@@ -461,7 +482,10 @@ mod tests {
         remove_selected(&mut app, "github-stats");
         assert!(!app.selected.contains("github-stats"));
         remove_selected(&mut app, "github-stats");
-        assert!(!app.selected.contains("github-stats"), "second Delete must stay a no-op");
+        assert!(
+            !app.selected.contains("github-stats"),
+            "second Delete must stay a no-op"
+        );
     }
 
     #[test]
@@ -473,12 +497,20 @@ mod tests {
 
     #[test]
     fn pack_layout_never_exceeds_canvas_width_per_row() {
-        let selected: HashSet<&'static str> = registry::all_widgets().iter().map(|w| w.id).collect();
+        let selected: HashSet<&'static str> =
+            registry::all_widgets().iter().map(|w| w.id).collect();
         let layout = pack_layout(&selected);
-        assert!(layout.rows.len() > 1, "expected wrapping across multiple rows");
+        assert!(
+            layout.rows.len() > 1,
+            "expected wrapping across multiple rows"
+        );
         for row in &layout.rows {
             let ids: HashSet<_> = row.widgets.iter().map(|w| w.id.as_str()).collect();
-            assert_eq!(ids.len(), row.widgets.len(), "no duplicate placements within a row");
+            assert_eq!(
+                ids.len(),
+                row.widgets.len(),
+                "no duplicate placements within a row"
+            );
             for w in &row.widgets {
                 let spec = registry::find(&w.id).unwrap();
                 assert!(
@@ -494,7 +526,8 @@ mod tests {
 
     #[test]
     fn save_and_queue_build_queues_a_build_and_moves_to_building() {
-        let dir = std::env::temp_dir().join(format!("readme-stuff-tui-save-ok-{}", std::process::id()));
+        let dir =
+            std::env::temp_dir().join(format!("readme-stuff-tui-save-ok-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let mut app = app_with("octocat", "GITHUB_TOKEN");
         toggle_selected(&mut app, "github-stats");
@@ -511,7 +544,10 @@ mod tests {
     #[test]
     fn save_and_queue_build_reports_an_error_and_does_not_queue_on_write_failure() {
         let dir = std::env::temp_dir()
-            .join(format!("readme-stuff-tui-save-missing-{}", std::process::id()))
+            .join(format!(
+                "readme-stuff-tui-save-missing-{}",
+                std::process::id()
+            ))
             .join("nested-that-does-not-exist");
         let mut app = app_with("octocat", "GITHUB_TOKEN");
 

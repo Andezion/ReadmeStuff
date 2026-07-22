@@ -1,6 +1,8 @@
 use readme_stuff_catalog::{BuildOutput, WidgetOutcome, build as build_pipeline};
 use readme_stuff_config::{Config, defaults, io as config_io};
-use readme_stuff_draw::{Align, DEFAULT_HEIGHT, DEFAULT_WIDTH, Theme, parse_lines, render_text_card};
+use readme_stuff_draw::{
+    Align, DEFAULT_HEIGHT, DEFAULT_WIDTH, Theme, parse_lines, render_text_card,
+};
 use std::path::{Path, PathBuf};
 
 #[tokio::main]
@@ -35,7 +37,6 @@ async fn main() {
     eprintln!("Done - {}", out_dir.display());
 }
 
-
 fn load_config() -> Config {
     if let Some(path) = config_io::find_config() {
         match config_io::load(&path) {
@@ -44,7 +45,10 @@ fn load_config() -> Config {
                 return cfg;
             }
             Err(e) => {
-                eprintln!("  config at {} failed to load ({e}), falling back to defaults", path.display());
+                eprintln!(
+                    "  config at {} failed to load ({e}), falling back to defaults",
+                    path.display()
+                );
             }
         }
     }
@@ -96,7 +100,7 @@ fn cli_bool_flag(name: &str) -> bool {
 
 fn positional_args() -> Vec<String> {
     const VALUE_FLAGS: &[&str] = &["--text-file", "--text-align"];
-    
+
     const BOOL_FLAGS: &[&str] = &["--text-only", "-c", "--compose"];
 
     let args: Vec<String> = std::env::args().skip(1).collect();
@@ -175,4 +179,3 @@ fn write_svg(dir: &Path, name: &str, content: &str) {
     std::fs::write(&path, content).unwrap_or_else(|e| panic!("write {name}: {e}"));
     eprintln!("    - {}", path.display());
 }
-

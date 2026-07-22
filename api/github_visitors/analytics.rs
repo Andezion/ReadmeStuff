@@ -1,7 +1,7 @@
 use crate::github_visitors::models::{
-    FilterReason, FilterSummary, RepositoryTrafficSummary, TrafficDay, TrafficHeatmap,
-    TrafficPath, TrafficReferrer, TrafficSnapshot, TrafficTrend, TrendHighlight, TrendPoint,
-    UniqueVisitorStats, VisitorAnalytics, VisitorEvent,
+    FilterReason, FilterSummary, RepositoryTrafficSummary, TrafficDay, TrafficHeatmap, TrafficPath,
+    TrafficReferrer, TrafficSnapshot, TrafficTrend, TrendHighlight, TrendPoint, UniqueVisitorStats,
+    VisitorAnalytics, VisitorEvent,
 };
 use chrono::{Datelike, NaiveDate, Timelike, Utc};
 use std::collections::{BTreeMap, HashMap};
@@ -56,7 +56,8 @@ pub fn compute_analytics(
 pub fn weekly_totals(data_points: &[TrendPoint]) -> Vec<(NaiveDate, u64)> {
     let mut weekly: BTreeMap<NaiveDate, u64> = BTreeMap::new();
     for p in data_points {
-        let week_start = p.date - chrono::Duration::days(p.date.weekday().num_days_from_monday() as i64);
+        let week_start =
+            p.date - chrono::Duration::days(p.date.weekday().num_days_from_monday() as i64);
         *weekly.entry(week_start).or_insert(0) += p.total;
     }
     weekly.into_iter().collect()
@@ -564,7 +565,10 @@ mod tests {
             .iter()
             .find(|s| s.repo == "Andezion/growing")
             .unwrap();
-        let flat = summaries.iter().find(|s| s.repo == "Andezion/flat").unwrap();
+        let flat = summaries
+            .iter()
+            .find(|s| s.repo == "Andezion/flat")
+            .unwrap();
 
         assert!(growing.trend.is_growing);
         assert!(growing.trend.growth_rate_pct > flat.trend.growth_rate_pct);
@@ -647,7 +651,7 @@ mod tests {
     #[test]
     fn highlight_flags_spike_without_beating_record() {
         let base = NaiveDate::from_ymd_opt(2024, 5, 1).unwrap();
-        
+
         let mut days: Vec<(NaiveDate, u64, u64)> = (0..14i64)
             .map(|i| (base + chrono::Duration::days(i), 10, 0))
             .collect();
@@ -716,11 +720,13 @@ mod tests {
         snap.captured_at = captured_at;
         snap.referrers = referrers
             .iter()
-            .map(|(name, count)| crate::github_visitors::models::TrafficReferrer {
-                referrer: name.to_string(),
-                count: *count,
-                uniques: *count,
-            })
+            .map(
+                |(name, count)| crate::github_visitors::models::TrafficReferrer {
+                    referrer: name.to_string(),
+                    count: *count,
+                    uniques: *count,
+                },
+            )
             .collect();
         snap
     }
@@ -741,7 +747,13 @@ mod tests {
 
         let trend = monthly_top_referrer(&snaps);
         assert_eq!(trend.len(), 2);
-        assert_eq!(trend[0], ("2024-05".to_string(), "github.com".to_string(), 50));
-        assert_eq!(trend[1], ("2024-06".to_string(), "google.com".to_string(), 30));
+        assert_eq!(
+            trend[0],
+            ("2024-05".to_string(), "github.com".to_string(), 50)
+        );
+        assert_eq!(
+            trend[1],
+            ("2024-06".to_string(), "google.com".to_string(), 30)
+        );
     }
 }

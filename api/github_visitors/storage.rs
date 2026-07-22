@@ -754,7 +754,10 @@ mod tests {
         let snaps = store.get_snapshots(None, 10).await.unwrap();
         assert_eq!(snaps.len(), 2);
         let day1_snap = snaps.iter().find(|s| s.captured_at == day1_later).unwrap();
-        assert_eq!(day1_snap.views.count, 20, "should keep the later day-1 snapshot");
+        assert_eq!(
+            day1_snap.views.count, 20,
+            "should keep the later day-1 snapshot"
+        );
     }
 
     #[tokio::test]

@@ -16,8 +16,11 @@ fn output_dir() -> PathBuf {
 fn main() -> std::io::Result<()> {
     readme_stuff_config::io::load_dotenv();
 
-    let existing = readme_stuff_config::io::find_config()
-        .and_then(|path| readme_stuff_config::io::load(&path).ok().map(|cfg| (path, cfg)));
+    let existing = readme_stuff_config::io::find_config().and_then(|path| {
+        readme_stuff_config::io::load(&path)
+            .ok()
+            .map(|cfg| (path, cfg))
+    });
     let mut state = App::new(existing);
 
     let mut terminal = ratatui::init();

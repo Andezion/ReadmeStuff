@@ -7,9 +7,9 @@ use std::path::{Path, PathBuf};
 #[derive(Debug, Clone)]
 pub enum WidgetOutcome {
     Written { id: String, path: PathBuf },
-    
+
     Skipped { id: String, reason: String },
-    
+
     Error { id: String, reason: String },
 }
 
@@ -49,7 +49,8 @@ pub async fn build(cfg: &Config, out_dir: &Path) -> Result<BuildOutput, String> 
     std::fs::create_dir_all(out_dir).map_err(|e| format!("cannot create output dir: {e}"))?;
 
     let needed = needed_credentials(cfg);
-    let profile = readme_stuff_aggregator::profile::build_profile_selective(&cfg.profile, &needed).await;
+    let profile =
+        readme_stuff_aggregator::profile::build_profile_selective(&cfg.profile, &needed).await;
     let theme = draw_theme(cfg.theme);
 
     let mut outcomes = Vec::new();
@@ -57,8 +58,8 @@ pub async fn build(cfg: &Config, out_dir: &Path) -> Result<BuildOutput, String> 
     let mut row_heights: Vec<u32> = Vec::new();
 
     for row in &cfg.layout.rows {
-        
-        let mut rendered: Vec<(&readme_stuff_config::PlacedWidget, String, (u32, u32))> = Vec::new();
+        let mut rendered: Vec<(&readme_stuff_config::PlacedWidget, String, (u32, u32))> =
+            Vec::new();
 
         for placed in &row.widgets {
             let Some(spec) = registry::find(&placed.id) else {
@@ -89,13 +90,25 @@ pub async fn build(cfg: &Config, out_dir: &Path) -> Result<BuildOutput, String> 
             continue;
         }
 
-        let row_h = rendered.iter().map(|(p, _, size)| p.y + size.1).max().unwrap_or(0);
+        let row_h = rendered
+            .iter()
+            .map(|(p, _, size)| p.y + size.1)
+            .max()
+            .unwrap_or(0);
         let tiles: Vec<Tile> = rendered
             .iter()
-            .map(|(p, svg, _)| Tile { svg, x: p.x, y: p.y })
+            .map(|(p, svg, _)| Tile {
+                svg,
+                x: p.x,
+                y: p.y,
+            })
             .collect();
         let row_svg = compose(cfg.layout.canvas_width, row_h, theme, &tiles)?;
-        write_svg(out_dir, &format!("row-{}.svg", row_svgs.len() + 1), &row_svg)?;
+        write_svg(
+            out_dir,
+            &format!("row-{}.svg", row_svgs.len() + 1),
+            &row_svg,
+        )?;
         row_svgs.push(row_svg);
         row_heights.push(row_h);
     }
@@ -130,7 +143,10 @@ mod tests {
     use readme_stuff_config::{Layout, PlacedWidget, ProfileConfig, Row};
 
     fn temp_dir(name: &str) -> PathBuf {
-        let dir = std::env::temp_dir().join(format!("readme-stuff-catalog-test-{name}-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!(
+            "readme-stuff-catalog-test-{name}-{}",
+            std::process::id()
+        ));
         std::fs::create_dir_all(&dir).unwrap();
         dir
     }
@@ -146,7 +162,9 @@ mod tests {
             },
         };
         let dir = temp_dir("empty");
-        let out = build(&cfg, &dir).await.expect("build should not error on an empty layout");
+        let out = build(&cfg, &dir)
+            .await
+            .expect("build should not error on an empty layout");
         assert!(out.widgets.is_empty());
         assert!(out.mosaic_path.is_none());
         std::fs::remove_dir_all(&dir).ok();
@@ -154,14 +172,17 @@ mod tests {
 
     #[tokio::test]
     async fn unconfigured_source_is_skipped_not_errored() {
-        
         let cfg = Config {
             profile: ProfileConfig::default(),
             theme: ThemeChoice::Matrix,
             layout: Layout {
                 canvas_width: 990,
                 rows: vec![Row {
-                    widgets: vec![PlacedWidget { id: "cf-rating".to_string(), x: 0, y: 0 }],
+                    widgets: vec![PlacedWidget {
+                        id: "cf-rating".to_string(),
+                        x: 0,
+                        y: 0,
+                    }],
                 }],
             },
         };
@@ -181,13 +202,19 @@ mod tests {
             layout: Layout {
                 canvas_width: 990,
                 rows: vec![Row {
-                    widgets: vec![PlacedWidget { id: "does-not-exist".to_string(), x: 0, y: 0 }],
+                    widgets: vec![PlacedWidget {
+                        id: "does-not-exist".to_string(),
+                        x: 0,
+                        y: 0,
+                    }],
                 }],
             },
         };
         let dir = temp_dir("unknown");
         let out = build(&cfg, &dir).await.expect("build should not error");
-        assert!(matches!(&out.widgets[0], WidgetOutcome::Error { id, .. } if id == "does-not-exist"));
+        assert!(
+            matches!(&out.widgets[0], WidgetOutcome::Error { id, .. } if id == "does-not-exist")
+        );
         std::fs::remove_dir_all(&dir).ok();
     }
 }

@@ -172,11 +172,16 @@ impl GitHubStreakApi {
         let sem = Arc::new(tokio::sync::Semaphore::new(8));
         let mut set: JoinSet<Vec<ContributionDay>> = JoinSet::new();
 
-    
         for year in MIN_YEAR..=MAX_YEAR {
             for (from, to) in [
-                (format!("{year}-01-01T00:00:00Z"), format!("{year}-06-30T23:59:59Z")),
-                (format!("{year}-07-01T00:00:00Z"), format!("{year}-12-31T23:59:59Z")),
+                (
+                    format!("{year}-01-01T00:00:00Z"),
+                    format!("{year}-06-30T23:59:59Z"),
+                ),
+                (
+                    format!("{year}-07-01T00:00:00Z"),
+                    format!("{year}-12-31T23:59:59Z"),
+                ),
             ] {
                 let client = self.client.clone();
                 let login = login.to_owned();
@@ -186,7 +191,10 @@ impl GitHubStreakApi {
                         return vec![];
                     };
                     let Ok(data): Result<UserRoot> = client
-                        .graphql(CALENDAR_QUERY, json!({ "login": login, "from": from, "to": to }))
+                        .graphql(
+                            CALENDAR_QUERY,
+                            json!({ "login": login, "from": from, "to": to }),
+                        )
                         .await
                     else {
                         return vec![];

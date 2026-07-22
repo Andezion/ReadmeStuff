@@ -2,7 +2,6 @@ use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::Span;
 use ratatui::widgets::{Block, BorderType};
 
-
 pub struct Palette {
     pub bg: Color,
     pub border: Color,
@@ -27,12 +26,18 @@ pub fn block(title: &str) -> Block<'_> {
         .border_style(Style::default().fg(PALETTE.border))
         .title(Span::styled(
             title,
-            Style::default().fg(PALETTE.title).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(PALETTE.title)
+                .add_modifier(Modifier::BOLD),
         ))
 }
 
 pub fn focusable_block(title: &str, focused: bool) -> Block<'_> {
-    let color = if focused { PALETTE.accent } else { PALETTE.border };
+    let color = if focused {
+        PALETTE.accent
+    } else {
+        PALETTE.border
+    };
     Block::bordered()
         .border_type(BorderType::Rounded)
         .border_style(Style::default().fg(color))

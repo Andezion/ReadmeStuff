@@ -23,7 +23,10 @@ pub fn draw(frame: &mut Frame, app: &App) {
 fn draw_error(frame: &mut Frame, area: Rect, message: &str) {
     let text = Text::from(vec![
         Line::from(""),
-        Line::styled(format!("Build failed: {message}"), Style::default().fg(Color::Red)),
+        Line::styled(
+            format!("Build failed: {message}"),
+            Style::default().fg(Color::Red),
+        ),
         Line::from(""),
         Line::from("[B] Back     [Q] Quit"),
     ]);
@@ -34,7 +37,10 @@ fn draw_error(frame: &mut Frame, area: Rect, message: &str) {
 }
 
 fn draw_output(frame: &mut Frame, area: Rect, output: &readme_stuff_catalog::BuildOutput) {
-    let mut lines = vec![Line::from(format!("Output dir: {}", output.out_dir.display())), Line::from("")];
+    let mut lines = vec![
+        Line::from(format!("Output dir: {}", output.out_dir.display())),
+        Line::from(""),
+    ];
 
     for outcome in &output.widgets {
         lines.push(match outcome {
@@ -46,20 +52,28 @@ fn draw_output(frame: &mut Frame, area: Rect, output: &readme_stuff_catalog::Bui
                 format!("  [SKIP]  {id} ({reason})"),
                 Style::default().fg(PALETTE.text_secondary),
             ),
-            WidgetOutcome::Error { id, reason } => {
-                Line::styled(format!("  [ERROR] {id} ({reason})"), Style::default().fg(Color::Red))
-            }
+            WidgetOutcome::Error { id, reason } => Line::styled(
+                format!("  [ERROR] {id} ({reason})"),
+                Style::default().fg(Color::Red),
+            ),
         });
     }
 
     lines.push(Line::from(""));
     lines.push(match &output.mosaic_path {
-        Some(p) => Line::styled(format!("Mosaic: {}", p.display()), Style::default().fg(PALETTE.title)),
-        None => Line::styled("Mosaic: not built (no rows produced output)", Style::default().fg(PALETTE.text_secondary)),
+        Some(p) => Line::styled(
+            format!("Mosaic: {}", p.display()),
+            Style::default().fg(PALETTE.title),
+        ),
+        None => Line::styled(
+            "Mosaic: not built (no rows produced output)",
+            Style::default().fg(PALETTE.text_secondary),
+        ),
     });
     lines.push(Line::from(""));
     lines.push(Line::from(vec![Span::raw("[B] Back to edit     [Q] Quit")]));
 
-    let para = Paragraph::new(Text::from(lines)).style(Style::default().fg(PALETTE.text_primary).bg(PALETTE.bg));
+    let para = Paragraph::new(Text::from(lines))
+        .style(Style::default().fg(PALETTE.text_primary).bg(PALETTE.bg));
     frame.render_widget(para, area);
 }

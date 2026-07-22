@@ -1,6 +1,5 @@
 use crate::schema::{Config, Layout, PlacedWidget, ProfileConfig, Row, ThemeChoice};
 
-
 pub fn default_config() -> Config {
     Config {
         profile: ProfileConfig {

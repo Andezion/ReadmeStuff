@@ -98,7 +98,10 @@ fn load_dotenv_from(path: &Path) {
 }
 
 pub fn load_dotenv() {
-    if let Some(path) = std::env::current_dir().ok().and_then(|d| find_dotenv_from(&d)) {
+    if let Some(path) = std::env::current_dir()
+        .ok()
+        .and_then(|d| find_dotenv_from(&d))
+    {
         load_dotenv_from(&path);
     }
 }
@@ -110,7 +113,8 @@ mod tests {
 
     #[test]
     fn round_trips_default_config() {
-        let dir = std::env::temp_dir().join(format!("readme-stuff-config-test-{}", std::process::id()));
+        let dir =
+            std::env::temp_dir().join(format!("readme-stuff-config-test-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join(CONFIG_FILE_NAME);
 
@@ -124,7 +128,8 @@ mod tests {
 
     #[test]
     fn find_config_walks_up_parents() {
-        let root = std::env::temp_dir().join(format!("readme-stuff-config-find-{}", std::process::id()));
+        let root =
+            std::env::temp_dir().join(format!("readme-stuff-config-find-{}", std::process::id()));
         let nested = root.join("a").join("b");
         std::fs::create_dir_all(&nested).unwrap();
         save(&root.join(CONFIG_FILE_NAME), &default_config()).unwrap();
@@ -137,7 +142,8 @@ mod tests {
 
     #[test]
     fn find_config_returns_none_when_absent() {
-        let dir = std::env::temp_dir().join(format!("readme-stuff-config-absent-{}", std::process::id()));
+        let dir =
+            std::env::temp_dir().join(format!("readme-stuff-config-absent-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         assert_eq!(find_config_from(&dir), None);
         std::fs::remove_dir_all(&dir).ok();
@@ -145,7 +151,10 @@ mod tests {
 
     #[test]
     fn find_dotenv_walks_up_parents() {
-        let root = std::env::temp_dir().join(format!("readme-stuff-config-dotenv-find-{}", std::process::id()));
+        let root = std::env::temp_dir().join(format!(
+            "readme-stuff-config-dotenv-find-{}",
+            std::process::id()
+        ));
         let nested = root.join("a").join("b");
         std::fs::create_dir_all(&nested).unwrap();
         std::fs::write(root.join(".env"), "X=1\n").unwrap();
@@ -158,7 +167,10 @@ mod tests {
 
     #[test]
     fn load_dotenv_from_sets_unset_vars_but_never_overrides_existing_ones() {
-        let dir = std::env::temp_dir().join(format!("readme-stuff-config-dotenv-load-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!(
+            "readme-stuff-config-dotenv-load-{}",
+            std::process::id()
+        ));
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join(".env");
         std::fs::write(
@@ -172,8 +184,14 @@ mod tests {
 
         load_dotenv_from(&path);
 
-        assert_eq!(std::env::var("READMESTUFF_TEST_UNSET_VAR").as_deref(), Ok("from-dotenv"));
-        assert_eq!(std::env::var("READMESTUFF_TEST_ALREADY_SET").as_deref(), Ok("from-process"));
+        assert_eq!(
+            std::env::var("READMESTUFF_TEST_UNSET_VAR").as_deref(),
+            Ok("from-dotenv")
+        );
+        assert_eq!(
+            std::env::var("READMESTUFF_TEST_ALREADY_SET").as_deref(),
+            Ok("from-process")
+        );
 
         unsafe { std::env::remove_var("READMESTUFF_TEST_UNSET_VAR") };
         unsafe { std::env::remove_var("READMESTUFF_TEST_ALREADY_SET") };

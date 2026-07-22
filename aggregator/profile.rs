@@ -16,7 +16,6 @@ use std::path::PathBuf;
 
 const NOT_SELECTED: &str = "not selected - no placed widget needs this source";
 
-
 #[derive(Clone, Copy)]
 struct SourceGates {
     github: bool,
@@ -37,7 +36,8 @@ impl SourceGates {
 
     fn from_needed(needed: &HashSet<Credential>) -> Self {
         SourceGates {
-            github: needed.contains(&Credential::GitHubToken) || needed.contains(&Credential::GitHubLogin),
+            github: needed.contains(&Credential::GitHubToken)
+                || needed.contains(&Credential::GitHubLogin),
             codeforces: needed.contains(&Credential::CodeforcesHandle),
             codewars: needed.contains(&Credential::CodewarsUsername),
             leetcode: needed.contains(&Credential::LeetcodeUsername),
@@ -84,10 +84,20 @@ pub async fn build_profile(
     cw_username: &str,
     lc_username: &str,
 ) -> UserProfile {
-    build_profile_gated(github_login, cf_handle, cw_username, lc_username, SourceGates::all()).await
+    build_profile_gated(
+        github_login,
+        cf_handle,
+        cw_username,
+        lc_username,
+        SourceGates::all(),
+    )
+    .await
 }
 
-pub async fn build_profile_selective(cfg: &ProfileConfig, needed: &HashSet<Credential>) -> UserProfile {
+pub async fn build_profile_selective(
+    cfg: &ProfileConfig,
+    needed: &HashSet<Credential>,
+) -> UserProfile {
     let gates = SourceGates::from_needed(needed);
     let github_login = cfg.github_login.clone().unwrap_or_default();
     let cf_handle = cfg.codeforces_handle.clone().unwrap_or_default();
@@ -103,7 +113,11 @@ async fn build_profile_gated(
     lc_username: &str,
     gates: SourceGates,
 ) -> UserProfile {
-    let gh_client = if gates.github { GitHubClient::from_env().ok() } else { None };
+    let gh_client = if gates.github {
+        GitHubClient::from_env().ok()
+    } else {
+        None
+    };
 
     let github_fut = {
         let login = github_login.to_owned();

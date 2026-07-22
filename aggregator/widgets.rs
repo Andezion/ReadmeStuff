@@ -36,7 +36,13 @@ pub fn github_visitors_widget(p: &UserProfile) -> Option<GithubVisitorsWidget> {
         .repositories
         .iter()
         .filter(|r| r.total_views_all_time > 0)
-        .map(|r| (r.repo.clone(), r.total_views_all_time, r.trend.growth_rate_pct))
+        .map(|r| {
+            (
+                r.repo.clone(),
+                r.total_views_all_time,
+                r.trend.growth_rate_pct,
+            )
+        })
         .collect();
     Some(GithubVisitorsWidget {
         total_views,

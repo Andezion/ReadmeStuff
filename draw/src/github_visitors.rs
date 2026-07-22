@@ -18,8 +18,11 @@ pub const VISITORS_SIZE: (u32, u32) = (
     REPO_LIST_START_Y + MAX_REPOS as u32 * REPO_ROW_H + 32 + SPARK_CHART_H + 16,
 );
 
-fn render_sparkline(w: &GithubVisitorsWidget, top_y: u32, c: &crate::theme::Colors) -> (String, u32) {
-    
+fn render_sparkline(
+    w: &GithubVisitorsWidget,
+    top_y: u32,
+    c: &crate::theme::Colors,
+) -> (String, u32) {
     let sep_y = top_y + 12;
     let label_y = sep_y + 14;
     let chart_top = label_y + 6;
@@ -34,7 +37,13 @@ fn render_sparkline(w: &GithubVisitorsWidget, top_y: u32, c: &crate::theme::Colo
         return (svg, block_h);
     }
 
-    let max_v = w.weekly_views.iter().map(|(_, v)| *v).max().unwrap_or(1).max(1);
+    let max_v = w
+        .weekly_views
+        .iter()
+        .map(|(_, v)| *v)
+        .max()
+        .unwrap_or(1)
+        .max(1);
     let n = w.weekly_views.len();
     let chart_left = 25f64;
     let chart_right = (W - 15) as f64;
@@ -73,7 +82,14 @@ pub fn render_github_visitors(w: &GithubVisitorsWidget, theme: Theme) -> String 
     let repo_list_bottom = REPO_LIST_START_Y + MAX_REPOS as u32 * REPO_ROW_H;
     let (spark_svg, spark_h) = render_sparkline(w, repo_list_bottom, &c);
     let height = repo_list_bottom + spark_h + 16;
-    let rain = matrix::generate(W, height, c.matrix_color, c.matrix_opacity, 0xABCD_1234, "gvs");
+    let rain = matrix::generate(
+        W,
+        height,
+        c.matrix_color,
+        c.matrix_opacity,
+        0xABCD_1234,
+        "gvs",
+    );
 
     let stats_svg = format!(
         "<text x=\"25\" y=\"88\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{views}</text>\
@@ -109,7 +125,9 @@ pub fn render_github_visitors(w: &GithubVisitorsWidget, theme: Theme) -> String 
         Some(TrendHighlight::RecordDay { value, .. }) => {
             Some((format!("New record: {} views", fmt_num(*value)), c.accent))
         }
-        Some(TrendHighlight::Spike { value, baseline, .. }) => {
+        Some(TrendHighlight::Spike {
+            value, baseline, ..
+        }) => {
             let ratio = if *baseline > 0.0 {
                 *value as f64 / *baseline
             } else {
@@ -230,7 +248,14 @@ pub const ENGAGEMENT_SIZE: (u32, u32) = (
 pub fn render_github_engagement(w: &EngagementWidget, theme: Theme) -> String {
     let c = theme.colors();
     let height = ENGAGEMENT_LIST_START_Y + ENGAGEMENT_MAX_ROWS as u32 * ENGAGEMENT_ROW_H + 16;
-    let rain = matrix::generate(W, height, c.matrix_color, c.matrix_opacity, 0x5EED_1234, "gge");
+    let rain = matrix::generate(
+        W,
+        height,
+        c.matrix_color,
+        c.matrix_opacity,
+        0x5EED_1234,
+        "gge",
+    );
 
     let stats_svg = format!(
         "<text x=\"25\" y=\"80\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{stars}</text>\
@@ -247,7 +272,12 @@ pub fn render_github_engagement(w: &EngagementWidget, theme: Theme) -> String {
     );
 
     let mut rows_svg = String::new();
-    for (i, (login, repo)) in w.recent_stargazers.iter().take(ENGAGEMENT_MAX_ROWS).enumerate() {
+    for (i, (login, repo)) in w
+        .recent_stargazers
+        .iter()
+        .take(ENGAGEMENT_MAX_ROWS)
+        .enumerate()
+    {
         let y = ENGAGEMENT_LIST_START_Y + i as u32 * ENGAGEMENT_ROW_H + 5;
         rows_svg.push_str(&format!(
             "<text x=\"25\" y=\"{y}\" font-family=\"monospace\" font-size=\"10\" fill=\"{tv}\">@{login}</text>\

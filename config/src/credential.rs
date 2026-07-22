@@ -10,7 +10,7 @@ pub enum Credential {
 #[derive(Debug, Clone, Copy)]
 pub enum Requirement {
     All(&'static [Credential]),
-    
+
     AnyOf(&'static [Credential]),
 }
 
@@ -22,7 +22,10 @@ impl Requirement {
         }
     }
 
-    pub fn credentials_to_fetch(&self, available: &std::collections::HashSet<Credential>) -> Vec<Credential> {
+    pub fn credentials_to_fetch(
+        &self,
+        available: &std::collections::HashSet<Credential>,
+    ) -> Vec<Credential> {
         match self {
             Requirement::All(reqs) => {
                 if reqs.iter().all(|r| available.contains(r)) {
@@ -31,7 +34,11 @@ impl Requirement {
                     Vec::new()
                 }
             }
-            Requirement::AnyOf(reqs) => reqs.iter().copied().filter(|r| available.contains(r)).collect(),
+            Requirement::AnyOf(reqs) => reqs
+                .iter()
+                .copied()
+                .filter(|r| available.contains(r))
+                .collect(),
         }
     }
 }

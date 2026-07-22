@@ -269,8 +269,6 @@ mod tests {
         assert_eq!(users[0].handle, handle);
     }
 
-    
-
     #[test]
     fn test_live_user_status_logs_full_response() {
         let handle = "Andezion";
@@ -304,6 +302,4 @@ mod tests {
 
         assert!(!ratings.is_empty());
     }
-
-    
 }

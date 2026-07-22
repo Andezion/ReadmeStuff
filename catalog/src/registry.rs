@@ -259,7 +259,12 @@ mod tests {
     #[test]
     fn every_widget_has_a_non_zero_size() {
         for w in all_widgets() {
-            assert!(w.size.0 > 0 && w.size.1 > 0, "{} has zero size {:?}", w.id, w.size);
+            assert!(
+                w.size.0 > 0 && w.size.1 > 0,
+                "{} has zero size {:?}",
+                w.id,
+                w.size
+            );
         }
     }
 

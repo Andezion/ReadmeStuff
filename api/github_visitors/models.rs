@@ -216,7 +216,10 @@ pub struct TrendPoint {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum TrendHighlight {
-    RecordDay { date: NaiveDate, value: u64 },
+    RecordDay {
+        date: NaiveDate,
+        value: u64,
+    },
     Spike {
         date: NaiveDate,
         value: u64,

@@ -53,7 +53,10 @@ fn missing_hint(app: &App, spec: &WidgetSpec) -> Option<String> {
 
 pub fn draw(frame: &mut Frame, app: &App) {
     let area = frame.area();
-    frame.render_widget(ratatui::widgets::Block::default().style(Style::default().bg(PALETTE.bg)), area);
+    frame.render_widget(
+        ratatui::widgets::Block::default().style(Style::default().bg(PALETTE.bg)),
+        area,
+    );
 
     let cols = Layout::default()
         .direction(Direction::Horizontal)
@@ -78,7 +81,13 @@ fn draw_fields(frame: &mut Frame, app: &App, area: Rect) {
         ])
         .split(area);
 
-    render_field(frame, "GitHub login", &app.github_login, app.focus == Field::GithubLogin, rows[0]);
+    render_field(
+        frame,
+        "GitHub login",
+        &app.github_login,
+        app.focus == Field::GithubLogin,
+        rows[0],
+    );
     render_field(
         frame,
         "GitHub token env var (name only, never the secret)",
@@ -115,12 +124,19 @@ fn draw_fields(frame: &mut Frame, app: &App, area: Rect) {
     frame.render_widget(help, rows[5]);
 
     if let Some(status) = &app.status {
-        let err = Paragraph::new(Line::from(status.as_str())).style(Style::default().fg(PALETTE.accent));
+        let err =
+            Paragraph::new(Line::from(status.as_str())).style(Style::default().fg(PALETTE.accent));
         frame.render_widget(err, rows[6]);
     }
 }
 
-fn render_field(frame: &mut Frame, label: &str, ta: &tui_textarea::TextArea, focused: bool, area: Rect) {
+fn render_field(
+    frame: &mut Frame,
+    label: &str,
+    ta: &tui_textarea::TextArea,
+    focused: bool,
+    area: Rect,
+) {
     let block = theme::focusable_block(label, focused);
     let inner = block.inner(area);
     frame.render_widget(block, area);
@@ -129,7 +145,10 @@ fn render_field(frame: &mut Frame, label: &str, ta: &tui_textarea::TextArea, foc
 
 fn draw_widget_list(frame: &mut Frame, app: &App, area: Rect) {
     let focused = app.focus == Field::WidgetList;
-    let block = theme::focusable_block("Widgets to include - [A] Add   [D] Delete   (Space/Enter: toggle)", focused);
+    let block = theme::focusable_block(
+        "Widgets to include - [A] Add   [D] Delete   (Space/Enter: toggle)",
+        focused,
+    );
 
     let items: Vec<ListItem> = registry::all_widgets()
         .iter()
@@ -140,18 +159,29 @@ fn draw_widget_list(frame: &mut Frame, app: &App, area: Rect) {
 
             let mut spans = vec![Span::styled(
                 format!("[{mark}] "),
-                Style::default().fg(if selectable { PALETTE.accent } else { PALETTE.text_secondary }),
+                Style::default().fg(if selectable {
+                    PALETTE.accent
+                } else {
+                    PALETTE.text_secondary
+                }),
             )];
             spans.push(Span::styled(
                 format!("{} ", spec.label),
-                Style::default().fg(if selectable { PALETTE.text_primary } else { PALETTE.text_secondary }),
+                Style::default().fg(if selectable {
+                    PALETTE.text_primary
+                } else {
+                    PALETTE.text_secondary
+                }),
             ));
             spans.push(Span::styled(
                 format!("({})", group_label(spec.group)),
                 Style::default().fg(PALETTE.text_secondary),
             ));
             if let Some(hint) = missing_hint(app, spec) {
-                spans.push(Span::styled(format!("  - {hint}"), Style::default().fg(PALETTE.text_secondary)));
+                spans.push(Span::styled(
+                    format!("  - {hint}"),
+                    Style::default().fg(PALETTE.text_secondary),
+                ));
             }
             ListItem::new(Line::from(spans))
         })

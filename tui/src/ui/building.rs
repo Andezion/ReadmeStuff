@@ -16,7 +16,9 @@ pub fn draw(frame: &mut Frame, app: &App) {
         Line::from(""),
         Line::from(format!("Building... {spinner}")),
         Line::from(""),
-        Line::from("Fetching, rendering and composing - needs network, this can take a few seconds."),
+        Line::from(
+            "Fetching, rendering and composing - needs network, this can take a few seconds.",
+        ),
         Line::from(""),
         Line::from("[Esc] Quit"),
     ]);

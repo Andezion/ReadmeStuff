@@ -55,7 +55,9 @@ async fn init_visitors_service() -> Option<Arc<GithubVisitorsService>> {
     let client = match GitHubClient::from_env() {
         Ok(c) => c,
         Err(_) => {
-            tracing::warn!("GITHUB_TOKEN not set - /track will serve the pixel but not record visits");
+            tracing::warn!(
+                "GITHUB_TOKEN not set - /track will serve the pixel but not record visits"
+            );
             return None;
         }
     };
