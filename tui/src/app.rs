@@ -4,16 +4,18 @@ use readme_stuff_catalog::registry::{self, WidgetSpec};
 use readme_stuff_config::{
     Config, Credential, Layout, PlacedWidget, ProfileConfig, Row, TextCardConfig, ThemeChoice, io,
 };
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use tui_textarea::TextArea;
 
 const CANVAS_WIDTH: u32 = 990;
+const LAYOUT_STEP: u32 = 15;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Screen {
     Welcome,
     Questionnaire,
+    Layout,
     Building,
     Report,
 }
@@ -76,6 +78,9 @@ pub struct App {
     pub selected: HashSet<&'static str>,
     pub widget_cursor: usize,
 
+    pub layout_positions: HashMap<&'static str, (u32, u32)>,
+    pub layout_cursor: usize,
+
     pub saved_path: Option<PathBuf>,
     pub status: Option<String>,
 }
@@ -103,6 +108,8 @@ impl App {
             focus: Field::GithubLogin,
             selected: HashSet::new(),
             widget_cursor: 0,
+            layout_positions: HashMap::new(),
+            layout_cursor: 0,
             saved_path: None,
             status: None,
         };
@@ -191,7 +198,113 @@ pub fn pack_layout(selected: &HashSet<&'static str>) -> Layout {
     }
 }
 
-pub fn to_config(app: &App) -> Config {
+fn auto_positions(selected: &HashSet<&'static str>) -> Vec<(&'static str, u32, u32)> {
+    let mut out = Vec::new();
+    let mut x = 0u32;
+    let mut y = 0u32;
+    let mut row_h = 0u32;
+
+    for spec in registry::all_widgets() {
+        if !selected.contains(spec.id) {
+            continue;
+        }
+        let (w, h) = spec.size;
+        if x > 0 && x + w > CANVAS_WIDTH {
+            x = 0;
+            y += row_h;
+            row_h = 0;
+        }
+        out.push((spec.id, x, y));
+        x += w;
+        row_h = row_h.max(h);
+    }
+    out
+}
+
+fn layout_order(app: &App) -> Vec<&'static str> {
+    registry::all_widgets()
+        .iter()
+        .filter(|spec| app.selected.contains(spec.id))
+        .map(|spec| spec.id)
+        .collect()
+}
+
+pub fn sync_layout_positions(app: &mut App) {
+    app.layout_positions
+        .retain(|id, _| app.selected.contains(id));
+    for (id, x, y) in auto_positions(&app.selected) {
+        app.layout_positions.entry(id).or_insert((x, y));
+    }
+    let len = layout_order(app).len();
+    if app.layout_cursor >= len {
+        app.layout_cursor = len.saturating_sub(1);
+    }
+}
+
+fn rects_overlap(a: (u32, u32, u32, u32), b: (u32, u32, u32, u32)) -> bool {
+    let (ax, ay, aw, ah) = a;
+    let (bx, by, bw, bh) = b;
+    ax < bx + bw && bx < ax + aw && ay < by + bh && by < ay + ah
+}
+
+pub fn move_layout_selected(app: &mut App, dx: i32, dy: i32) {
+    let order = layout_order(app);
+    let Some(&id) = order.get(app.layout_cursor) else {
+        return;
+    };
+    let Some(spec) = registry::find(id) else {
+        return;
+    };
+    let (w, h) = spec.size;
+    let (cur_x, cur_y) = app.layout_positions.get(id).copied().unwrap_or((0, 0));
+
+    let max_x = CANVAS_WIDTH.saturating_sub(w) as i32;
+    let new_x = (cur_x as i32 + dx).clamp(0, max_x) as u32;
+    let new_y = (cur_y as i32 + dy).max(0) as u32;
+    let candidate = (new_x, new_y, w, h);
+
+    for &other_id in &order {
+        if other_id == id {
+            continue;
+        }
+        let (Some(other_spec), Some(&(ox, oy))) =
+            (registry::find(other_id), app.layout_positions.get(other_id))
+        else {
+            continue;
+        };
+        if rects_overlap(candidate, (ox, oy, other_spec.size.0, other_spec.size.1)) {
+            app.status = Some(format!("blocked by {other_id}"));
+            return;
+        }
+    }
+
+    app.layout_positions.insert(id, (new_x, new_y));
+    app.status = None;
+}
+
+fn manual_layout(app: &App) -> Layout {
+    let widgets: Vec<PlacedWidget> = layout_order(app)
+        .into_iter()
+        .filter_map(|id| {
+            app.layout_positions.get(id).map(|&(x, y)| PlacedWidget {
+                id: id.to_string(),
+                x,
+                y,
+            })
+        })
+        .collect();
+
+    Layout {
+        canvas_width: CANVAS_WIDTH,
+        rows: if widgets.is_empty() {
+            vec![]
+        } else {
+            vec![Row { widgets }]
+        },
+    }
+}
+
+fn base_config(app: &App, layout: Layout) -> Config {
     Config {
         profile: ProfileConfig {
             github_login: field_opt(&app.github_login),
@@ -201,12 +314,20 @@ pub fn to_config(app: &App) -> Config {
             leetcode_username: field_opt(&app.leetcode_username),
         },
         theme: ThemeChoice::Matrix,
-        layout: pack_layout(&app.selected),
+        layout,
         text_card: TextCardConfig {
             file: field_opt(&app.text_card_file),
             ..Default::default()
         },
     }
+}
+
+pub fn to_config(app: &App) -> Config {
+    base_config(app, pack_layout(&app.selected))
+}
+
+pub fn to_config_with_manual_layout(app: &App) -> Config {
+    base_config(app, manual_layout(app))
 }
 
 pub fn load_into(app: &mut App, cfg: &Config) {
@@ -236,7 +357,19 @@ fn save_and_queue_build(app: &mut App) {
 }
 
 fn save_and_queue_build_in(app: &mut App, dir: &Path) {
-    let cfg = to_config(app);
+    save_config_and_queue(app, dir, to_config(app));
+}
+
+fn save_and_queue_build_with_layout(app: &mut App) {
+    let dir = std::env::current_dir().unwrap_or_default();
+    save_and_queue_build_with_layout_in(app, &dir);
+}
+
+fn save_and_queue_build_with_layout_in(app: &mut App, dir: &Path) {
+    save_config_and_queue(app, dir, to_config_with_manual_layout(app));
+}
+
+fn save_config_and_queue(app: &mut App, dir: &Path, cfg: Config) {
     let path = dir.join(io::CONFIG_FILE_NAME);
     match io::save(&path, &cfg) {
         Ok(()) => {
@@ -263,6 +396,7 @@ pub fn handle_key(app: &mut App, key: KeyEvent) {
     match app.screen {
         Screen::Welcome => handle_welcome_key(app, key),
         Screen::Questionnaire => handle_questionnaire_key(app, key),
+        Screen::Layout => handle_layout_key(app, key),
         Screen::Building => handle_building_key(app, key),
         Screen::Report => handle_report_key(app, key),
     }
@@ -327,6 +461,14 @@ fn handle_questionnaire_key(app: &mut App, key: KeyEvent) {
                     remove_selected(app, spec.id);
                 }
             }
+            KeyCode::Char('l') | KeyCode::Char('L') => {
+                if app.selected.is_empty() {
+                    app.status = Some("select at least one widget first".to_string());
+                } else {
+                    sync_layout_positions(app);
+                    app.screen = Screen::Layout;
+                }
+            }
             _ => {}
         }
         return;
@@ -347,6 +489,25 @@ fn handle_questionnaire_key(app: &mut App, key: KeyEvent) {
             };
             field.input(key);
         }
+    }
+}
+
+fn handle_layout_key(app: &mut App, key: KeyEvent) {
+    if key.code == KeyCode::Char('s') && key.modifiers.contains(KeyModifiers::CONTROL) {
+        save_and_queue_build_with_layout(app);
+        return;
+    }
+
+    let len = layout_order(app).len();
+    match key.code {
+        KeyCode::Esc => app.screen = Screen::Questionnaire,
+        KeyCode::Tab if len > 0 => app.layout_cursor = (app.layout_cursor + 1) % len,
+        KeyCode::BackTab if len > 0 => app.layout_cursor = (app.layout_cursor + len - 1) % len,
+        KeyCode::Left | KeyCode::Char('h') => move_layout_selected(app, -(LAYOUT_STEP as i32), 0),
+        KeyCode::Right | KeyCode::Char('l') => move_layout_selected(app, LAYOUT_STEP as i32, 0),
+        KeyCode::Up | KeyCode::Char('k') => move_layout_selected(app, 0, -(LAYOUT_STEP as i32)),
+        KeyCode::Down | KeyCode::Char('j') => move_layout_selected(app, 0, LAYOUT_STEP as i32),
+        _ => {}
     }
 }
 
@@ -533,6 +694,75 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn sync_layout_positions_seeds_new_selections_and_drops_deselected() {
+        let mut app = app_with("octocat", "GITHUB_TOKEN");
+        toggle_selected(&mut app, "github-stats");
+        toggle_selected(&mut app, "github-repos");
+        sync_layout_positions(&mut app);
+        assert!(app.layout_positions.contains_key("github-stats"));
+        assert!(app.layout_positions.contains_key("github-repos"));
+
+        toggle_selected(&mut app, "github-repos");
+        sync_layout_positions(&mut app);
+        assert!(app.layout_positions.contains_key("github-stats"));
+        assert!(!app.layout_positions.contains_key("github-repos"));
+    }
+
+    #[test]
+    fn sync_layout_positions_keeps_a_manually_moved_widget_in_place() {
+        let mut app = app_with("octocat", "GITHUB_TOKEN");
+        toggle_selected(&mut app, "github-stats");
+        sync_layout_positions(&mut app);
+        move_layout_selected(&mut app, 15, 15);
+        let moved = app.layout_positions["github-stats"];
+
+        sync_layout_positions(&mut app);
+        assert_eq!(app.layout_positions["github-stats"], moved);
+    }
+
+    #[test]
+    fn move_layout_selected_clamps_to_the_canvas() {
+        let mut app = app_with("octocat", "GITHUB_TOKEN");
+        toggle_selected(&mut app, "github-stats");
+        sync_layout_positions(&mut app);
+
+        move_layout_selected(&mut app, -1000, -1000);
+        let (x, y) = app.layout_positions["github-stats"];
+        assert_eq!(x, 0);
+        assert_eq!(y, 0);
+    }
+
+    #[test]
+    fn move_layout_selected_is_blocked_by_an_overlap() {
+        let mut app = app_with("octocat", "GITHUB_TOKEN");
+        toggle_selected(&mut app, "github-stats");
+        toggle_selected(&mut app, "github-repos");
+        sync_layout_positions(&mut app);
+        let before = app.layout_positions["github-stats"];
+
+        let target = app.layout_positions["github-repos"];
+        let dx = target.0 as i32 - before.0 as i32;
+        move_layout_selected(&mut app, dx, 0);
+
+        assert_eq!(app.layout_positions["github-stats"], before);
+        assert!(app.status.is_some());
+    }
+
+    #[test]
+    fn manual_layout_config_is_a_single_row_with_saved_positions() {
+        let mut app = app_with("octocat", "GITHUB_TOKEN");
+        toggle_selected(&mut app, "github-stats");
+        sync_layout_positions(&mut app);
+        move_layout_selected(&mut app, 15, 30);
+
+        let cfg = to_config_with_manual_layout(&app);
+        assert_eq!(cfg.layout.rows.len(), 1);
+        let placed = &cfg.layout.rows[0].widgets[0];
+        assert_eq!(placed.id, "github-stats");
+        assert_eq!((placed.x, placed.y), app.layout_positions["github-stats"]);
     }
 
     #[test]
