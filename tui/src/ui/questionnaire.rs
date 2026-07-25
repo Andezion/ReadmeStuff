@@ -154,7 +154,7 @@ fn render_field(
 fn draw_widget_list(frame: &mut Frame, app: &App, area: Rect) {
     let focused = app.focus == Field::WidgetList;
     let block = theme::focusable_block(
-        "Widgets to include - [A] Add   [D] Delete   (Space/Enter: toggle)",
+        "Widgets to include - [A] Add   [D] Delete   [L] Layout   (Space/Enter: toggle)",
         focused,
     );
 
