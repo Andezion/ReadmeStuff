@@ -5,7 +5,7 @@ use ratatui::layout::Rect;
 use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span, Text};
 use ratatui::widgets::{Paragraph, Wrap};
-use readme_stuff_catalog::WidgetOutcome;
+use readme_stuff_catalog::{TextCardOutcome, WidgetOutcome};
 
 pub fn draw(frame: &mut Frame, app: &App) {
     let area = frame.area();
@@ -70,6 +70,23 @@ fn draw_output(frame: &mut Frame, area: Rect, output: &readme_stuff_catalog::Bui
             Style::default().fg(PALETTE.text_secondary),
         ),
     });
+    if let Some(text_card) = &output.text_card {
+        lines.push(match text_card {
+            TextCardOutcome::Written(p) => Line::styled(
+                format!("Text card: {}", p.display()),
+                Style::default().fg(PALETTE.accent),
+            ),
+            TextCardOutcome::Skipped(reason) => Line::styled(
+                format!("Text card: skipped ({reason})"),
+                Style::default().fg(PALETTE.text_secondary),
+            ),
+            TextCardOutcome::Error(reason) => Line::styled(
+                format!("Text card: error ({reason})"),
+                Style::default().fg(Color::Red),
+            ),
+        });
+    }
+
     lines.push(Line::from(""));
     lines.push(Line::from(vec![Span::raw("[B] Back to edit     [Q] Quit")]));
 
