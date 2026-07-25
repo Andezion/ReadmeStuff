@@ -1,6 +1,7 @@
 pub mod theme;
 
 mod building;
+mod layout;
 mod questionnaire;
 mod report;
 mod welcome;
@@ -12,6 +13,7 @@ pub fn draw(frame: &mut Frame, app: &App) {
     match app.screen {
         Screen::Welcome => welcome::draw(frame, app),
         Screen::Questionnaire => questionnaire::draw(frame, app),
+        Screen::Layout => layout::draw(frame, app),
         Screen::Building => building::draw(frame, app),
         Screen::Report => report::draw(frame, app),
     }
