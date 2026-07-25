@@ -1,5 +1,5 @@
-use readme_stuff_catalog::{BuildOutput, WidgetOutcome, build as build_pipeline};
-use readme_stuff_config::{Config, defaults, io as config_io};
+use readme_stuff_catalog::{BuildOutput, TextCardOutcome, WidgetOutcome, build as build_pipeline};
+use readme_stuff_config::{Config, TextCardConfig, defaults, io as config_io};
 use readme_stuff_draw::{
     Align, DEFAULT_HEIGHT, DEFAULT_WIDTH, Theme, parse_lines, render_text_card,
 };
@@ -15,12 +15,13 @@ async fn main() {
     let text_only = cli_flag("--text-only").is_some()
         || matches!(std::env::var("TEXT_ONLY").as_deref(), Ok("1") | Ok("true"));
     if text_only {
-        render_custom_text_card(&out_dir);
+        render_text_only_card(&out_dir);
         eprintln!("Done - {}", out_dir.display());
         return;
     }
 
-    let cfg = load_config();
+    let mut cfg = load_config();
+    apply_text_card_overrides(&mut cfg);
     let login = cfg.profile.github_login.as_deref().unwrap_or("<none>");
     eprintln!("Fetching profile for {login}...");
 
@@ -31,8 +32,6 @@ async fn main() {
             std::process::exit(1);
         }
     }
-
-    render_custom_text_card(&out_dir);
 
     eprintln!("Done - {}", out_dir.display());
 }
@@ -84,6 +83,12 @@ fn report_build(output: &BuildOutput) {
         Some(p) => eprintln!("  compose OK -> {}", p.display()),
         None => eprintln!("  compose SKIP (no rows produced output)"),
     }
+    match &output.text_card {
+        Some(TextCardOutcome::Written(p)) => eprintln!("  text-card OK -> {}", p.display()),
+        Some(TextCardOutcome::Skipped(reason)) => eprintln!("  text-card SKIP ({reason})"),
+        Some(TextCardOutcome::Error(reason)) => eprintln!("  text-card ERROR ({reason})"),
+        None => {}
+    }
 }
 
 fn cli_flag(name: &str) -> Option<String> {
@@ -120,8 +125,32 @@ fn positional_args() -> Vec<String> {
     positional
 }
 
-fn render_custom_text_card(out_dir: &Path) {
+fn apply_text_card_overrides(cfg: &mut Config) {
     let Some(path) = cli_flag("--text-file").or_else(|| std::env::var("TEXT_FILE").ok()) else {
+        return;
+    };
+
+    let align = cli_flag("--text-align").or_else(|| std::env::var("TEXT_ALIGN").ok());
+    let centered = cli_bool_flag("-c")
+        || matches!(
+            std::env::var("TEXT_ALIGN_CENTER").as_deref(),
+            Ok("1") | Ok("true")
+        );
+    let positional = positional_args();
+
+    cfg.text_card = TextCardConfig {
+        file: Some(path),
+        output: positional.first().cloned(),
+        align,
+        centered,
+        width: positional.get(1).and_then(|s| s.parse::<u32>().ok()),
+        height: positional.get(2).and_then(|s| s.parse::<u32>().ok()),
+    };
+}
+
+fn render_text_only_card(out_dir: &Path) {
+    let Some(path) = cli_flag("--text-file").or_else(|| std::env::var("TEXT_FILE").ok()) else {
+        eprintln!("  --text-only requires --text-file (or TEXT_FILE)");
         return;
     };
 
