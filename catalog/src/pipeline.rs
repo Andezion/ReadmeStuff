@@ -1,6 +1,8 @@
 use crate::registry;
 use readme_stuff_config::{Config, ThemeChoice};
-use readme_stuff_draw::{Theme, Tile, compose};
+use readme_stuff_draw::{
+    Align, DEFAULT_HEIGHT, DEFAULT_WIDTH, Theme, Tile, compose, parse_lines, render_text_card,
+};
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
@@ -14,10 +16,18 @@ pub enum WidgetOutcome {
 }
 
 #[derive(Debug, Clone)]
+pub enum TextCardOutcome {
+    Written(PathBuf),
+    Skipped(String),
+    Error(String),
+}
+
+#[derive(Debug, Clone)]
 pub struct BuildOutput {
     pub out_dir: PathBuf,
     pub widgets: Vec<WidgetOutcome>,
     pub mosaic_path: Option<PathBuf>,
+    pub text_card: Option<TextCardOutcome>,
 }
 
 fn draw_theme(theme: ThemeChoice) -> Theme {
@@ -130,11 +140,44 @@ pub async fn build(cfg: &Config, out_dir: &Path) -> Result<BuildOutput, String> 
         Some(write_svg(out_dir, "profile-mosaic.svg", &mosaic)?)
     };
 
+    let text_card = build_text_card(cfg, out_dir, theme);
+
     Ok(BuildOutput {
         out_dir: out_dir.to_path_buf(),
         widgets: outcomes,
         mosaic_path,
+        text_card,
     })
+}
+
+fn build_text_card(cfg: &Config, out_dir: &Path, theme: Theme) -> Option<TextCardOutcome> {
+    let path = cfg.text_card.file.as_ref()?;
+
+    let content = match std::fs::read_to_string(path) {
+        Ok(c) => c,
+        Err(e) => return Some(TextCardOutcome::Error(format!("cannot read {path}: {e}"))),
+    };
+
+    let lines = parse_lines(&content);
+    if lines.is_empty() {
+        return Some(TextCardOutcome::Skipped(format!("no text lines in {path}")));
+    }
+
+    let align_str = cfg.text_card.align.as_deref().unwrap_or("left");
+    let align = Align::parse(align_str, cfg.text_card.centered).unwrap_or(Align::DEFAULT);
+    let width = cfg.text_card.width.unwrap_or(DEFAULT_WIDTH);
+    let height = cfg.text_card.height.unwrap_or(DEFAULT_HEIGHT);
+    let name = cfg
+        .text_card
+        .output
+        .as_deref()
+        .unwrap_or("custom-text-dark.svg");
+
+    let svg = render_text_card(&lines, align, theme, width, height);
+    match write_svg(out_dir, name, &svg) {
+        Ok(p) => Some(TextCardOutcome::Written(p)),
+        Err(e) => Some(TextCardOutcome::Error(e)),
+    }
 }
 
 #[cfg(test)]
@@ -160,6 +203,7 @@ mod tests {
                 canvas_width: 990,
                 rows: vec![],
             },
+            ..Default::default()
         };
         let dir = temp_dir("empty");
         let out = build(&cfg, &dir)
@@ -185,6 +229,7 @@ mod tests {
                     }],
                 }],
             },
+            ..Default::default()
         };
         let dir = temp_dir("skip");
         let out = build(&cfg, &dir).await.expect("build should not error");
@@ -209,12 +254,79 @@ mod tests {
                     }],
                 }],
             },
+            ..Default::default()
         };
         let dir = temp_dir("unknown");
         let out = build(&cfg, &dir).await.expect("build should not error");
         assert!(
             matches!(&out.widgets[0], WidgetOutcome::Error { id, .. } if id == "does-not-exist")
         );
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[tokio::test]
+    async fn no_text_card_configured_yields_no_outcome() {
+        let cfg = Config {
+            profile: ProfileConfig::default(),
+            theme: ThemeChoice::Matrix,
+            layout: Layout {
+                canvas_width: 990,
+                rows: vec![],
+            },
+            ..Default::default()
+        };
+        let dir = temp_dir("text-card-none");
+        let out = build(&cfg, &dir).await.expect("build should not error");
+        assert!(out.text_card.is_none());
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[tokio::test]
+    async fn configured_text_card_is_rendered_alongside_widgets() {
+        let dir = temp_dir("text-card-written");
+        let text_path = dir.join("greeting.txt");
+        std::fs::write(&text_path, "hello there(20)\n").unwrap();
+
+        let cfg = Config {
+            profile: ProfileConfig::default(),
+            theme: ThemeChoice::Matrix,
+            layout: Layout {
+                canvas_width: 990,
+                rows: vec![],
+            },
+            text_card: readme_stuff_config::TextCardConfig {
+                file: Some(text_path.display().to_string()),
+                ..Default::default()
+            },
+        };
+        let out = build(&cfg, &dir).await.expect("build should not error");
+        match out.text_card {
+            Some(TextCardOutcome::Written(path)) => {
+                assert!(path.exists());
+                assert_eq!(path.file_name().unwrap(), "custom-text-dark.svg");
+            }
+            other => panic!("expected a written text card, got {other:?}"),
+        }
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[tokio::test]
+    async fn missing_text_card_file_is_reported_as_an_error() {
+        let dir = temp_dir("text-card-missing");
+        let cfg = Config {
+            profile: ProfileConfig::default(),
+            theme: ThemeChoice::Matrix,
+            layout: Layout {
+                canvas_width: 990,
+                rows: vec![],
+            },
+            text_card: readme_stuff_config::TextCardConfig {
+                file: Some(dir.join("does-not-exist.txt").display().to_string()),
+                ..Default::default()
+            },
+        };
+        let out = build(&cfg, &dir).await.expect("build should not error");
+        assert!(matches!(out.text_card, Some(TextCardOutcome::Error(_))));
         std::fs::remove_dir_all(&dir).ok();
     }
 }
