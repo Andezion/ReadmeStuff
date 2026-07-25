@@ -76,6 +76,7 @@ fn draw_fields(frame: &mut Frame, app: &App, area: Rect) {
             Constraint::Length(3),
             Constraint::Length(3),
             Constraint::Length(3),
+            Constraint::Length(3),
             Constraint::Length(2),
             Constraint::Min(0),
         ])
@@ -116,17 +117,24 @@ fn draw_fields(frame: &mut Frame, app: &App, area: Rect) {
         app.focus == Field::LeetcodeUsername,
         rows[4],
     );
+    render_field(
+        frame,
+        "Greeting text file (optional, e.g. text/text.txt)",
+        &app.text_card_file,
+        app.focus == Field::TextCardFile,
+        rows[5],
+    );
 
     let help = Paragraph::new(Line::from(
         "Tab/Shift+Tab: move focus   Ctrl+S: save & build   Esc: quit",
     ))
     .style(Style::default().fg(PALETTE.text_secondary));
-    frame.render_widget(help, rows[5]);
+    frame.render_widget(help, rows[6]);
 
     if let Some(status) = &app.status {
         let err =
             Paragraph::new(Line::from(status.as_str())).style(Style::default().fg(PALETTE.accent));
-        frame.render_widget(err, rows[6]);
+        frame.render_widget(err, rows[7]);
     }
 }
 
