@@ -1,4 +1,6 @@
-use crate::schema::{Config, Layout, PlacedWidget, ProfileConfig, Row, ThemeChoice};
+use crate::schema::{
+    Config, Layout, PlacedWidget, ProfileConfig, Row, TextCardConfig, ThemeChoice,
+};
 
 pub fn default_config() -> Config {
     Config {
@@ -14,6 +16,7 @@ pub fn default_config() -> Config {
             canvas_width: 990,
             rows: default_rows(),
         },
+        text_card: TextCardConfig::default(),
     }
 }
 
