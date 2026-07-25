@@ -71,8 +71,20 @@ impl Default for Layout {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
 #[serde(default)]
+pub struct TextCardConfig {
+    pub file: Option<String>,
+    pub output: Option<String>,
+    pub align: Option<String>,
+    pub centered: bool,
+    pub width: Option<u32>,
+    pub height: Option<u32>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default, PartialEq)]
+#[serde(default)]
 pub struct Config {
     pub profile: ProfileConfig,
     pub theme: ThemeChoice,
     pub layout: Layout,
+    pub text_card: TextCardConfig,
 }
