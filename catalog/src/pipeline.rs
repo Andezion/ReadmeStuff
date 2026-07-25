@@ -1,7 +1,7 @@
 use crate::registry;
 use readme_stuff_config::{Config, ThemeChoice};
 use readme_stuff_draw::{
-    Align, DEFAULT_HEIGHT, DEFAULT_WIDTH, Theme, Tile, compose, parse_lines, render_text_card,
+    Align, DEFAULT_HEIGHT, Theme, Tile, compose, parse_lines, render_text_card,
 };
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -123,24 +123,28 @@ pub async fn build(cfg: &Config, out_dir: &Path) -> Result<BuildOutput, String> 
         row_heights.push(row_h);
     }
 
-    let mosaic_path = if row_svgs.is_empty() {
+    let (text_card, text_card_svg) = build_text_card(cfg, out_dir, theme);
+
+    let mosaic_path = if row_svgs.is_empty() && text_card_svg.is_none() {
         None
     } else {
         let mut y = 0u32;
-        let mosaic_tiles: Vec<Tile> = row_svgs
-            .iter()
-            .zip(row_heights.iter())
-            .map(|(svg, h)| {
-                let tile = Tile { svg, x: 0, y };
-                y += h;
-                tile
-            })
-            .collect();
+        let mut mosaic_tiles: Vec<Tile> = Vec::new();
+
+        if let Some(svg) = text_card_svg.as_deref() {
+            let h = svg_declared_height(svg).unwrap_or(0);
+            mosaic_tiles.push(Tile { svg, x: 0, y });
+            y += h;
+        }
+
+        for (svg, h) in row_svgs.iter().zip(row_heights.iter()) {
+            mosaic_tiles.push(Tile { svg, x: 0, y });
+            y += h;
+        }
+
         let mosaic = compose(cfg.layout.canvas_width, y, theme, &mosaic_tiles)?;
         Some(write_svg(out_dir, "profile-mosaic.svg", &mosaic)?)
     };
-
-    let text_card = build_text_card(cfg, out_dir, theme);
 
     Ok(BuildOutput {
         out_dir: out_dir.to_path_buf(),
@@ -150,33 +154,54 @@ pub async fn build(cfg: &Config, out_dir: &Path) -> Result<BuildOutput, String> 
     })
 }
 
-fn build_text_card(cfg: &Config, out_dir: &Path, theme: Theme) -> Option<TextCardOutcome> {
-    let path = cfg.text_card.file.as_ref()?;
+fn svg_declared_height(svg: &str) -> Option<u32> {
+    let marker = "height=\"";
+    let start = svg.find(marker)? + marker.len();
+    let end = svg[start..].find('"')? + start;
+    svg[start..end].parse().ok()
+}
+
+fn build_text_card(
+    cfg: &Config,
+    out_dir: &Path,
+    theme: Theme,
+) -> (Option<TextCardOutcome>, Option<String>) {
+    let Some(path) = cfg.text_card.file.as_ref() else {
+        return (None, None);
+    };
 
     let content = match std::fs::read_to_string(path) {
         Ok(c) => c,
-        Err(e) => return Some(TextCardOutcome::Error(format!("cannot read {path}: {e}"))),
+        Err(e) => {
+            return (
+                Some(TextCardOutcome::Error(format!("cannot read {path}: {e}"))),
+                None,
+            );
+        }
     };
 
     let lines = parse_lines(&content);
     if lines.is_empty() {
-        return Some(TextCardOutcome::Skipped(format!("no text lines in {path}")));
+        return (
+            Some(TextCardOutcome::Skipped(format!("no text lines in {path}"))),
+            None,
+        );
     }
 
     let align_str = cfg.text_card.align.as_deref().unwrap_or("left");
     let align = Align::parse(align_str, cfg.text_card.centered).unwrap_or(Align::DEFAULT);
-    let width = cfg.text_card.width.unwrap_or(DEFAULT_WIDTH);
+    let width = cfg.text_card.width.unwrap_or(cfg.layout.canvas_width);
     let height = cfg.text_card.height.unwrap_or(DEFAULT_HEIGHT);
     let name = cfg
         .text_card
         .output
         .as_deref()
-        .unwrap_or("custom-text-dark.svg");
+        .unwrap_or("greeting-dark.svg");
 
     let svg = render_text_card(&lines, align, theme, width, height);
     match write_svg(out_dir, name, &svg) {
-        Ok(p) => Some(TextCardOutcome::Written(p)),
-        Err(e) => Some(TextCardOutcome::Error(e)),
+        Ok(p) => (Some(TextCardOutcome::Written(p)), Some(svg)),
+        Err(e) => (Some(TextCardOutcome::Error(e)), None),
     }
 }
 
@@ -303,10 +328,14 @@ mod tests {
         match out.text_card {
             Some(TextCardOutcome::Written(path)) => {
                 assert!(path.exists());
-                assert_eq!(path.file_name().unwrap(), "custom-text-dark.svg");
+                assert_eq!(path.file_name().unwrap(), "greeting-dark.svg");
             }
             other => panic!("expected a written text card, got {other:?}"),
         }
+        assert!(
+            out.mosaic_path.is_some(),
+            "a lone text card should still produce a mosaic"
+        );
         std::fs::remove_dir_all(&dir).ok();
     }
 
