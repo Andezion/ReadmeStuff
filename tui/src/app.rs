@@ -2,7 +2,7 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use readme_stuff_catalog::BuildOutput;
 use readme_stuff_catalog::registry::{self, WidgetSpec};
 use readme_stuff_config::{
-    Config, Credential, Layout, PlacedWidget, ProfileConfig, Row, ThemeChoice, io,
+    Config, Credential, Layout, PlacedWidget, ProfileConfig, Row, TextCardConfig, ThemeChoice, io,
 };
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -25,16 +25,18 @@ pub enum Field {
     CodeforcesHandle,
     CodewarsUsername,
     LeetcodeUsername,
+    TextCardFile,
     WidgetList,
 }
 
 impl Field {
-    const ORDER: [Field; 6] = [
+    const ORDER: [Field; 7] = [
         Field::GithubLogin,
         Field::GithubTokenEnv,
         Field::CodeforcesHandle,
         Field::CodewarsUsername,
         Field::LeetcodeUsername,
+        Field::TextCardFile,
         Field::WidgetList,
     ];
 
@@ -68,6 +70,7 @@ pub struct App {
     pub codeforces_handle: TextArea<'static>,
     pub codewars_username: TextArea<'static>,
     pub leetcode_username: TextArea<'static>,
+    pub text_card_file: TextArea<'static>,
     pub focus: Field,
 
     pub selected: HashSet<&'static str>,
@@ -96,6 +99,7 @@ impl App {
             codeforces_handle: TextArea::default(),
             codewars_username: TextArea::default(),
             leetcode_username: TextArea::default(),
+            text_card_file: TextArea::default(),
             focus: Field::GithubLogin,
             selected: HashSet::new(),
             widget_cursor: 0,
@@ -198,6 +202,10 @@ pub fn to_config(app: &App) -> Config {
         },
         theme: ThemeChoice::Matrix,
         layout: pack_layout(&app.selected),
+        text_card: TextCardConfig {
+            file: field_opt(&app.text_card_file),
+            ..Default::default()
+        },
     }
 }
 
@@ -212,6 +220,7 @@ pub fn load_into(app: &mut App, cfg: &Config) {
     app.codeforces_handle = single_line(cfg.profile.codeforces_handle.as_deref().unwrap_or(""));
     app.codewars_username = single_line(cfg.profile.codewars_username.as_deref().unwrap_or(""));
     app.leetcode_username = single_line(cfg.profile.leetcode_username.as_deref().unwrap_or(""));
+    app.text_card_file = single_line(cfg.text_card.file.as_deref().unwrap_or(""));
     app.selected = cfg
         .layout
         .rows
@@ -333,6 +342,7 @@ fn handle_questionnaire_key(app: &mut App, key: KeyEvent) {
                 Field::CodeforcesHandle => &mut app.codeforces_handle,
                 Field::CodewarsUsername => &mut app.codewars_username,
                 Field::LeetcodeUsername => &mut app.leetcode_username,
+                Field::TextCardFile => &mut app.text_card_file,
                 Field::WidgetList => unreachable!(),
             };
             field.input(key);
@@ -401,6 +411,7 @@ mod tests {
             },
             theme: ThemeChoice::Matrix,
             layout: pack_layout(&HashSet::from(["github-stats"])),
+            ..Default::default()
         };
         let mut app = App::new(Some((PathBuf::from("readme.toml"), cfg)));
         handle_key(&mut app, KeyEvent::from(KeyCode::Char('r')));
