@@ -135,7 +135,11 @@ mod tests {
             50,
             "#ffffff",
             &[
-                PlacedTile { svg: &a, x: 0, y: 0 },
+                PlacedTile {
+                    svg: &a,
+                    x: 0,
+                    y: 0,
+                },
                 PlacedTile {
                     svg: &b,
                     x: 100,
@@ -160,7 +164,11 @@ mod tests {
             50,
             "#ffffff",
             &[
-                PlacedTile { svg: &a, x: 0, y: 0 },
+                PlacedTile {
+                    svg: &a,
+                    x: 0,
+                    y: 0,
+                },
                 PlacedTile {
                     svg: &b,
                     x: 100,
@@ -179,8 +187,17 @@ mod tests {
     #[test]
     fn compose_freeform_crops_to_the_given_canvas_height() {
         let a = tile(100, 50, "a", "only");
-        let out = compose_freeform(100, 50, "#ffffff", &[PlacedTile { svg: &a, x: 0, y: 0 }])
-            .expect("compose should succeed");
+        let out = compose_freeform(
+            100,
+            50,
+            "#ffffff",
+            &[PlacedTile {
+                svg: &a,
+                x: 0,
+                y: 0,
+            }],
+        )
+        .expect("compose should succeed");
         assert!(out.contains(r#"height="50""#));
         assert!(!out.contains(r#"height="990""#));
     }

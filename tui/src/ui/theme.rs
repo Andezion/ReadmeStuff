@@ -40,5 +40,12 @@ pub fn colored_block(title: &str, color: Color) -> Block<'_> {
 }
 
 pub fn focusable_block(title: &str, focused: bool) -> Block<'_> {
-    colored_block(title, if focused { PALETTE.accent } else { PALETTE.border })
+    colored_block(
+        title,
+        if focused {
+            PALETTE.accent
+        } else {
+            PALETTE.border
+        },
+    )
 }

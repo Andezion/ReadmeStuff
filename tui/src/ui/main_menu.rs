@@ -21,7 +21,10 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
     ];
     if let Some(status) = &app.status {
         lines.push(Line::from(""));
-        lines.push(Line::styled(status.as_str(), Style::default().fg(PALETTE.accent)));
+        lines.push(Line::styled(
+            status.as_str(),
+            Style::default().fg(PALETTE.accent),
+        ));
     }
 
     let para = Paragraph::new(Text::from(lines))

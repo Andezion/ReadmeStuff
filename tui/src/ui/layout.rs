@@ -71,8 +71,7 @@ fn draw_canvas(frame: &mut Frame, app: &App, area: Rect) {
 }
 
 fn draw_help(frame: &mut Frame, app: &App, area: Rect) {
-    let mut text =
-        "Tab: next widget   arrows: move   Ctrl+S: save & build   Esc: back".to_string();
+    let mut text = "Tab: next widget   arrows: move   Ctrl+S: save & build   Esc: back".to_string();
     if let Some(status) = &app.status {
         text.push_str("   -   ");
         text.push_str(status);

@@ -28,7 +28,10 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
 }
 
 fn short_label(id: &str) -> &str {
-    Path::new(id).file_name().and_then(|s| s.to_str()).unwrap_or(id)
+    Path::new(id)
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or(id)
 }
 
 fn draw_sidebar(frame: &mut Frame, app: &mut App, area: Rect) {
@@ -51,8 +54,8 @@ fn draw_sidebar(frame: &mut Frame, app: &mut App, area: Rect) {
         };
         let (w, h) = item.size;
         let aspect = w as f64 / h as f64;
-        let box_w = ((SIDEBAR_ITEM_HEIGHT as f64 * 2.0 * aspect).round() as u16)
-            .clamp(3, inner.width);
+        let box_w =
+            ((SIDEBAR_ITEM_HEIGHT as f64 * 2.0 * aspect).round() as u16).clamp(3, inner.width);
 
         let rect = Rect {
             x: inner.x,
@@ -96,13 +99,26 @@ fn draw_canvas(frame: &mut Frame, app: &mut App, area: Rect) {
 
     for item in &app.editor.placed {
         draw_box(
-            frame, inner, scale_x, scale_y, scroll_y, item.x, item.y, item.w, item.h, &item.id,
+            frame,
+            inner,
+            scale_x,
+            scale_y,
+            scroll_y,
+            item.x,
+            item.y,
+            item.w,
+            item.h,
+            &item.id,
             PALETTE.border,
         );
     }
 
     if let Some(drag) = &app.editor.drag {
-        let color = if drag.valid { PALETTE.accent } else { Color::Red };
+        let color = if drag.valid {
+            PALETTE.accent
+        } else {
+            Color::Red
+        };
         draw_box(
             frame,
             inner,

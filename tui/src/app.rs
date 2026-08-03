@@ -86,7 +86,10 @@ impl TextWidgetField {
     ];
 
     fn index(self) -> usize {
-        TextWidgetField::ORDER.iter().position(|f| *f == self).unwrap()
+        TextWidgetField::ORDER
+            .iter()
+            .position(|f| *f == self)
+            .unwrap()
     }
 
     pub fn next(self) -> TextWidgetField {
@@ -1727,7 +1730,7 @@ mod tests {
             h: 50,
         });
 
-        remove_at(&mut app, 50, 10); 
+        remove_at(&mut app, 50, 10);
 
         assert!(app.editor.placed.is_empty());
         assert!(app.editor.sidebar.contains(&"w1".to_string()));
@@ -1742,8 +1745,7 @@ mod tests {
 
         assert!(app.status.is_some());
         assert!(
-            !dir
-                .join(readme_stuff_catalog::WIDGETS_DIR)
+            !dir.join(readme_stuff_catalog::WIDGETS_DIR)
                 .join(README_EXPORT_NAME)
                 .exists()
         );
@@ -1783,7 +1785,11 @@ mod tests {
             .join(readme_stuff_catalog::WIDGETS_DIR)
             .join(README_EXPORT_NAME);
         let content = std::fs::read_to_string(&out).unwrap_or_else(|e| {
-            panic!("expected {} to exist (status: {:?}): {e}", out.display(), app.status)
+            panic!(
+                "expected {} to exist (status: {:?}): {e}",
+                out.display(),
+                app.status
+            )
         });
         assert!(content.contains(r#"height="50""#));
         assert!(content.contains(r#"translate(0,0)"#));

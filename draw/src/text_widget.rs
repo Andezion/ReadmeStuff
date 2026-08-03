@@ -10,7 +10,6 @@ const FONT_BYTES: &[u8] =
 const PAD_X: f32 = 25.0;
 const PAD_TOP: f32 = 30.0;
 
-
 pub fn render_text_widget(
     lines: &[&str],
     font_size: f32,
