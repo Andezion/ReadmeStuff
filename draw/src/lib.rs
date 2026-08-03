@@ -1,3 +1,4 @@
+pub mod canvas;
 pub mod compose;
 mod helpers;
 mod matrix;
@@ -7,6 +8,7 @@ pub mod theme;
 mod text_card;
 mod text_glyph;
 mod text_input;
+mod text_widget;
 
 // GitHub
 mod github_contributions;
@@ -37,6 +39,7 @@ mod competitive;
 mod langs;
 mod streak;
 
+pub use canvas::{PlacedTile, compose_freeform, svg_size};
 pub use compose::{Tile, compose};
 pub use theme::Theme;
 
@@ -106,3 +109,4 @@ pub use competitive::render_competitive;
 pub use text_card::{DEFAULT_HEIGHT, DEFAULT_WIDTH, render_text_card};
 pub use text_glyph::{Align, HAlign, TextLine, VAlign};
 pub use text_input::parse_lines;
+pub use text_widget::render_text_widget;
