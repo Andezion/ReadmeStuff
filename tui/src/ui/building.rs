@@ -8,7 +8,7 @@ use ratatui::widgets::Paragraph;
 
 const SPINNER: [char; 4] = ['|', '/', '-', '\\'];
 
-pub fn draw(frame: &mut Frame, app: &App) {
+pub fn draw(frame: &mut Frame, app: &mut App) {
     let area = frame.area();
     let spinner = SPINNER[(app.build_tick as usize) % SPINNER.len()];
 
