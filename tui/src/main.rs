@@ -2,7 +2,8 @@ mod app;
 mod ui;
 
 use app::{App, Screen};
-use crossterm::event::{Event, KeyEventKind};
+use crossterm::event::{DisableMouseCapture, EnableMouseCapture, Event, KeyEventKind};
+use crossterm::execute;
 use ratatui::DefaultTerminal;
 use readme_stuff_catalog::BuildOutput;
 use std::path::PathBuf;
@@ -10,7 +11,9 @@ use std::sync::mpsc;
 use std::time::Duration;
 
 fn output_dir() -> PathBuf {
-    PathBuf::from(std::env::var("OUTPUT_DIR").unwrap_or_else(|_| "profile".into()))
+    PathBuf::from(
+        std::env::var("OUTPUT_DIR").unwrap_or_else(|_| readme_stuff_catalog::WIDGETS_DIR.into()),
+    )
 }
 
 fn main() -> std::io::Result<()> {
@@ -24,7 +27,9 @@ fn main() -> std::io::Result<()> {
     let mut state = App::new(existing);
 
     let mut terminal = ratatui::init();
+    execute!(std::io::stdout(), EnableMouseCapture)?;
     let result = run(&mut terminal, &mut state);
+    let _ = execute!(std::io::stdout(), DisableMouseCapture);
     ratatui::restore();
     result
 }
@@ -56,10 +61,12 @@ fn run(terminal: &mut DefaultTerminal, app: &mut App) -> std::io::Result<()> {
         }
 
         if crossterm::event::poll(Duration::from_millis(100))? {
-            if let Event::Key(key) = crossterm::event::read()? {
-                if key.kind == KeyEventKind::Press {
+            match crossterm::event::read()? {
+                Event::Key(key) if key.kind == KeyEventKind::Press => {
                     app::handle_key(app, key);
                 }
+                Event::Mouse(mouse) => app::handle_mouse(app, mouse),
+                _ => {}
             }
         }
     }
