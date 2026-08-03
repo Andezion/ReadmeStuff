@@ -1,23 +1,32 @@
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 use readme_stuff_catalog::BuildOutput;
 use readme_stuff_catalog::registry::{self, WidgetSpec};
+use readme_stuff_catalog::{DiscoveredWidget, Rect as PixelRect};
 use readme_stuff_config::{
     Config, Credential, Layout, PlacedWidget, ProfileConfig, Row, TextCardConfig, ThemeChoice, io,
 };
+use readme_stuff_draw::{Align, HAlign, PlacedTile, Theme, VAlign};
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use tui_textarea::TextArea;
 
 const CANVAS_WIDTH: u32 = 990;
 const LAYOUT_STEP: u32 = 15;
+const SCROLL_STEP: u32 = 30;
+const README_EXPORT_NAME: &str = "README.svg";
+const EXPORT_BG: &str = "#ffffff";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Screen {
+    MainMenu,
     Welcome,
     Questionnaire,
     Layout,
     Building,
     Report,
+    TextWidgetGen,
+    WidgetSelect,
+    ReadmeEditor,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -56,6 +65,136 @@ impl Field {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TextWidgetField {
+    Filename,
+    Content,
+    FontSize,
+    LineHeight,
+    Width,
+    Height,
+}
+
+impl TextWidgetField {
+    const ORDER: [TextWidgetField; 6] = [
+        TextWidgetField::Filename,
+        TextWidgetField::Content,
+        TextWidgetField::FontSize,
+        TextWidgetField::LineHeight,
+        TextWidgetField::Width,
+        TextWidgetField::Height,
+    ];
+
+    fn index(self) -> usize {
+        TextWidgetField::ORDER.iter().position(|f| *f == self).unwrap()
+    }
+
+    pub fn next(self) -> TextWidgetField {
+        TextWidgetField::ORDER[(self.index() + 1) % TextWidgetField::ORDER.len()]
+    }
+
+    pub fn prev(self) -> TextWidgetField {
+        let n = TextWidgetField::ORDER.len();
+        TextWidgetField::ORDER[(self.index() + n - 1) % n]
+    }
+}
+
+pub struct TextWidgetForm {
+    pub filename: TextArea<'static>,
+    pub content: TextArea<'static>,
+    pub font_size: TextArea<'static>,
+    pub line_height: TextArea<'static>,
+    pub width: TextArea<'static>,
+    pub height: TextArea<'static>,
+    pub focus: TextWidgetField,
+    pub halign: HAlign,
+    pub valign: VAlign,
+}
+
+impl TextWidgetForm {
+    pub fn new() -> TextWidgetForm {
+        TextWidgetForm {
+            filename: TextArea::default(),
+            content: TextArea::default(),
+            font_size: single_line("16"),
+            line_height: single_line("20"),
+            width: single_line(&readme_stuff_draw::DEFAULT_WIDTH.to_string()),
+            height: single_line(&readme_stuff_draw::DEFAULT_HEIGHT.to_string()),
+            focus: TextWidgetField::Filename,
+            halign: HAlign::Left,
+            valign: VAlign::Top,
+        }
+    }
+}
+
+impl Default for TextWidgetForm {
+    fn default() -> Self {
+        TextWidgetForm::new()
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+pub struct ScreenRect {
+    pub x: u16,
+    pub y: u16,
+    pub w: u16,
+    pub h: u16,
+}
+
+impl ScreenRect {
+    pub fn contains(&self, col: u16, row: u16) -> bool {
+        col >= self.x && col < self.x + self.w && row >= self.y && row < self.y + self.h
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PlacedItem {
+    pub id: String,
+    pub x: i32,
+    pub y: i32,
+    pub w: u32,
+    pub h: u32,
+}
+
+#[derive(Debug, Clone)]
+pub struct DragState {
+    pub id: String,
+    pub from_sidebar: bool,
+    pub grab_dx: i32,
+    pub grab_dy: i32,
+    pub w: u32,
+    pub h: u32,
+    pub current: (i32, i32),
+    pub valid: bool,
+    pub original: Option<(i32, i32)>,
+}
+
+pub struct EditorState {
+    pub items: HashMap<String, DiscoveredWidget>,
+    pub sidebar: Vec<String>,
+    pub placed: Vec<PlacedItem>,
+    pub drag: Option<DragState>,
+    pub scroll_y: u32,
+    pub canvas_width: u32,
+    pub canvas_area: ScreenRect,
+    pub sidebar_items: Vec<(String, ScreenRect)>,
+}
+
+impl EditorState {
+    fn new() -> EditorState {
+        EditorState {
+            items: HashMap::new(),
+            sidebar: Vec::new(),
+            placed: Vec::new(),
+            drag: None,
+            scroll_y: 0,
+            canvas_width: CANVAS_WIDTH,
+            canvas_area: ScreenRect::default(),
+            sidebar_items: Vec::new(),
+        }
+    }
+}
+
 pub struct App {
     pub screen: Screen,
     pub should_quit: bool,
@@ -83,6 +222,14 @@ pub struct App {
 
     pub saved_path: Option<PathBuf>,
     pub status: Option<String>,
+
+    pub text_widget: TextWidgetForm,
+
+    pub discovered: Vec<DiscoveredWidget>,
+    pub discovered_selected: HashSet<String>,
+    pub discovered_cursor: usize,
+
+    pub editor: EditorState,
 }
 
 fn single_line(text: &str) -> TextArea<'static> {
@@ -92,7 +239,7 @@ fn single_line(text: &str) -> TextArea<'static> {
 impl App {
     pub fn new(existing: Option<(PathBuf, Config)>) -> App {
         let mut app = App {
-            screen: Screen::Questionnaire,
+            screen: Screen::MainMenu,
             should_quit: false,
             found_config_path: None,
             pending_resume: None,
@@ -112,6 +259,11 @@ impl App {
             layout_cursor: 0,
             saved_path: None,
             status: None,
+            text_widget: TextWidgetForm::new(),
+            discovered: Vec::new(),
+            discovered_selected: HashSet::new(),
+            discovered_cursor: 0,
+            editor: EditorState::new(),
         };
         if let Some((path, cfg)) = existing {
             app.found_config_path = Some(path);
@@ -394,11 +546,35 @@ pub fn tick_building(app: &mut App) {
 
 pub fn handle_key(app: &mut App, key: KeyEvent) {
     match app.screen {
+        Screen::MainMenu => handle_main_menu_key(app, key),
         Screen::Welcome => handle_welcome_key(app, key),
         Screen::Questionnaire => handle_questionnaire_key(app, key),
         Screen::Layout => handle_layout_key(app, key),
         Screen::Building => handle_building_key(app, key),
         Screen::Report => handle_report_key(app, key),
+        Screen::TextWidgetGen => handle_text_widget_key(app, key),
+        Screen::WidgetSelect => handle_widget_select_key(app, key),
+        Screen::ReadmeEditor => handle_readme_editor_key(app, key),
+    }
+}
+
+fn handle_main_menu_key(app: &mut App, key: KeyEvent) {
+    match key.code {
+        KeyCode::Char('g') | KeyCode::Char('G') => app.screen = Screen::Questionnaire,
+        KeyCode::Char('t') | KeyCode::Char('T') => {
+            app.text_widget = TextWidgetForm::new();
+            app.status = None;
+            app.screen = Screen::TextWidgetGen;
+        }
+        KeyCode::Char('w') | KeyCode::Char('W') => {
+            rescan_discovered(app);
+            app.discovered_selected.clear();
+            app.discovered_cursor = 0;
+            app.status = None;
+            app.screen = Screen::WidgetSelect;
+        }
+        KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('Q') => app.should_quit = true,
+        _ => {}
     }
 }
 
@@ -425,7 +601,7 @@ fn handle_questionnaire_key(app: &mut App, key: KeyEvent) {
         return;
     }
     if key.code == KeyCode::Esc {
-        app.should_quit = true;
+        app.screen = Screen::MainMenu;
         return;
     }
     if key.code == KeyCode::Tab {
@@ -530,6 +706,499 @@ fn handle_report_key(app: &mut App, key: KeyEvent) {
     }
 }
 
+fn next_halign(h: HAlign) -> HAlign {
+    match h {
+        HAlign::Left => HAlign::Center,
+        HAlign::Center => HAlign::Right,
+        HAlign::Right => HAlign::Left,
+    }
+}
+
+fn prev_halign(h: HAlign) -> HAlign {
+    match h {
+        HAlign::Left => HAlign::Right,
+        HAlign::Right => HAlign::Center,
+        HAlign::Center => HAlign::Left,
+    }
+}
+
+fn next_valign(v: VAlign) -> VAlign {
+    match v {
+        VAlign::Top => VAlign::Center,
+        VAlign::Center => VAlign::Bottom,
+        VAlign::Bottom => VAlign::Top,
+    }
+}
+
+fn prev_valign(v: VAlign) -> VAlign {
+    match v {
+        VAlign::Top => VAlign::Bottom,
+        VAlign::Bottom => VAlign::Center,
+        VAlign::Center => VAlign::Top,
+    }
+}
+
+fn handle_text_widget_key(app: &mut App, key: KeyEvent) {
+    if key.code == KeyCode::Esc {
+        app.screen = Screen::MainMenu;
+        return;
+    }
+
+    if key.modifiers.contains(KeyModifiers::CONTROL) {
+        match key.code {
+            KeyCode::Char('s') | KeyCode::Char('S') => {
+                generate_text_widget(app);
+                return;
+            }
+            KeyCode::Left => {
+                app.text_widget.halign = prev_halign(app.text_widget.halign);
+                return;
+            }
+            KeyCode::Right => {
+                app.text_widget.halign = next_halign(app.text_widget.halign);
+                return;
+            }
+            KeyCode::Up => {
+                app.text_widget.valign = prev_valign(app.text_widget.valign);
+                return;
+            }
+            KeyCode::Down => {
+                app.text_widget.valign = next_valign(app.text_widget.valign);
+                return;
+            }
+            _ => {}
+        }
+    }
+
+    if key.code == KeyCode::Tab {
+        app.text_widget.focus = app.text_widget.focus.next();
+        return;
+    }
+    if key.code == KeyCode::BackTab {
+        app.text_widget.focus = app.text_widget.focus.prev();
+        return;
+    }
+
+    let field = match app.text_widget.focus {
+        TextWidgetField::Filename => &mut app.text_widget.filename,
+        TextWidgetField::Content => &mut app.text_widget.content,
+        TextWidgetField::FontSize => &mut app.text_widget.font_size,
+        TextWidgetField::LineHeight => &mut app.text_widget.line_height,
+        TextWidgetField::Width => &mut app.text_widget.width,
+        TextWidgetField::Height => &mut app.text_widget.height,
+    };
+    field.input(key);
+}
+
+fn sanitize_filename(raw: &str) -> Option<String> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+    let base = Path::new(trimmed).file_name()?.to_str()?.to_string();
+    if base.is_empty() || base == "." || base == ".." {
+        return None;
+    }
+    Some(base)
+}
+
+fn parse_or(ta: &TextArea, default: f32) -> f32 {
+    field_text(ta).trim().parse().unwrap_or(default)
+}
+
+fn parse_or_u32(ta: &TextArea, default: u32) -> u32 {
+    field_text(ta).trim().parse().unwrap_or(default)
+}
+
+fn generate_text_widget(app: &mut App) {
+    generate_text_widget_in(app, Path::new("."));
+}
+
+fn generate_text_widget_in(app: &mut App, base: &Path) {
+    let Some(name) = sanitize_filename(&field_text(&app.text_widget.filename)) else {
+        app.status = Some("enter a valid filename".to_string());
+        return;
+    };
+
+    let font_size = parse_or(&app.text_widget.font_size, 16.0).max(1.0);
+    let line_height = parse_or(&app.text_widget.line_height, font_size * 1.25).max(1.0);
+    let width = parse_or_u32(&app.text_widget.width, readme_stuff_draw::DEFAULT_WIDTH).max(1);
+    let height = parse_or_u32(&app.text_widget.height, readme_stuff_draw::DEFAULT_HEIGHT).max(1);
+    let align = Align {
+        h: app.text_widget.halign,
+        v: app.text_widget.valign,
+    };
+
+    let lines: Vec<&str> = app
+        .text_widget
+        .content
+        .lines()
+        .iter()
+        .map(|s| s.as_str())
+        .collect();
+    let svg = readme_stuff_draw::render_text_widget(
+        &lines,
+        font_size,
+        line_height,
+        align,
+        Theme::Dark,
+        width,
+        height,
+    );
+
+    let dir = base.join(readme_stuff_catalog::TEXT_WIDGETS_DIR);
+    if let Err(e) = std::fs::create_dir_all(&dir) {
+        app.status = Some(format!("cannot create {}: {e}", dir.display()));
+        return;
+    }
+    let path = dir.join(format!("{name}_text.svg"));
+    match std::fs::write(&path, svg) {
+        Ok(()) => app.status = Some(format!("saved {}", path.display())),
+        Err(e) => app.status = Some(format!("write failed: {e}")),
+    }
+}
+
+pub fn rescan_discovered(app: &mut App) {
+    rescan_discovered_in(app, Path::new("."));
+}
+
+fn rescan_discovered_in(app: &mut App, base: &Path) {
+    let widgets_dir = base.join(readme_stuff_catalog::WIDGETS_DIR);
+    let text_dir = base.join(readme_stuff_catalog::TEXT_WIDGETS_DIR);
+    app.discovered = readme_stuff_catalog::scan_widgets(&[&widgets_dir, &text_dir]);
+    let known: HashSet<String> = app.discovered.iter().map(|w| w.id.clone()).collect();
+    app.discovered_selected.retain(|id| known.contains(id));
+    if app.discovered_cursor >= app.discovered.len() {
+        app.discovered_cursor = app.discovered.len().saturating_sub(1);
+    }
+}
+
+pub fn toggle_discovered(app: &mut App, id: &str) {
+    if !app.discovered_selected.remove(id) {
+        app.discovered_selected.insert(id.to_string());
+    }
+}
+
+fn handle_widget_select_key(app: &mut App, key: KeyEvent) {
+    match key.code {
+        KeyCode::Esc => app.screen = Screen::MainMenu,
+        KeyCode::Down | KeyCode::Char('j') => {
+            let len = app.discovered.len();
+            if len > 0 {
+                app.discovered_cursor = (app.discovered_cursor + 1).min(len - 1);
+            }
+        }
+        KeyCode::Up | KeyCode::Char('k') => {
+            app.discovered_cursor = app.discovered_cursor.saturating_sub(1);
+        }
+        KeyCode::Char(' ') | KeyCode::Enter => {
+            if let Some(w) = app.discovered.get(app.discovered_cursor) {
+                let id = w.id.clone();
+                toggle_discovered(app, &id);
+            }
+        }
+        KeyCode::Char('l') | KeyCode::Char('L') => {
+            if app.discovered_selected.is_empty() {
+                app.status = Some("select at least one widget first".to_string());
+            } else {
+                init_editor(app);
+                app.status = None;
+                app.screen = Screen::ReadmeEditor;
+            }
+        }
+        _ => {}
+    }
+}
+
+pub fn init_editor(app: &mut App) {
+    let mut editor = EditorState::new();
+    for w in &app.discovered {
+        if app.discovered_selected.contains(&w.id) {
+            editor.sidebar.push(w.id.clone());
+            editor.items.insert(w.id.clone(), w.clone());
+        }
+    }
+    app.editor = editor;
+}
+
+fn canvas_scale(area: ScreenRect) -> (f64, f64) {
+    let scale_x = area.w as f64 / CANVAS_WIDTH as f64;
+    (scale_x, scale_x / 2.0)
+}
+
+pub fn cell_to_pixel(app: &App, col: u16, row: u16) -> Option<(i32, i32)> {
+    let area = app.editor.canvas_area;
+    if !area.contains(col, row) {
+        return None;
+    }
+    let (scale_x, scale_y) = canvas_scale(area);
+    if scale_x <= 0.0 || scale_y <= 0.0 {
+        return None;
+    }
+    let px = (col - area.x) as f64 / scale_x;
+    let py = (row - area.y) as f64 / scale_y + app.editor.scroll_y as f64;
+    Some((px.round() as i32, py.round() as i32))
+}
+
+fn point_in(p: &PlacedItem, px: i32, py: i32) -> bool {
+    px >= p.x && px < p.x + p.w as i32 && py >= p.y && py < p.y + p.h as i32
+}
+
+fn other_rects(app: &App) -> Vec<PixelRect> {
+    app.editor
+        .placed
+        .iter()
+        .map(|p| PixelRect {
+            x: p.x,
+            y: p.y,
+            w: p.w,
+            h: p.h,
+        })
+        .collect()
+}
+
+fn hit_sidebar(app: &App, col: u16, row: u16) -> Option<String> {
+    app.editor
+        .sidebar_items
+        .iter()
+        .find(|(_, r)| r.contains(col, row))
+        .map(|(id, _)| id.clone())
+}
+
+fn snap_and_validate(app: &App, raw: PixelRect) -> ((i32, i32), bool) {
+    let others = other_rects(app);
+    let (sx, sy) = readme_stuff_catalog::snap(raw, &others, app.editor.canvas_width);
+    let candidate = PixelRect {
+        x: sx,
+        y: sy,
+        w: raw.w,
+        h: raw.h,
+    };
+    let valid = readme_stuff_catalog::fits_canvas(candidate, app.editor.canvas_width)
+        && !others
+            .iter()
+            .any(|o| readme_stuff_catalog::overlaps(candidate, *o));
+    ((sx, sy), valid)
+}
+
+fn start_drag(app: &mut App, col: u16, row: u16) {
+    if app.editor.drag.is_some() {
+        return;
+    }
+
+    if let Some(id) = hit_sidebar(app, col, row) {
+        let Some(item) = app.editor.items.get(&id) else {
+            return;
+        };
+        let (w, h) = item.size;
+        let Some((px, py)) = cell_to_pixel(app, col, row) else {
+            return;
+        };
+        let grab_dx = w as i32 / 2;
+        let grab_dy = h as i32 / 2;
+        let raw = PixelRect {
+            x: px - grab_dx,
+            y: py - grab_dy,
+            w,
+            h,
+        };
+        let (current, valid) = snap_and_validate(app, raw);
+        app.editor.drag = Some(DragState {
+            id,
+            from_sidebar: true,
+            grab_dx,
+            grab_dy,
+            w,
+            h,
+            current,
+            valid,
+            original: None,
+        });
+        return;
+    }
+
+    let Some((px, py)) = cell_to_pixel(app, col, row) else {
+        return;
+    };
+    let Some(idx) = app.editor.placed.iter().position(|p| point_in(p, px, py)) else {
+        return;
+    };
+    let placed = app.editor.placed.remove(idx);
+    let grab_dx = px - placed.x;
+    let grab_dy = py - placed.y;
+    let original = (placed.x, placed.y);
+    app.editor.drag = Some(DragState {
+        id: placed.id,
+        from_sidebar: false,
+        grab_dx,
+        grab_dy,
+        w: placed.w,
+        h: placed.h,
+        current: original,
+        valid: true,
+        original: Some(original),
+    });
+}
+
+fn update_drag(app: &mut App, col: u16, row: u16) {
+    let Some((px, py)) = cell_to_pixel(app, col, row) else {
+        return;
+    };
+    let Some(drag) = &app.editor.drag else {
+        return;
+    };
+    let (grab_dx, grab_dy, w, h) = (drag.grab_dx, drag.grab_dy, drag.w, drag.h);
+    let raw = PixelRect {
+        x: px - grab_dx,
+        y: py - grab_dy,
+        w,
+        h,
+    };
+    let (current, valid) = snap_and_validate(app, raw);
+
+    if let Some(drag) = app.editor.drag.as_mut() {
+        drag.current = current;
+        drag.valid = valid;
+    }
+}
+
+fn end_drag(app: &mut App) {
+    let Some(drag) = app.editor.drag.take() else {
+        return;
+    };
+    if drag.valid {
+        app.editor.placed.push(PlacedItem {
+            id: drag.id.clone(),
+            x: drag.current.0,
+            y: drag.current.1,
+            w: drag.w,
+            h: drag.h,
+        });
+        app.editor.sidebar.retain(|id| id != &drag.id);
+    } else if !drag.from_sidebar
+        && let Some((ox, oy)) = drag.original
+    {
+        app.editor.placed.push(PlacedItem {
+            id: drag.id,
+            x: ox,
+            y: oy,
+            w: drag.w,
+            h: drag.h,
+        });
+    }
+}
+
+fn remove_at(app: &mut App, col: u16, row: u16) {
+    let Some((px, py)) = cell_to_pixel(app, col, row) else {
+        return;
+    };
+    if let Some(idx) = app.editor.placed.iter().position(|p| point_in(p, px, py)) {
+        let item = app.editor.placed.remove(idx);
+        app.editor.sidebar.push(item.id);
+    }
+}
+
+pub fn handle_mouse(app: &mut App, mouse: MouseEvent) {
+    if app.screen != Screen::ReadmeEditor {
+        return;
+    }
+    match mouse.kind {
+        MouseEventKind::Down(MouseButton::Right) => start_drag(app, mouse.column, mouse.row),
+        MouseEventKind::Drag(MouseButton::Right) => update_drag(app, mouse.column, mouse.row),
+        MouseEventKind::Up(MouseButton::Right) => end_drag(app),
+        MouseEventKind::Down(MouseButton::Left) => remove_at(app, mouse.column, mouse.row),
+        MouseEventKind::ScrollUp => {
+            app.editor.scroll_y = app.editor.scroll_y.saturating_sub(SCROLL_STEP);
+        }
+        MouseEventKind::ScrollDown => app.editor.scroll_y += SCROLL_STEP,
+        _ => {}
+    }
+}
+
+fn export_readme(app: &mut App) {
+    export_readme_in(app, Path::new("."));
+}
+
+fn export_readme_in(app: &mut App, base: &Path) {
+    if app.editor.placed.is_empty() {
+        app.status = Some("place at least one widget before exporting".to_string());
+        return;
+    }
+
+    let content_bottom = app
+        .editor
+        .placed
+        .iter()
+        .map(|p| (p.y + p.h as i32).max(0) as u32)
+        .max()
+        .unwrap_or(0);
+
+    let mut svgs: Vec<String> = Vec::with_capacity(app.editor.placed.len());
+    for item in &app.editor.placed {
+        let Some(widget) = app.editor.items.get(&item.id) else {
+            continue;
+        };
+        match std::fs::read_to_string(&widget.path) {
+            Ok(content) => svgs.push(content),
+            Err(e) => {
+                app.status = Some(format!("cannot read {}: {e}", widget.path.display()));
+                return;
+            }
+        }
+    }
+
+    let tiles: Vec<PlacedTile> = app
+        .editor
+        .placed
+        .iter()
+        .zip(svgs.iter())
+        .map(|(item, svg)| PlacedTile {
+            svg,
+            x: item.x.max(0) as u32,
+            y: item.y.max(0) as u32,
+        })
+        .collect();
+
+    let svg = match readme_stuff_draw::compose_freeform(
+        app.editor.canvas_width,
+        content_bottom,
+        EXPORT_BG,
+        &tiles,
+    ) {
+        Ok(svg) => svg,
+        Err(e) => {
+            app.status = Some(format!("compose failed: {e}"));
+            return;
+        }
+    };
+
+    let dir = base.join(readme_stuff_catalog::WIDGETS_DIR);
+    if let Err(e) = std::fs::create_dir_all(&dir) {
+        app.status = Some(format!("cannot create {}: {e}", dir.display()));
+        return;
+    }
+    let path = dir.join(README_EXPORT_NAME);
+    match std::fs::write(&path, svg) {
+        Ok(()) => app.status = Some(format!("exported {}", path.display())),
+        Err(e) => app.status = Some(format!("write failed: {e}")),
+    }
+}
+
+fn handle_readme_editor_key(app: &mut App, key: KeyEvent) {
+    if key.code == KeyCode::Char('s') && key.modifiers.contains(KeyModifiers::CONTROL) {
+        export_readme(app);
+        return;
+    }
+    match key.code {
+        KeyCode::Esc => app.screen = Screen::MainMenu,
+        KeyCode::PageUp => {
+            app.editor.scroll_y = app.editor.scroll_y.saturating_sub(SCROLL_STEP * 5);
+        }
+        KeyCode::PageDown => app.editor.scroll_y += SCROLL_STEP * 5,
+        _ => {}
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -542,9 +1211,9 @@ mod tests {
     }
 
     #[test]
-    fn no_existing_config_starts_on_questionnaire() {
+    fn no_existing_config_starts_on_main_menu() {
         let app = App::new(None);
-        assert_eq!(app.screen, Screen::Questionnaire);
+        assert_eq!(app.screen, Screen::MainMenu);
         assert_eq!(field_text(&app.github_token_env), "GITHUB_TOKEN");
     }
 
@@ -791,6 +1460,7 @@ mod tests {
             ))
             .join("nested-that-does-not-exist");
         let mut app = app_with("octocat", "GITHUB_TOKEN");
+        app.screen = Screen::Questionnaire;
 
         save_and_queue_build_in(&mut app, &dir);
 
@@ -843,5 +1513,280 @@ mod tests {
         load_into(&mut reloaded, &cfg);
         assert_eq!(field_text(&reloaded.github_login), "octocat");
         assert_eq!(reloaded.selected, app.selected);
+    }
+
+    fn temp_dir(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!(
+            "readme-stuff-tui-app-{name}-{}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    #[test]
+    fn main_menu_g_enters_questionnaire() {
+        let mut app = App::new(None);
+        handle_key(&mut app, KeyEvent::from(KeyCode::Char('g')));
+        assert_eq!(app.screen, Screen::Questionnaire);
+    }
+
+    #[test]
+    fn main_menu_t_enters_text_widget_screen_with_a_fresh_form() {
+        let mut app = App::new(None);
+        app.text_widget.filename = single_line("stale");
+        handle_key(&mut app, KeyEvent::from(KeyCode::Char('t')));
+        assert_eq!(app.screen, Screen::TextWidgetGen);
+        assert_eq!(field_text(&app.text_widget.filename), "");
+    }
+
+    #[test]
+    fn questionnaire_esc_returns_to_main_menu() {
+        let mut app = App::new(None);
+        app.screen = Screen::Questionnaire;
+        handle_key(&mut app, KeyEvent::from(KeyCode::Esc));
+        assert_eq!(app.screen, Screen::MainMenu);
+    }
+
+    #[test]
+    fn generate_text_widget_in_sanitizes_path_traversal_and_writes_the_file() {
+        let dir = temp_dir("text-widget-ok");
+        let mut app = App::new(None);
+        app.text_widget.filename = single_line("../evil/name");
+        app.text_widget.content = TextArea::from(vec!["hello".to_string()]);
+
+        generate_text_widget_in(&mut app, &dir);
+
+        let expected = dir
+            .join(readme_stuff_catalog::TEXT_WIDGETS_DIR)
+            .join("name_text.svg");
+        assert!(expected.exists(), "status: {:?}", app.status);
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn generate_text_widget_in_rejects_an_empty_filename() {
+        let dir = temp_dir("text-widget-empty");
+        let mut app = App::new(None);
+
+        generate_text_widget_in(&mut app, &dir);
+
+        assert!(app.status.is_some());
+        assert!(!dir.join(readme_stuff_catalog::TEXT_WIDGETS_DIR).exists());
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn toggle_discovered_adds_then_removes() {
+        let mut app = App::new(None);
+        toggle_discovered(&mut app, "readme_test/a.svg");
+        assert!(app.discovered_selected.contains("readme_test/a.svg"));
+        toggle_discovered(&mut app, "readme_test/a.svg");
+        assert!(!app.discovered_selected.contains("readme_test/a.svg"));
+    }
+
+    #[test]
+    fn rescan_discovered_in_finds_generated_widgets() {
+        let dir = temp_dir("rescan");
+        let widgets_dir = dir.join(readme_stuff_catalog::WIDGETS_DIR);
+        std::fs::create_dir_all(&widgets_dir).unwrap();
+        std::fs::write(
+            widgets_dir.join("a.svg"),
+            r#"<svg width="10" height="10" xmlns="http://www.w3.org/2000/svg"></svg>"#,
+        )
+        .unwrap();
+
+        let mut app = App::new(None);
+        rescan_discovered_in(&mut app, &dir);
+
+        assert_eq!(app.discovered.len(), 1);
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn init_editor_seeds_sidebar_from_the_selection_only() {
+        let mut app = App::new(None);
+        app.discovered = vec![
+            DiscoveredWidget {
+                id: "a".to_string(),
+                path: PathBuf::from("a"),
+                size: (10, 10),
+            },
+            DiscoveredWidget {
+                id: "b".to_string(),
+                path: PathBuf::from("b"),
+                size: (20, 20),
+            },
+        ];
+        app.discovered_selected.insert("b".to_string());
+
+        init_editor(&mut app);
+
+        assert_eq!(app.editor.sidebar, vec!["b".to_string()]);
+        assert!(app.editor.items.contains_key("b"));
+        assert!(!app.editor.items.contains_key("a"));
+        assert!(app.editor.placed.is_empty());
+    }
+
+    fn editor_test_app(widgets: &[(&str, u32, u32)]) -> App {
+        let mut app = App::new(None);
+        app.editor.canvas_area = ScreenRect {
+            x: 0,
+            y: 0,
+            w: CANVAS_WIDTH as u16,
+            h: 2000,
+        };
+        for (id, w, h) in widgets {
+            app.editor.items.insert(
+                id.to_string(),
+                DiscoveredWidget {
+                    id: id.to_string(),
+                    path: PathBuf::from(id),
+                    size: (*w, *h),
+                },
+            );
+            app.editor.sidebar.push(id.to_string());
+        }
+        app
+    }
+
+    #[test]
+    fn drag_from_sidebar_snaps_to_the_canvas_corner_and_commits_on_release() {
+        let mut app = editor_test_app(&[("w1", 100, 50)]);
+        app.editor.sidebar_items = vec![(
+            "w1".to_string(),
+            ScreenRect {
+                x: 0,
+                y: 0,
+                w: 5,
+                h: 2,
+            },
+        )];
+
+        start_drag(&mut app, 2, 1);
+        assert!(app.editor.drag.is_some());
+
+        update_drag(&mut app, 52, 13);
+        end_drag(&mut app);
+
+        assert!(app.editor.drag.is_none());
+        assert!(!app.editor.sidebar.contains(&"w1".to_string()));
+        let placed = app
+            .editor
+            .placed
+            .iter()
+            .find(|p| p.id == "w1")
+            .expect("w1 should have been committed");
+        assert_eq!((placed.x, placed.y), (0, 0));
+    }
+
+    #[test]
+    fn repositioning_a_placed_widget_reverts_to_its_original_spot_on_collision() {
+        let mut app = editor_test_app(&[]);
+        app.editor.sidebar.clear();
+        app.editor.placed.push(PlacedItem {
+            id: "w1".to_string(),
+            x: 0,
+            y: 0,
+            w: 100,
+            h: 50,
+        });
+        app.editor.placed.push(PlacedItem {
+            id: "w2".to_string(),
+            x: 200,
+            y: 0,
+            w: 100,
+            h: 50,
+        });
+
+        start_drag(&mut app, 50, 13);
+        assert!(app.editor.drag.is_some());
+
+        update_drag(&mut app, 250, 13);
+        assert!(!app.editor.drag.as_ref().unwrap().valid);
+        end_drag(&mut app);
+
+        let w1 = app
+            .editor
+            .placed
+            .iter()
+            .find(|p| p.id == "w1")
+            .expect("w1 must still be placed after a rejected move");
+        assert_eq!((w1.x, w1.y), (0, 0));
+        assert!(!app.editor.sidebar.contains(&"w1".to_string()));
+    }
+
+    #[test]
+    fn left_click_on_a_placed_widget_returns_it_to_the_sidebar() {
+        let mut app = editor_test_app(&[]);
+        app.editor.placed.push(PlacedItem {
+            id: "w1".to_string(),
+            x: 10,
+            y: 10,
+            w: 100,
+            h: 50,
+        });
+
+        remove_at(&mut app, 50, 10); 
+
+        assert!(app.editor.placed.is_empty());
+        assert!(app.editor.sidebar.contains(&"w1".to_string()));
+    }
+
+    #[test]
+    fn export_readme_in_requires_at_least_one_placed_widget() {
+        let dir = temp_dir("export-empty");
+        let mut app = App::new(None);
+
+        export_readme_in(&mut app, &dir);
+
+        assert!(app.status.is_some());
+        assert!(
+            !dir
+                .join(readme_stuff_catalog::WIDGETS_DIR)
+                .join(README_EXPORT_NAME)
+                .exists()
+        );
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn export_readme_in_crops_to_the_lowest_placed_widget() {
+        let dir = temp_dir("export-crop");
+        let widget_path = dir.join("w1.svg");
+        std::fs::write(
+            &widget_path,
+            r#"<svg width="100" height="50" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="50"/></svg>"#,
+        )
+        .unwrap();
+
+        let mut app = App::new(None);
+        app.editor.items.insert(
+            "w1".to_string(),
+            DiscoveredWidget {
+                id: "w1".to_string(),
+                path: widget_path,
+                size: (100, 50),
+            },
+        );
+        app.editor.placed.push(PlacedItem {
+            id: "w1".to_string(),
+            x: 0,
+            y: 0,
+            w: 100,
+            h: 50,
+        });
+
+        export_readme_in(&mut app, &dir);
+
+        let out = dir
+            .join(readme_stuff_catalog::WIDGETS_DIR)
+            .join(README_EXPORT_NAME);
+        let content = std::fs::read_to_string(&out).unwrap_or_else(|e| {
+            panic!("expected {} to exist (status: {:?}): {e}", out.display(), app.status)
+        });
+        assert!(content.contains(r#"height="50""#));
+        assert!(content.contains(r#"translate(0,0)"#));
+        std::fs::remove_dir_all(&dir).ok();
     }
 }
