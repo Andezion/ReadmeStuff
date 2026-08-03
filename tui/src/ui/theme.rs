@@ -32,14 +32,13 @@ pub fn block(title: &str) -> Block<'_> {
         ))
 }
 
-pub fn focusable_block(title: &str, focused: bool) -> Block<'_> {
-    let color = if focused {
-        PALETTE.accent
-    } else {
-        PALETTE.border
-    };
+pub fn colored_block(title: &str, color: Color) -> Block<'_> {
     Block::bordered()
         .border_type(BorderType::Rounded)
         .border_style(Style::default().fg(color))
         .title(Span::styled(title, Style::default().fg(PALETTE.title)))
+}
+
+pub fn focusable_block(title: &str, focused: bool) -> Block<'_> {
+    colored_block(title, if focused { PALETTE.accent } else { PALETTE.border })
 }
