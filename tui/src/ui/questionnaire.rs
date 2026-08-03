@@ -51,7 +51,7 @@ fn missing_hint(app: &App, spec: &WidgetSpec) -> Option<String> {
     })
 }
 
-pub fn draw(frame: &mut Frame, app: &App) {
+pub fn draw(frame: &mut Frame, app: &mut App) {
     let area = frame.area();
     frame.render_widget(
         ratatui::widgets::Block::default().style(Style::default().bg(PALETTE.bg)),
@@ -119,7 +119,7 @@ fn draw_fields(frame: &mut Frame, app: &App, area: Rect) {
     );
     render_field(
         frame,
-        "Greeting text file (optional, e.g. text/text.txt)",
+        "Greeting text file (optional, text/text.txt)",
         &app.text_card_file,
         app.focus == Field::TextCardFile,
         rows[5],
