@@ -994,27 +994,16 @@ fn start_drag(app: &mut App, col: u16, row: u16) {
             return;
         };
         let (w, h) = item.size;
-        let Some((px, py)) = cell_to_pixel(app, col, row) else {
-            return;
-        };
-        let grab_dx = w as i32 / 2;
-        let grab_dy = h as i32 / 2;
-        let raw = PixelRect {
-            x: px - grab_dx,
-            y: py - grab_dy,
-            w,
-            h,
-        };
-        let (current, valid) = snap_and_validate(app, raw);
+        
         app.editor.drag = Some(DragState {
             id,
             from_sidebar: true,
-            grab_dx,
-            grab_dy,
+            grab_dx: w as i32 / 2,
+            grab_dy: h as i32 / 2,
             w,
             h,
-            current,
-            valid,
+            current: (0, 0),
+            valid: false,
             original: None,
         });
         return;
@@ -1108,7 +1097,8 @@ pub fn handle_mouse(app: &mut App, mouse: MouseEvent) {
     match mouse.kind {
         MouseEventKind::Down(MouseButton::Right) => start_drag(app, mouse.column, mouse.row),
         MouseEventKind::Drag(MouseButton::Right) => update_drag(app, mouse.column, mouse.row),
-        MouseEventKind::Up(MouseButton::Right) => end_drag(app),
+        
+        MouseEventKind::Up(_) => end_drag(app),
         MouseEventKind::Down(MouseButton::Left) => remove_at(app, mouse.column, mouse.row),
         MouseEventKind::ScrollUp => {
             app.editor.scroll_y = app.editor.scroll_y.saturating_sub(SCROLL_STEP);
@@ -1684,6 +1674,40 @@ mod tests {
     }
 
     #[test]
+    fn drag_starts_from_the_sidebar_even_though_sidebar_and_canvas_are_disjoint_columns() {
+        let mut app = editor_test_app(&[("w1", 100, 50)]);
+        app.editor.canvas_area = ScreenRect {
+            x: 50,
+            y: 0,
+            w: CANVAS_WIDTH as u16,
+            h: 2000,
+        };
+        app.editor.sidebar_items = vec![(
+            "w1".to_string(),
+            ScreenRect {
+                x: 0,
+                y: 0,
+                w: 5,
+                h: 2,
+            },
+        )];
+
+        start_drag(&mut app, 2, 1);
+        assert!(
+            app.editor.drag.is_some(),
+            "a sidebar click must start a drag even when it falls outside canvas_area"
+        );
+
+        update_drag(&mut app, 250, 200);
+        end_drag(&mut app);
+
+        assert!(
+            app.editor.placed.iter().any(|p| p.id == "w1"),
+            "the widget should have been placed once the drag reached the canvas"
+        );
+    }
+
+    #[test]
     fn repositioning_a_placed_widget_reverts_to_its_original_spot_on_collision() {
         let mut app = editor_test_app(&[]);
         app.editor.sidebar.clear();
@@ -1734,6 +1758,58 @@ mod tests {
 
         assert!(app.editor.placed.is_empty());
         assert!(app.editor.sidebar.contains(&"w1".to_string()));
+    }
+
+    #[test]
+    fn a_right_button_drag_still_commits_when_the_release_is_reported_as_the_wrong_button() {
+        
+        let mut app = editor_test_app(&[("w1", 100, 50)]);
+        app.screen = Screen::ReadmeEditor;
+        app.editor.sidebar_items = vec![(
+            "w1".to_string(),
+            ScreenRect {
+                x: 0,
+                y: 0,
+                w: 5,
+                h: 2,
+            },
+        )];
+
+        handle_mouse(
+            &mut app,
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Right),
+                column: 2,
+                row: 1,
+                modifiers: KeyModifiers::empty(),
+            },
+        );
+        assert!(app.editor.drag.is_some());
+
+        // move onto the canvas, away from any edge, so the drop position is valid
+        handle_mouse(
+            &mut app,
+            MouseEvent {
+                kind: MouseEventKind::Drag(MouseButton::Right),
+                column: 200,
+                row: 200,
+                modifiers: KeyModifiers::empty(),
+            },
+        );
+        assert!(app.editor.drag.as_ref().unwrap().valid);
+
+        handle_mouse(
+            &mut app,
+            MouseEvent {
+                kind: MouseEventKind::Up(MouseButton::Left),
+                column: 200,
+                row: 200,
+                modifiers: KeyModifiers::empty(),
+            },
+        );
+
+        assert!(app.editor.drag.is_none());
+        assert!(app.editor.placed.iter().any(|p| p.id == "w1"));
     }
 
     #[test]
