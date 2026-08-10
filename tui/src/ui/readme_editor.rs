@@ -35,17 +35,33 @@ fn short_label(id: &str) -> &str {
 }
 
 fn draw_sidebar(frame: &mut Frame, app: &mut App, area: Rect) {
-    let block = theme::block("widgets - RMB drag onto the canvas");
+    let block = theme::block("widgets - RMB drag onto the canvas, wheel to scroll");
     let inner = block.inner(area);
     frame.render_widget(block, area);
 
     app.editor.sidebar_items.clear();
+    app.editor.sidebar_area = ScreenRect {
+        x: inner.x,
+        y: inner.y,
+        w: inner.width,
+        h: inner.height,
+    };
     if inner.width < 3 || inner.height < SIDEBAR_ITEM_HEIGHT {
         return;
     }
 
+    let stride = SIDEBAR_ITEM_HEIGHT + SIDEBAR_ITEM_GAP;
+    let capacity = (inner.height / stride).max(1) as usize;
+    let len = app.editor.sidebar.len();
+    let max_scroll = len.saturating_sub(capacity);
+    if app.editor.sidebar_scroll > max_scroll {
+        app.editor.sidebar_scroll = max_scroll;
+    }
+    let start = app.editor.sidebar_scroll;
+    let end = (start + capacity).min(len);
+
     let mut y = inner.y;
-    for id in app.editor.sidebar.clone() {
+    for id in app.editor.sidebar[start..end].iter().cloned() {
         if y + SIDEBAR_ITEM_HEIGHT > inner.y + inner.height {
             break;
         }
@@ -181,8 +197,8 @@ fn draw_box(
 }
 
 fn draw_help(frame: &mut Frame, app: &App, area: Rect) {
-    let mut text = "RMB: drag to place/move   LMB: remove   wheel/PageUp/PageDown: scroll   \
-                     Ctrl+S: export   Esc: main menu"
+    let mut text = "RMB: drag to place/move   LMB: remove   wheel over sidebar/canvas: scroll \
+                     that panel   PageUp/PageDown: scroll canvas   Ctrl+S: export   Esc: main menu"
         .to_string();
     if let Some(status) = &app.status {
         text.push_str("   -   ");
