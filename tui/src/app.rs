@@ -181,6 +181,8 @@ pub struct EditorState {
     pub canvas_width: u32,
     pub canvas_area: ScreenRect,
     pub sidebar_items: Vec<(String, ScreenRect)>,
+    pub sidebar_scroll: usize,
+    pub sidebar_area: ScreenRect,
 }
 
 impl EditorState {
@@ -194,6 +196,8 @@ impl EditorState {
             canvas_width: CANVAS_WIDTH,
             canvas_area: ScreenRect::default(),
             sidebar_items: Vec::new(),
+            sidebar_scroll: 0,
+            sidebar_area: ScreenRect::default(),
         }
     }
 }
@@ -231,6 +235,8 @@ pub struct App {
     pub discovered: Vec<DiscoveredWidget>,
     pub discovered_selected: HashSet<String>,
     pub discovered_cursor: usize,
+    pub discovered_scroll: usize,
+    pub discovered_rows: Vec<(usize, ScreenRect)>,
 
     pub editor: EditorState,
 }
@@ -266,6 +272,8 @@ impl App {
             discovered: Vec::new(),
             discovered_selected: HashSet::new(),
             discovered_cursor: 0,
+            discovered_scroll: 0,
+            discovered_rows: Vec::new(),
             editor: EditorState::new(),
         };
         if let Some((path, cfg)) = existing {
@@ -573,6 +581,7 @@ fn handle_main_menu_key(app: &mut App, key: KeyEvent) {
             rescan_discovered(app);
             app.discovered_selected.clear();
             app.discovered_cursor = 0;
+            app.discovered_scroll = 0;
             app.status = None;
             app.screen = Screen::WidgetSelect;
         }
@@ -882,33 +891,59 @@ pub fn toggle_discovered(app: &mut App, id: &str) {
     }
 }
 
+fn move_discovered_cursor(app: &mut App, delta: i32) {
+    let len = app.discovered.len();
+    if len == 0 {
+        return;
+    }
+    let next = (app.discovered_cursor as i32 + delta).clamp(0, len as i32 - 1);
+    app.discovered_cursor = next as usize;
+}
+
+fn confirm_discovered_selection(app: &mut App) {
+    if app.discovered_selected.is_empty() {
+        app.status = Some("select at least one widget first".to_string());
+    } else {
+        init_editor(app);
+        app.status = None;
+        app.screen = Screen::ReadmeEditor;
+    }
+}
+
 fn handle_widget_select_key(app: &mut App, key: KeyEvent) {
     match key.code {
         KeyCode::Esc => app.screen = Screen::MainMenu,
-        KeyCode::Down | KeyCode::Char('j') => {
-            let len = app.discovered.len();
-            if len > 0 {
-                app.discovered_cursor = (app.discovered_cursor + 1).min(len - 1);
-            }
-        }
-        KeyCode::Up | KeyCode::Char('k') => {
-            app.discovered_cursor = app.discovered_cursor.saturating_sub(1);
-        }
+        KeyCode::Down | KeyCode::Char('j') => move_discovered_cursor(app, 1),
+        KeyCode::Up | KeyCode::Char('k') => move_discovered_cursor(app, -1),
         KeyCode::Char(' ') | KeyCode::Enter => {
             if let Some(w) = app.discovered.get(app.discovered_cursor) {
                 let id = w.id.clone();
                 toggle_discovered(app, &id);
             }
         }
-        KeyCode::Char('l') | KeyCode::Char('L') => {
-            if app.discovered_selected.is_empty() {
-                app.status = Some("select at least one widget first".to_string());
-            } else {
-                init_editor(app);
-                app.status = None;
-                app.screen = Screen::ReadmeEditor;
+        KeyCode::Char('l') | KeyCode::Char('L') => confirm_discovered_selection(app),
+        _ => {}
+    }
+}
+
+fn handle_widget_select_mouse(app: &mut App, mouse: MouseEvent) {
+    match mouse.kind {
+        MouseEventKind::Down(MouseButton::Left) | MouseEventKind::Down(MouseButton::Right) => {
+            let hit = app
+                .discovered_rows
+                .iter()
+                .find(|(_, r)| r.contains(mouse.column, mouse.row))
+                .map(|&(idx, _)| idx);
+            if let Some(idx) = hit {
+                app.discovered_cursor = idx;
+                if let Some(w) = app.discovered.get(idx) {
+                    let id = w.id.clone();
+                    toggle_discovered(app, &id);
+                }
             }
         }
+        MouseEventKind::ScrollUp => move_discovered_cursor(app, -1),
+        MouseEventKind::ScrollDown => move_discovered_cursor(app, 1),
         _ => {}
     }
 }
@@ -1091,20 +1126,32 @@ fn remove_at(app: &mut App, col: u16, row: u16) {
 }
 
 pub fn handle_mouse(app: &mut App, mouse: MouseEvent) {
-    if app.screen != Screen::ReadmeEditor {
-        return;
+    match app.screen {
+        Screen::WidgetSelect => handle_widget_select_mouse(app, mouse),
+        Screen::ReadmeEditor => handle_readme_editor_mouse(app, mouse),
+        _ => {}
     }
+}
+
+fn handle_readme_editor_mouse(app: &mut App, mouse: MouseEvent) {
     match mouse.kind {
         MouseEventKind::Down(MouseButton::Right) => start_drag(app, mouse.column, mouse.row),
         MouseEventKind::Drag(MouseButton::Right) => update_drag(app, mouse.column, mouse.row),
-        
         MouseEventKind::Up(_) => end_drag(app),
         MouseEventKind::Down(MouseButton::Left) => remove_at(app, mouse.column, mouse.row),
-        MouseEventKind::ScrollUp => {
-            app.editor.scroll_y = app.editor.scroll_y.saturating_sub(SCROLL_STEP);
-        }
-        MouseEventKind::ScrollDown => app.editor.scroll_y += SCROLL_STEP,
+        MouseEventKind::ScrollUp => scroll_editor(app, mouse.column, mouse.row, -1),
+        MouseEventKind::ScrollDown => scroll_editor(app, mouse.column, mouse.row, 1),
         _ => {}
+    }
+}
+
+fn scroll_editor(app: &mut App, col: u16, row: u16, dir: i32) {
+    if app.editor.sidebar_area.contains(col, row) {
+        app.editor.sidebar_scroll = (app.editor.sidebar_scroll as i32 + dir).max(0) as usize;
+    } else if dir < 0 {
+        app.editor.scroll_y = app.editor.scroll_y.saturating_sub(SCROLL_STEP);
+    } else {
+        app.editor.scroll_y += SCROLL_STEP;
     }
 }
 
@@ -1621,6 +1668,73 @@ mod tests {
         assert!(app.editor.placed.is_empty());
     }
 
+    fn discovered_app(ids: &[&str]) -> App {
+        let mut app = App::new(None);
+        app.screen = Screen::WidgetSelect;
+        app.discovered = ids
+            .iter()
+            .map(|id| DiscoveredWidget {
+                id: id.to_string(),
+                path: PathBuf::from(id),
+                size: (10, 10),
+            })
+            .collect();
+        app
+    }
+
+    #[test]
+    fn clicking_a_row_toggles_that_widget_regardless_of_cursor_position() {
+        let mut app = discovered_app(&["a", "b", "c"]);
+        app.discovered_cursor = 0;
+        app.discovered_rows = vec![
+            (0, ScreenRect { x: 0, y: 0, w: 20, h: 1 }),
+            (1, ScreenRect { x: 0, y: 1, w: 20, h: 1 }),
+            (2, ScreenRect { x: 0, y: 2, w: 20, h: 1 }),
+        ];
+
+        handle_mouse(
+            &mut app,
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                column: 5,
+                row: 1,
+                modifiers: KeyModifiers::empty(),
+            },
+        );
+
+        assert_eq!(app.discovered_cursor, 1);
+        assert!(app.discovered_selected.contains("b"));
+        assert!(!app.discovered_selected.contains("a"));
+    }
+
+    #[test]
+    fn wheel_moves_the_cursor_on_the_widget_select_screen() {
+        let mut app = discovered_app(&["a", "b", "c"]);
+        app.discovered_cursor = 0;
+
+        handle_mouse(
+            &mut app,
+            MouseEvent {
+                kind: MouseEventKind::ScrollDown,
+                column: 0,
+                row: 0,
+                modifiers: KeyModifiers::empty(),
+            },
+        );
+        assert_eq!(app.discovered_cursor, 1);
+
+        handle_mouse(
+            &mut app,
+            MouseEvent {
+                kind: MouseEventKind::ScrollUp,
+                column: 0,
+                row: 0,
+                modifiers: KeyModifiers::empty(),
+            },
+        );
+        assert_eq!(app.discovered_cursor, 0);
+    }
+
     fn editor_test_app(widgets: &[(&str, u32, u32)]) -> App {
         let mut app = App::new(None);
         app.editor.canvas_area = ScreenRect {
@@ -1758,6 +1872,48 @@ mod tests {
 
         assert!(app.editor.placed.is_empty());
         assert!(app.editor.sidebar.contains(&"w1".to_string()));
+    }
+
+    #[test]
+    fn wheel_scrolls_the_sidebar_or_the_canvas_depending_on_where_the_pointer_is() {
+        let mut app = editor_test_app(&[]);
+        app.screen = Screen::ReadmeEditor;
+        app.editor.sidebar_area = ScreenRect {
+            x: 0,
+            y: 0,
+            w: 20,
+            h: 30,
+        };
+        app.editor.canvas_area = ScreenRect {
+            x: 20,
+            y: 0,
+            w: CANVAS_WIDTH as u16,
+            h: 2000,
+        };
+
+        handle_mouse(
+            &mut app,
+            MouseEvent {
+                kind: MouseEventKind::ScrollDown,
+                column: 5,
+                row: 5,
+                modifiers: KeyModifiers::empty(),
+            },
+        );
+        assert_eq!(app.editor.sidebar_scroll, 1);
+        assert_eq!(app.editor.scroll_y, 0);
+
+        handle_mouse(
+            &mut app,
+            MouseEvent {
+                kind: MouseEventKind::ScrollDown,
+                column: 50,
+                row: 5,
+                modifiers: KeyModifiers::empty(),
+            },
+        );
+        assert_eq!(app.editor.sidebar_scroll, 1);
+        assert_eq!(app.editor.scroll_y, SCROLL_STEP);
     }
 
     #[test]
