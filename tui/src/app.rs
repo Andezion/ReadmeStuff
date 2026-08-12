@@ -14,7 +14,7 @@ const CANVAS_WIDTH: u32 = 990;
 const LAYOUT_STEP: u32 = 15;
 const SCROLL_STEP: u32 = 30;
 const README_EXPORT_NAME: &str = "README.svg";
-const EXPORT_BG: &str = "#ffffff";
+const EXPORT_BG: &str = "#0d1117";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Screen {
