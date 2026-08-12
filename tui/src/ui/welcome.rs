@@ -1,4 +1,4 @@
-use crate::app::App;
+    use crate::app::App;
 use crate::ui::theme::{self, PALETTE};
 use ratatui::Frame;
 use ratatui::layout::Alignment;
@@ -20,7 +20,7 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         Line::from(""),
         Line::from(format!("Found an existing config: {path}")),
         Line::from(""),
-        Line::from("[R] Resume it     [N] Start new     [Esc] Quit"),
+        Line::from("[R] Resume it -> main menu     [N] Start new -> main menu     [Esc] Quit"),
     ]);
 
     let para = Paragraph::new(text)
