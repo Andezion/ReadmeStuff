@@ -169,6 +169,7 @@ pub struct DragState {
     pub h: u32,
     pub current: (i32, i32),
     pub valid: bool,
+    pub moved: bool,
     pub original: Option<(i32, i32)>,
 }
 
@@ -596,11 +597,11 @@ fn handle_welcome_key(app: &mut App, key: KeyEvent) {
             if let Some(cfg) = app.pending_resume.take() {
                 load_into(app, &cfg);
             }
-            app.screen = Screen::Questionnaire;
+            app.screen = Screen::MainMenu;
         }
         KeyCode::Char('n') | KeyCode::Char('N') => {
             app.pending_resume = None;
-            app.screen = Screen::Questionnaire;
+            app.screen = Screen::MainMenu;
         }
         KeyCode::Esc | KeyCode::Char('q') => app.should_quit = true,
         _ => {}
@@ -1039,6 +1040,7 @@ fn start_drag(app: &mut App, col: u16, row: u16) {
             h,
             current: (0, 0),
             valid: false,
+            moved: false,
             original: None,
         });
         return;
@@ -1063,6 +1065,7 @@ fn start_drag(app: &mut App, col: u16, row: u16) {
         h: placed.h,
         current: original,
         valid: true,
+        moved: false,
         original: Some(original),
     });
 }
@@ -1086,6 +1089,7 @@ fn update_drag(app: &mut App, col: u16, row: u16) {
     if let Some(drag) = app.editor.drag.as_mut() {
         drag.current = current;
         drag.valid = valid;
+        drag.moved = true;
     }
 }
 
@@ -1093,7 +1097,7 @@ fn end_drag(app: &mut App) {
     let Some(drag) = app.editor.drag.take() else {
         return;
     };
-    if drag.valid {
+    if drag.valid && drag.moved {
         app.editor.placed.push(PlacedItem {
             id: drag.id.clone(),
             x: drag.current.0,
@@ -1102,26 +1106,20 @@ fn end_drag(app: &mut App) {
             h: drag.h,
         });
         app.editor.sidebar.retain(|id| id != &drag.id);
-    } else if !drag.from_sidebar
-        && let Some((ox, oy)) = drag.original
-    {
-        app.editor.placed.push(PlacedItem {
-            id: drag.id,
-            x: ox,
-            y: oy,
-            w: drag.w,
-            h: drag.h,
-        });
-    }
-}
-
-fn remove_at(app: &mut App, col: u16, row: u16) {
-    let Some((px, py)) = cell_to_pixel(app, col, row) else {
-        return;
-    };
-    if let Some(idx) = app.editor.placed.iter().position(|p| point_in(p, px, py)) {
-        let item = app.editor.placed.remove(idx);
-        app.editor.sidebar.push(item.id);
+    } else if !drag.from_sidebar {
+        if drag.moved {
+            if let Some((ox, oy)) = drag.original {
+                app.editor.placed.push(PlacedItem {
+                    id: drag.id,
+                    x: ox,
+                    y: oy,
+                    w: drag.w,
+                    h: drag.h,
+                });
+            }
+        } else {
+            app.editor.sidebar.push(drag.id);
+        }
     }
 }
 
@@ -1135,10 +1133,13 @@ pub fn handle_mouse(app: &mut App, mouse: MouseEvent) {
 
 fn handle_readme_editor_mouse(app: &mut App, mouse: MouseEvent) {
     match mouse.kind {
-        MouseEventKind::Down(MouseButton::Right) => start_drag(app, mouse.column, mouse.row),
-        MouseEventKind::Drag(MouseButton::Right) => update_drag(app, mouse.column, mouse.row),
+        MouseEventKind::Down(MouseButton::Left) | MouseEventKind::Down(MouseButton::Right) => {
+            start_drag(app, mouse.column, mouse.row)
+        }
+        MouseEventKind::Drag(MouseButton::Left) | MouseEventKind::Drag(MouseButton::Right) => {
+            update_drag(app, mouse.column, mouse.row)
+        }
         MouseEventKind::Up(_) => end_drag(app),
-        MouseEventKind::Down(MouseButton::Left) => remove_at(app, mouse.column, mouse.row),
         MouseEventKind::ScrollUp => scroll_editor(app, mouse.column, mouse.row, -1),
         MouseEventKind::ScrollDown => scroll_editor(app, mouse.column, mouse.row, 1),
         _ => {}
@@ -1272,6 +1273,20 @@ mod tests {
     }
 
     #[test]
+    fn resume_returns_to_main_menu_with_the_choice_of_generate_text_or_build() {
+        let cfg = Config {
+            profile: ProfileConfig {
+                github_login: Some("octocat".to_string()),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+        let mut app = App::new(Some((PathBuf::from("readme.toml"), cfg)));
+        handle_key(&mut app, KeyEvent::from(KeyCode::Char('r')));
+        assert_eq!(app.screen, Screen::MainMenu);
+    }
+
+    #[test]
     fn resume_prefills_fields_and_selection_from_loaded_config() {
         let cfg = Config {
             profile: ProfileConfig {
@@ -1285,9 +1300,13 @@ mod tests {
         };
         let mut app = App::new(Some((PathBuf::from("readme.toml"), cfg)));
         handle_key(&mut app, KeyEvent::from(KeyCode::Char('r')));
-        assert_eq!(app.screen, Screen::Questionnaire);
+        assert_eq!(app.screen, Screen::MainMenu);
         assert_eq!(field_text(&app.github_login), "octocat");
         assert!(app.selected.contains("github-stats"));
+
+        handle_key(&mut app, KeyEvent::from(KeyCode::Char('g')));
+        assert_eq!(app.screen, Screen::Questionnaire);
+        assert_eq!(field_text(&app.github_login), "octocat");
     }
 
     #[test]
@@ -1301,7 +1320,7 @@ mod tests {
         };
         let mut app = App::new(Some((PathBuf::from("readme.toml"), cfg)));
         handle_key(&mut app, KeyEvent::from(KeyCode::Char('n')));
-        assert_eq!(app.screen, Screen::Questionnaire);
+        assert_eq!(app.screen, Screen::MainMenu);
         assert_eq!(field_text(&app.github_login), "");
     }
 
@@ -1858,7 +1877,7 @@ mod tests {
     }
 
     #[test]
-    fn left_click_on_a_placed_widget_returns_it_to_the_sidebar() {
+    fn clicking_a_placed_widget_without_dragging_returns_it_to_the_sidebar() {
         let mut app = editor_test_app(&[]);
         app.editor.placed.push(PlacedItem {
             id: "w1".to_string(),
@@ -1868,7 +1887,8 @@ mod tests {
             h: 50,
         });
 
-        remove_at(&mut app, 50, 10);
+        start_drag(&mut app, 50, 10);
+        end_drag(&mut app);
 
         assert!(app.editor.placed.is_empty());
         assert!(app.editor.sidebar.contains(&"w1".to_string()));
@@ -1966,6 +1986,91 @@ mod tests {
 
         assert!(app.editor.drag.is_none());
         assert!(app.editor.placed.iter().any(|p| p.id == "w1"));
+    }
+
+    #[test]
+    fn left_button_drag_from_sidebar_places_a_widget_on_the_canvas() {
+        let mut app = editor_test_app(&[("w1", 100, 50)]);
+        app.screen = Screen::ReadmeEditor;
+        app.editor.sidebar_items = vec![(
+            "w1".to_string(),
+            ScreenRect {
+                x: 0,
+                y: 0,
+                w: 5,
+                h: 2,
+            },
+        )];
+
+        handle_mouse(
+            &mut app,
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                column: 2,
+                row: 1,
+                modifiers: KeyModifiers::empty(),
+            },
+        );
+        assert!(app.editor.drag.is_some());
+
+        handle_mouse(
+            &mut app,
+            MouseEvent {
+                kind: MouseEventKind::Drag(MouseButton::Left),
+                column: 200,
+                row: 200,
+                modifiers: KeyModifiers::empty(),
+            },
+        );
+        assert!(app.editor.drag.as_ref().unwrap().valid);
+
+        handle_mouse(
+            &mut app,
+            MouseEvent {
+                kind: MouseEventKind::Up(MouseButton::Left),
+                column: 200,
+                row: 200,
+                modifiers: KeyModifiers::empty(),
+            },
+        );
+
+        assert!(app.editor.drag.is_none());
+        assert!(app.editor.placed.iter().any(|p| p.id == "w1"));
+    }
+
+    #[test]
+    fn left_button_click_without_dragging_on_a_placed_widget_removes_it() {
+        let mut app = editor_test_app(&[]);
+        app.screen = Screen::ReadmeEditor;
+        app.editor.placed.push(PlacedItem {
+            id: "w1".to_string(),
+            x: 10,
+            y: 10,
+            w: 100,
+            h: 50,
+        });
+
+        handle_mouse(
+            &mut app,
+            MouseEvent {
+                kind: MouseEventKind::Down(MouseButton::Left),
+                column: 50,
+                row: 10,
+                modifiers: KeyModifiers::empty(),
+            },
+        );
+        handle_mouse(
+            &mut app,
+            MouseEvent {
+                kind: MouseEventKind::Up(MouseButton::Left),
+                column: 50,
+                row: 10,
+                modifiers: KeyModifiers::empty(),
+            },
+        );
+
+        assert!(app.editor.placed.is_empty());
+        assert!(app.editor.sidebar.contains(&"w1".to_string()));
     }
 
     #[test]
