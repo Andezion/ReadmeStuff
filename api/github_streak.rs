@@ -164,6 +164,43 @@ impl GitHubStreakApi {
         })
     }
 
+    pub async fn fetch_recent_calendar(
+        &self,
+        login: &str,
+        weeks: u32,
+    ) -> Result<ContributionCalendar> {
+        let to = Utc::now();
+        let from = to - Duration::days(weeks as i64 * 7 - 1);
+
+        let resp: UserRoot = self
+            .client
+            .graphql(
+                CALENDAR_QUERY,
+                json!({
+                    "login": login,
+                    "from": from.to_rfc3339(),
+                    "to":   to.to_rfc3339(),
+                }),
+            )
+            .await?;
+
+        let cal = resp.user.contributions_collection.contribution_calendar;
+        Ok(ContributionCalendar {
+            total_contributions: cal.total_contributions,
+            weeks: cal
+                .weeks
+                .into_iter()
+                .map(|w| ContributionWeek {
+                    contribution_days: w
+                        .contribution_days
+                        .into_iter()
+                        .filter_map(parse_day)
+                        .collect(),
+                })
+                .collect(),
+        })
+    }
+
     async fn fetch_all_days(&self, login: &str) -> Result<Vec<ContributionDay>> {
         use tokio::task::JoinSet;
 
