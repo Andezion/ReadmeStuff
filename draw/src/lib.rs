@@ -18,6 +18,7 @@ mod github_repos;
 mod github_social;
 mod github_stats;
 mod github_visitors;
+mod linkedin;
 
 // Codeforces
 mod cf_rating;
@@ -41,7 +42,7 @@ mod streak;
 
 pub use canvas::{PlacedTile, compose_freeform, svg_size};
 pub use compose::{Tile, compose};
-pub use theme::Theme;
+pub use theme::{ColorScheme, Font, Theme};
 
 pub mod sizes {
     pub const GITHUB_STATS: (u32, u32) = crate::github_stats::SIZE;
@@ -70,6 +71,8 @@ pub mod sizes {
     pub const LC_BADGES: (u32, u32) = crate::lc_badges::SIZE;
 
     pub const COMPETITIVE: (u32, u32) = crate::competitive::SIZE;
+
+    pub const LINKEDIN: (u32, u32) = crate::linkedin::SIZE;
 }
 
 // GitHub
@@ -104,6 +107,9 @@ pub use lc_solved::render_lc_solved;
 
 // Legacy
 pub use competitive::render_competitive;
+
+// LinkedIn 
+pub use linkedin::render_linkedin;
 
 // Custom text-to-SVG rendering
 pub use text_card::{DEFAULT_HEIGHT, DEFAULT_WIDTH, render_text_card};
