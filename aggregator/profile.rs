@@ -163,6 +163,22 @@ async fn build_profile_gated(
         }
     };
 
+    let contribution_grid_fut = {
+        let login = github_login.to_owned();
+        let client = gh_client.clone();
+        let enabled = gates.github;
+        async move {
+            if !enabled {
+                return Err(NOT_SELECTED.to_string());
+            }
+            let c = client.ok_or_else(|| "GITHUB_TOKEN not set".to_string())?;
+            GitHubStreakApi::new(c)
+                .fetch_recent_calendar(&login, 53)
+                .await
+                .map_err(|e| e.to_string())
+        }
+    };
+
     let langs_fut = {
         let login = github_login.to_owned();
         let client = gh_client.clone();
@@ -300,6 +316,7 @@ async fn build_profile_gated(
     let (
         github_res,
         streak_res,
+        contribution_grid_res,
         langs_res,
         commit_streak_res,
         visitors_res,
@@ -310,6 +327,7 @@ async fn build_profile_gated(
     ) = tokio::join!(
         github_fut,
         streak_fut,
+        contribution_grid_fut,
         langs_fut,
         commit_streak_fut,
         visitors_fut,
@@ -338,6 +356,7 @@ async fn build_profile_gated(
         },
         github: github_res.ok(),
         streak: streak_res.ok(),
+        contribution_grid: contribution_grid_res.ok(),
         commit_streak: commit_streak_res.ok(),
         langs: langs_res.ok(),
         codeforces: cf_res.ok(),
