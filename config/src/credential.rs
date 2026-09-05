@@ -5,6 +5,7 @@ pub enum Credential {
     CodeforcesHandle,
     CodewarsUsername,
     LeetcodeUsername,
+    LinkedIn,
 }
 
 #[derive(Debug, Clone, Copy)]
