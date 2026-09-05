@@ -91,14 +91,14 @@ mod tests {
 
     #[test]
     fn renders_declared_width_and_height() {
-        let svg = render_text_widget(&["hello"], 16.0, 20.0, Align::DEFAULT, Theme::Dark, 300, 80);
+        let svg = render_text_widget(&["hello"], 16.0, 20.0, Align::DEFAULT, Theme::DARK, 300, 80);
         assert!(svg.contains(r#"width="300""#));
         assert!(svg.contains(r#"height="80""#));
     }
 
     #[test]
     fn empty_lines_still_produce_a_valid_svg() {
-        let svg = render_text_widget(&[], 16.0, 20.0, Align::DEFAULT, Theme::Dark, 300, 80);
+        let svg = render_text_widget(&[], 16.0, 20.0, Align::DEFAULT, Theme::DARK, 300, 80);
         assert!(svg.starts_with("<svg"));
         assert!(svg.trim_end().ends_with("</svg>"));
     }
@@ -110,7 +110,7 @@ mod tests {
             16.0,
             20.0,
             Align::DEFAULT,
-            Theme::Dark,
+            Theme::DARK,
             300,
             80,
         );
