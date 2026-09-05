@@ -11,9 +11,9 @@ const PCT_X: u32 = W - PAD;
 
 pub fn render_langs(w: &LangsWidget, theme: Theme) -> String {
     let c = theme.colors();
+    let font = c.font_family;
     let rain = matrix::generate(W, H, c.matrix_color, c.matrix_opacity, 0xFACE_FEED, "ln");
 
-    // Row baseline positions for up to 5 languages
     let row_y: [u32; 5] = [75, 99, 123, 147, 171];
 
     let mut bars = String::new();
@@ -26,14 +26,14 @@ pub fn render_langs(w: &LangsWidget, theme: Theme) -> String {
         bars.push_str(&format!(
             "<circle cx=\"{dot_x}\" cy=\"{dot_y}\" r=\"4\" fill=\"{color}\"/>\
              <text x=\"{name_x}\" y=\"{y}\" \
-                font-family=\"monospace\" font-size=\"11\" \
+                font-family=\"{font}\" font-size=\"11\" \
                 fill=\"{tv}\">{name}</text>\
              <rect x=\"{BAR_X}\" y=\"{bar_y}\" width=\"{BAR_W}\" height=\"9\" rx=\"4.5\" \
                 fill=\"{bar_bg}\"/>\
              <rect x=\"{BAR_X}\" y=\"{bar_y}\" width=\"{fill_w}\" height=\"9\" rx=\"4.5\" \
                 fill=\"{color}\"/>\
              <text x=\"{PCT_X}\" y=\"{y}\" text-anchor=\"end\" \
-                font-family=\"monospace\" font-size=\"11\" \
+                font-family=\"{font}\" font-size=\"11\" \
                 fill=\"{ts}\">{pct:.1}%</text>",
             dot_x = PAD + 4,
             dot_y = y - 4,
@@ -56,7 +56,7 @@ pub fn render_langs(w: &LangsWidget, theme: Theme) -> String {
 <rect width="{W}" height="{H}" rx="6" fill="{bg}"/>
 <g clip-path="url(#ln-clip)">{rain}</g>
 <rect width="{W}" height="{H}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<text x="25" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">Top Languages</text>
+<text x="25" y="35" font-family="{font}" font-size="14" font-weight="600" fill="{title}">Top Languages</text>
 <line x1="25" y1="52" x2="470" y2="52" stroke="{sep}" stroke-width="1"/>
 {bars}
 </svg>"#,
