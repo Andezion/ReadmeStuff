@@ -24,6 +24,11 @@ pub struct LeetcodeData {
     pub badges: BadgesResponse,
 }
 
+pub struct LinkedinData {
+    pub name: String,
+    pub profile_url: String,
+}
+
 pub struct UserProfile {
     pub github: Option<ProfileStats>,
     pub streak: Option<StreakStats>,
@@ -34,6 +39,7 @@ pub struct UserProfile {
     pub leetcode: Option<LeetcodeData>,
     pub visitors: Option<VisitorAnalytics>,
     pub engagement: Option<EngagementSummary>,
+    pub linkedin: Option<LinkedinData>,
     pub sources: SourceStatus,
 }
 
