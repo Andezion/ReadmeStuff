@@ -122,6 +122,20 @@ pub fn streak_widget(p: &UserProfile) -> Option<StreakWidget> {
     })
 }
 
+pub struct ContributionGridWidget {
+    pub weeks: Vec<readme_stuff_api::github_streak::ContributionWeek>,
+}
+
+pub fn contribution_grid_widget(p: &UserProfile) -> Option<ContributionGridWidget> {
+    let cal = p.contribution_grid.as_ref()?;
+    if cal.weeks.is_empty() {
+        return None;
+    }
+    Some(ContributionGridWidget {
+        weeks: cal.weeks.clone(),
+    })
+}
+
 pub struct LangBar {
     pub name: String,
     pub percentage: f64,
