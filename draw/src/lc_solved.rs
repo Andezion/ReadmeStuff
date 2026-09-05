@@ -11,6 +11,7 @@ const LC_HARD: &str = "#ff375f";
 
 pub fn render_lc_solved(w: &LcSolvedWidget, theme: Theme) -> String {
     let c = theme.colors();
+    let font = c.font_family;
     let rain = matrix::generate(W, H, c.matrix_color, c.matrix_opacity, 0x1C00_0001, "lcs");
 
     let total_str = fmt_num(w.total as u64);
@@ -32,8 +33,8 @@ pub fn render_lc_solved(w: &LcSolvedWidget, theme: Theme) -> String {
     for (i, (label, count, color)) in stats.iter().enumerate() {
         let x = col_x[i];
         stat_svg.push_str(&format!(
-            "<text x=\"{x}\" y=\"172\" font-family=\"monospace\" font-size=\"20\" font-weight=\"700\" fill=\"{color}\">{val}</text>\
-             <text x=\"{x}\" y=\"189\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">{label}</text>",
+            "<text x=\"{x}\" y=\"172\" font-family=\"{font}\" font-size=\"20\" font-weight=\"700\" fill=\"{color}\">{val}</text>\
+             <text x=\"{x}\" y=\"189\" font-family=\"{font}\" font-size=\"11\" fill=\"{tl}\">{label}</text>",
             val = fmt_num(*count as u64),
             tl = c.text_secondary,
         ));
@@ -49,10 +50,10 @@ pub fn render_lc_solved(w: &LcSolvedWidget, theme: Theme) -> String {
 <rect width="{W}" height="{H}" rx="6" fill="{bg}"/>
 <g clip-path="url(#lcs-clip)">{rain}</g>
 <rect width="{W}" height="{H}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<text x="25" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">LeetCode &#8212; Problems Solved</text>
+<text x="25" y="35" font-family="{font}" font-size="14" font-weight="600" fill="{title}">LeetCode &#8212; Problems Solved</text>
 <line x1="25" y1="52" x2="470" y2="52" stroke="{sep}" stroke-width="1"/>
-<text x="25" y="100" font-family="monospace" font-size="36" font-weight="700" fill="{tv}">{total}</text>
-<text x="108" y="100" font-family="monospace" font-size="14" fill="{ts}">solved</text>
+<text x="25" y="100" font-family="{font}" font-size="36" font-weight="700" fill="{tv}">{total}</text>
+<text x="108" y="100" font-family="{font}" font-size="14" fill="{ts}">solved</text>
 <rect x="25" y="115" width="{easy_w}" height="8" rx="4" fill="{lc_easy}"/>
 <rect x="{med_x}" y="115" width="{med_w}" height="8" fill="{lc_medium}"/>
 <rect x="{hard_x}" y="115" width="{hard_w}" height="8" rx="4" fill="{lc_hard}"/>
