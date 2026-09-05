@@ -1,4 +1,4 @@
-use crate::github_client::{GitHubClient, Result};
+use crate::github_client::{GitHubClient, GitHubError, Result};
 use chrono::{Datelike, Duration, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -170,7 +170,7 @@ impl GitHubStreakApi {
         const MIN_YEAR: i32 = 1969;
         const MAX_YEAR: i32 = 2030;
         let sem = Arc::new(tokio::sync::Semaphore::new(8));
-        let mut set: JoinSet<Vec<ContributionDay>> = JoinSet::new();
+        let mut set: JoinSet<Result<Vec<ContributionDay>>> = JoinSet::new();
 
         for year in MIN_YEAR..=MAX_YEAR {
             for (from, to) in [
@@ -188,30 +188,44 @@ impl GitHubStreakApi {
                 let sem = sem.clone();
                 set.spawn(async move {
                     let Ok(_permit) = sem.acquire_owned().await else {
-                        return vec![];
+                        return Ok(vec![]);
                     };
-                    let Ok(data): Result<UserRoot> = client
+                    let data: UserRoot = client
                         .graphql(
                             CALENDAR_QUERY,
                             json!({ "login": login, "from": from, "to": to }),
                         )
-                        .await
-                    else {
-                        return vec![];
-                    };
+                        .await?;
                     let cal = data.user.contributions_collection.contribution_calendar;
                     if cal.total_contributions == 0 {
-                        return vec![];
+                        return Ok(vec![]);
                     }
-                    flatten_calendar(cal)
+                    Ok(flatten_calendar(cal))
                 });
             }
         }
 
         let mut all = Vec::new();
+        let mut any_success = false;
+        let mut first_error: Option<GitHubError> = None;
         while let Some(result) = set.join_next().await {
-            if let Ok(days) = result {
-                all.extend(days);
+            match result {
+                Ok(Ok(days)) => {
+                    any_success = true;
+                    all.extend(days);
+                }
+                Ok(Err(e)) => {
+                    if first_error.is_none() {
+                        first_error = Some(e);
+                    }
+                }
+                Err(_) => {}
+            }
+        }
+
+        if !any_success {
+            if let Some(e) = first_error {
+                return Err(e);
             }
         }
 
