@@ -195,7 +195,7 @@ fn render_text_only_card(out_dir: &Path) {
         return;
     }
 
-    let svg = render_text_card(&lines, align, Theme::Dark, width, height);
+    let svg = render_text_card(&lines, align, Theme::DARK, width, height);
     write_svg(out_dir, &svg_name, &svg);
     eprintln!(
         "  custom-text OK ({path}, align={align_str}{c}, size={width}x{height}, file={svg_name})",
