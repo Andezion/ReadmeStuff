@@ -1,5 +1,5 @@
 use crate::schema::{
-    Config, Layout, PlacedWidget, ProfileConfig, Row, TextCardConfig, ThemeChoice,
+    Config, FontChoice, Layout, PlacedWidget, ProfileConfig, Row, TextCardConfig, ThemeChoice,
 };
 
 pub fn default_config() -> Config {
@@ -10,8 +10,11 @@ pub fn default_config() -> Config {
             codeforces_handle: Some("Andezion".to_string()),
             codewars_username: Some("Andezion".to_string()),
             leetcode_username: Some("Andezion".to_string()),
+            linkedin_name: None,
+            linkedin_url: None,
         },
         theme: ThemeChoice::Matrix,
+        font: FontChoice::Monospace,
         layout: Layout {
             canvas_width: 990,
             rows: default_rows(),
