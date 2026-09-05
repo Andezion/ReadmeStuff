@@ -17,6 +17,7 @@ const DIV2: u32 = 327;
 
 pub fn render_competitive(w: &CompetitiveWidget, theme: Theme) -> String {
     let c = theme.colors();
+    let font = c.font_family;
     let rain = matrix::generate(W, H, c.matrix_color, c.matrix_opacity, 0xCAFE_BABE, "cp");
 
     let cf_svg = render_cf(w, &c);
@@ -33,7 +34,7 @@ pub fn render_competitive(w: &CompetitiveWidget, theme: Theme) -> String {
 <rect width="{W}" height="{H}" rx="6" fill="{bg}"/>
 <g clip-path="url(#cp-clip)">{rain}</g>
 <rect width="{W}" height="{H}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<text x="25" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">Competitive Programming</text>
+<text x="25" y="35" font-family="{font}" font-size="14" font-weight="600" fill="{title}">Competitive Programming</text>
 <line x1="25" y1="52" x2="470" y2="52" stroke="{sep}" stroke-width="1"/>
 <line x1="{DIV1}" y1="58" x2="{DIV1}" y2="187" stroke="{sep}" stroke-width="1"/>
 <line x1="{DIV2}" y1="58" x2="{DIV2}" y2="187" stroke="{sep}" stroke-width="1"/>
@@ -54,34 +55,35 @@ pub fn render_competitive(w: &CompetitiveWidget, theme: Theme) -> String {
     )
 }
 
-fn platform_label(x: u32, label: &str, color: &str) -> String {
+fn platform_label(x: u32, label: &str, color: &str, font: &str) -> String {
     format!(
         "<text x=\"{x}\" y=\"72\" \
-            font-family=\"monospace\" font-size=\"10\" font-weight=\"600\" \
+            font-family=\"{font}\" font-size=\"10\" font-weight=\"600\" \
             fill=\"{color}\" letter-spacing=\"1\">{label}</text>",
         label = label.to_uppercase(),
     )
 }
 
-fn stat_line(x: u32, y: u32, text: &str, size: u32, weight: &str, color: &str) -> String {
+fn stat_line(x: u32, y: u32, text: &str, size: u32, weight: &str, color: &str, font: &str) -> String {
     format!(
         "<text x=\"{x}\" y=\"{y}\" \
-            font-family=\"monospace\" font-size=\"{size}\" font-weight=\"{weight}\" \
+            font-family=\"{font}\" font-size=\"{size}\" font-weight=\"{weight}\" \
             fill=\"{color}\">{text}</text>",
         text = xml_escape(text),
     )
 }
 
 fn render_cf(w: &CompetitiveWidget, c: &crate::theme::Colors) -> String {
+    let font = c.font_family;
     let Some(rating) = w.cf_rating else {
-        return platform_label(CF_X, "codeforces", c.text_secondary)
-            + &stat_line(CF_X, 105, "—", 18, "400", c.text_secondary);
+        return platform_label(CF_X, "codeforces", c.text_secondary, font)
+            + &stat_line(CF_X, 105, "—", 18, "400", c.text_secondary, font);
     };
 
     let rank = w.cf_rank.as_deref().unwrap_or("unrated");
     let rcolor = cf_rank_color(rank);
 
-    platform_label(CF_X, "codeforces", rcolor)
+    platform_label(CF_X, "codeforces", rcolor, font)
         + &stat_line(
             CF_X,
             105,
@@ -89,14 +91,16 @@ fn render_cf(w: &CompetitiveWidget, c: &crate::theme::Colors) -> String {
             20,
             "700",
             c.text_primary,
+            font,
         )
-        + &stat_line(CF_X, 123, rank, 11, "400", rcolor)
+        + &stat_line(CF_X, 123, rank, 11, "400", rcolor, font)
 }
 
 fn render_cw(w: &CompetitiveWidget, c: &crate::theme::Colors) -> String {
+    let font = c.font_family;
     let Some(ref rank) = w.cw_rank else {
-        return platform_label(CW_X, "codewars", c.text_secondary)
-            + &stat_line(CW_X, 105, "—", 18, "400", c.text_secondary);
+        return platform_label(CW_X, "codewars", c.text_secondary, font)
+            + &stat_line(CW_X, 105, "—", 18, "400", c.text_secondary, font);
     };
 
     // Codewars kyu colors (1-8, lower = better)
@@ -113,15 +117,16 @@ fn render_cw(w: &CompetitiveWidget, c: &crate::theme::Colors) -> String {
         .map(|h| format!("honor {}", fmt_num(h as u64)))
         .unwrap_or_default();
 
-    platform_label(CW_X, "codewars", kyu_color)
-        + &stat_line(CW_X, 105, rank, 20, "700", c.text_primary)
-        + &stat_line(CW_X, 123, &honor_str, 11, "400", c.text_secondary)
+    platform_label(CW_X, "codewars", kyu_color, font)
+        + &stat_line(CW_X, 105, rank, 20, "700", c.text_primary, font)
+        + &stat_line(CW_X, 123, &honor_str, 11, "400", c.text_secondary, font)
 }
 
 fn render_lc(w: &CompetitiveWidget, c: &crate::theme::Colors) -> String {
+    let font = c.font_family;
     let Some(solved) = w.lc_solved else {
-        return platform_label(LC_X, "leetcode", c.text_secondary)
-            + &stat_line(LC_X, 105, "—", 18, "400", c.text_secondary);
+        return platform_label(LC_X, "leetcode", c.text_secondary, font)
+            + &stat_line(LC_X, 105, "—", 18, "400", c.text_secondary, font);
     };
 
     let solved_str = format!("{solved} solved");
@@ -130,7 +135,7 @@ fn render_lc(w: &CompetitiveWidget, c: &crate::theme::Colors) -> String {
         _ => String::new(),
     };
 
-    platform_label(LC_X, "leetcode", "#ffa116")
-        + &stat_line(LC_X, 105, &solved_str, 18, "700", c.text_primary)
-        + &stat_line(LC_X, 123, &breakdown, 11, "400", c.text_secondary)
+    platform_label(LC_X, "leetcode", "#ffa116", font)
+        + &stat_line(LC_X, 105, &solved_str, 18, "700", c.text_primary, font)
+        + &stat_line(LC_X, 123, &breakdown, 11, "400", c.text_secondary, font)
 }
