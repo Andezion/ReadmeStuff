@@ -2,6 +2,7 @@ pub mod canvas;
 pub mod compose;
 mod helpers;
 mod matrix;
+mod rng;
 pub mod theme;
 
 // Custom text-to-SVG rendering
@@ -11,6 +12,8 @@ mod text_input;
 mod text_widget;
 
 // GitHub
+mod contribution_grid;
+mod cube_rain;
 mod github_contributions;
 mod github_heatmap;
 mod github_monthly;
@@ -45,6 +48,7 @@ pub use compose::{Tile, compose};
 pub use theme::{ColorScheme, Font, Theme};
 
 pub mod sizes {
+    pub const CONTRIBUTION_GRID: (u32, u32) = crate::contribution_grid::SIZE;
     pub const GITHUB_STATS: (u32, u32) = crate::github_stats::SIZE;
     pub const GITHUB_REPOS: (u32, u32) = crate::github_repos::SIZE;
     pub const GITHUB_CONTRIBUTIONS: (u32, u32) = crate::github_contributions::SIZE;
@@ -76,6 +80,7 @@ pub mod sizes {
 }
 
 // GitHub
+pub use contribution_grid::render_contribution_grid;
 pub use github_contributions::render_github_contributions;
 pub use github_heatmap::render_github_heatmap;
 pub use github_monthly::render_github_monthly;
