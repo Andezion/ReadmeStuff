@@ -1,4 +1,5 @@
-// Half-width katakana + digits for the Matrix effect
+use crate::rng::Lcg;
+
 const CHARS: &[char] = &[
     'ｦ', 'ｧ', 'ｨ', 'ｩ', 'ｪ', 'ｫ', 'ｬ', 'ｭ', 'ｮ', 'ｯ', 'ｱ', 'ｲ', 'ｳ', 'ｴ', 'ｵ', 'ｶ', 'ｷ', 'ｸ', 'ｹ',
     'ｺ', 'ｻ', 'ｼ', 'ｽ', 'ｾ', 'ｿ', 'ﾀ', 'ﾁ', 'ﾂ', 'ﾃ', 'ﾄ', 'ﾅ', 'ﾆ', 'ﾇ', 'ﾈ', 'ﾉ', 'ﾊ', 'ﾋ', 'ﾌ',
@@ -6,29 +7,11 @@ const CHARS: &[char] = &[
     '0', '1', '4', '8', '6', '5', '2', '7', '3', '9',
 ];
 
-struct Lcg(u64);
+trait PickChar {
+    fn pick_char(&mut self) -> char;
+}
 
-impl Lcg {
-    fn new(seed: u64) -> Self {
-        Self(seed.wrapping_add(1))
-    }
-
-    fn next(&mut self) -> u64 {
-        self.0 = self
-            .0
-            .wrapping_mul(6_364_136_223_846_793_005)
-            .wrapping_add(1_442_695_040_888_963_407);
-        self.0
-    }
-
-    fn range(&mut self, lo: u64, hi: u64) -> u64 {
-        lo + self.next() % (hi - lo)
-    }
-
-    fn rangef(&mut self, lo: f64, hi: f64) -> f64 {
-        lo + (self.next() as f64 / u64::MAX as f64) * (hi - lo)
-    }
-
+impl PickChar for Lcg {
     fn pick_char(&mut self) -> char {
         CHARS[self.range(0, CHARS.len() as u64) as usize]
     }
@@ -65,13 +48,11 @@ pub fn generate(
             "<g style=\"animation:{prefix}{i} {duration:.2}s linear infinite;animation-delay:{delay:.2}s\">",
         ));
 
-        // Leading character at full brightness
         let ch = rng.pick_char();
         drops.push_str(&format!(
             "<text x=\"{x}\" y=\"0\" font-family=\"monospace\" font-size=\"12\" fill=\"{color}\">{ch}</text>",
         ));
 
-        // Trailing characters fading out
         for j in 1..=trail {
             let ch = rng.pick_char();
             let alpha = 1.0 - j as f64 / (trail + 1) as f64;
