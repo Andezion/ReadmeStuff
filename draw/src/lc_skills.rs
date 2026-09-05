@@ -23,6 +23,7 @@ fn cat_color(cat: &str) -> &'static str {
 
 pub fn render_lc_skills(w: &LcSkillsWidget, theme: Theme) -> String {
     let c = theme.colors();
+    let font = c.font_family;
     let h: u32 = FIRST_Y + MAX_ROWS as u32 * ROW_H + 15;
 
     let rain = matrix::generate(W, h, c.matrix_color, c.matrix_opacity, 0x1C00_0002, "lcsk");
@@ -36,11 +37,11 @@ pub fn render_lc_skills(w: &LcSkillsWidget, theme: Theme) -> String {
         let color = cat_color(skill.category);
 
         rows.push_str(&format!(
-            "<text x=\"{PAD_X}\" y=\"{y}\" font-family=\"monospace\" font-size=\"11\" fill=\"{tv}\">{name}</text>\
-             <text x=\"{cat_x}\" y=\"{y}\" font-family=\"monospace\" font-size=\"9\" fill=\"{color}\">{cat}</text>\
+            "<text x=\"{PAD_X}\" y=\"{y}\" font-family=\"{font}\" font-size=\"11\" fill=\"{tv}\">{name}</text>\
+             <text x=\"{cat_x}\" y=\"{y}\" font-family=\"{font}\" font-size=\"9\" fill=\"{color}\">{cat}</text>\
              <rect x=\"{BAR_X}\" y=\"{bar_y}\" width=\"{BAR_MAX_W}\" height=\"9\" rx=\"4\" fill=\"{bar_bg}\"/>\
              <rect x=\"{BAR_X}\" y=\"{bar_y}\" width=\"{fill_w}\" height=\"9\" rx=\"4\" fill=\"{color}\"/>\
-             <text x=\"{COUNT_X}\" y=\"{y}\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"11\" fill=\"{ts}\">{amount}</text>",
+             <text x=\"{COUNT_X}\" y=\"{y}\" text-anchor=\"end\" font-family=\"{font}\" font-size=\"11\" fill=\"{ts}\">{amount}</text>",
             name = xml_escape(&skill.name),
             cat = skill.category.to_uppercase(),
             cat_x = PAD_X + 200,
@@ -56,7 +57,7 @@ pub fn render_lc_skills(w: &LcSkillsWidget, theme: Theme) -> String {
         let label = match *cat { "adv" => "Advanced", "int" => "Intermediate", _ => "Fundamental" };
         format!(
             "<circle cx=\"{cx}\" cy=\"58\" r=\"4\" fill=\"{color}\"/>\
-             <text x=\"{tx}\" y=\"62\" font-family=\"monospace\" font-size=\"10\" fill=\"{ts}\">{label}</text>",
+             <text x=\"{tx}\" y=\"62\" font-family=\"{font}\" font-size=\"10\" fill=\"{ts}\">{label}</text>",
             cx = lx, tx = lx + 8, ts = c.text_secondary,
         )
     }).collect::<String>();
@@ -71,7 +72,7 @@ pub fn render_lc_skills(w: &LcSkillsWidget, theme: Theme) -> String {
 <rect width="{W}" height="{h}" rx="6" fill="{bg}"/>
 <g clip-path="url(#lcsk-clip)">{rain}</g>
 <rect width="{W}" height="{h}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<text x="25" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">LeetCode - Top Skills</text>
+<text x="25" y="35" font-family="{font}" font-size="14" font-weight="600" fill="{title}">LeetCode - Top Skills</text>
 <line x1="25" y1="48" x2="470" y2="48" stroke="{sep}" stroke-width="1"/>
 {legend}
 {rows}
