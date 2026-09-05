@@ -67,10 +67,11 @@ fn render_sparkline(
 
     let svg = format!(
         "<line x1=\"25\" y1=\"{sep_y}\" x2=\"{lx2}\" y2=\"{sep_y}\" stroke=\"{sep}\" stroke-width=\"1\"/>\
-         <text x=\"25\" y=\"{label_y}\" font-family=\"monospace\" font-size=\"10\" fill=\"{tl}\">Weekly views since {since}</text>\
+         <text x=\"25\" y=\"{label_y}\" font-family=\"{font}\" font-size=\"10\" fill=\"{tl}\">Weekly views since {since}</text>\
          <polyline points=\"{points}\" fill=\"none\" stroke=\"{accent}\" stroke-width=\"1.5\"/>",
         lx2 = W - 15,
         sep = c.separator,
+        font = c.font_family,
         tl = c.text_secondary,
         accent = c.accent,
     );
@@ -79,6 +80,7 @@ fn render_sparkline(
 
 pub fn render_github_visitors(w: &GithubVisitorsWidget, theme: Theme) -> String {
     let c = theme.colors();
+    let font = c.font_family;
     let repo_list_bottom = REPO_LIST_START_Y + MAX_REPOS as u32 * REPO_ROW_H;
     let (spark_svg, spark_h) = render_sparkline(w, repo_list_bottom, &c);
     let height = repo_list_bottom + spark_h + 16;
@@ -92,14 +94,14 @@ pub fn render_github_visitors(w: &GithubVisitorsWidget, theme: Theme) -> String 
     );
 
     let stats_svg = format!(
-        "<text x=\"25\" y=\"88\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{views}</text>\
-         <text x=\"25\" y=\"104\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Total Views</text>\
-         <text x=\"260\" y=\"88\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{unique}</text>\
-         <text x=\"260\" y=\"104\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Unique Visitors</text>\
-         <text x=\"25\" y=\"132\" font-family=\"monospace\" font-size=\"16\" font-weight=\"700\" fill=\"{tv}\">{clones}</text>\
-         <text x=\"25\" y=\"146\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Clones</text>\
-         <text x=\"260\" y=\"132\" font-family=\"monospace\" font-size=\"16\" font-weight=\"700\" fill=\"{tv}\">{cloners}</text>\
-         <text x=\"260\" y=\"146\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Unique Cloners</text>",
+        "<text x=\"25\" y=\"88\" font-family=\"{font}\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{views}</text>\
+         <text x=\"25\" y=\"104\" font-family=\"{font}\" font-size=\"11\" fill=\"{tl}\">Total Views</text>\
+         <text x=\"260\" y=\"88\" font-family=\"{font}\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{unique}</text>\
+         <text x=\"260\" y=\"104\" font-family=\"{font}\" font-size=\"11\" fill=\"{tl}\">Unique Visitors</text>\
+         <text x=\"25\" y=\"132\" font-family=\"{font}\" font-size=\"16\" font-weight=\"700\" fill=\"{tv}\">{clones}</text>\
+         <text x=\"25\" y=\"146\" font-family=\"{font}\" font-size=\"11\" fill=\"{tl}\">Clones</text>\
+         <text x=\"260\" y=\"132\" font-family=\"{font}\" font-size=\"16\" font-weight=\"700\" fill=\"{tv}\">{cloners}</text>\
+         <text x=\"260\" y=\"146\" font-family=\"{font}\" font-size=\"11\" fill=\"{tl}\">Unique Cloners</text>",
         views = fmt_num(w.total_views),
         unique = fmt_num(w.total_unique),
         clones = fmt_num(w.total_clones),
@@ -140,7 +142,7 @@ pub fn render_github_visitors(w: &GithubVisitorsWidget, theme: Theme) -> String 
     let badge_svg = highlight_badge
         .map(|(label, color)| {
             format!(
-                "<text x=\"{rx}\" y=\"35\" font-family=\"monospace\" font-size=\"10\" font-weight=\"600\" fill=\"{color}\" text-anchor=\"end\">{label}</text>",
+                "<text x=\"{rx}\" y=\"35\" font-family=\"{font}\" font-size=\"10\" font-weight=\"600\" fill=\"{color}\" text-anchor=\"end\">{label}</text>",
                 rx = W - 15,
                 label = xml_escape(&label),
             )
@@ -148,13 +150,13 @@ pub fn render_github_visitors(w: &GithubVisitorsWidget, theme: Theme) -> String 
         .unwrap_or_default();
 
     let mut meta_svg = format!(
-        "<text x=\"25\" y=\"172\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">{trend}</text>",
+        "<text x=\"25\" y=\"172\" font-family=\"{font}\" font-size=\"11\" fill=\"{tl}\">{trend}</text>",
         trend = xml_escape(&trend_text),
         tl = c.text_secondary,
     );
     if let Some((referrer, count)) = &w.top_referrer {
         meta_svg.push_str(&format!(
-            "<text x=\"25\" y=\"188\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Top referrer: {r} ({n})</text>",
+            "<text x=\"25\" y=\"188\" font-family=\"{font}\" font-size=\"11\" fill=\"{tl}\">Top referrer: {r} ({n})</text>",
             r = xml_escape(referrer),
             n = fmt_num(*count),
             tl = c.text_secondary,
@@ -174,7 +176,7 @@ pub fn render_github_visitors(w: &GithubVisitorsWidget, theme: Theme) -> String 
             .collect::<Vec<_>>()
             .join(" -> ");
         meta_svg.push_str(&format!(
-            "<text x=\"25\" y=\"204\" font-family=\"monospace\" font-size=\"10\" fill=\"{tl}\">Referrers: {trail}</text>",
+            "<text x=\"25\" y=\"204\" font-family=\"{font}\" font-size=\"10\" fill=\"{tl}\">Referrers: {trail}</text>",
             trail = xml_escape(&trail),
             tl = c.text_secondary,
         ));
@@ -190,9 +192,9 @@ pub fn render_github_visitors(w: &GithubVisitorsWidget, theme: Theme) -> String 
             c.text_secondary
         };
         repos_svg.push_str(&format!(
-            "<text x=\"25\" y=\"{y}\" font-family=\"monospace\" font-size=\"10\" fill=\"{tl}\">{repo}</text>\
-             <text x=\"{gx}\" y=\"{y}\" font-family=\"monospace\" font-size=\"9\" fill=\"{gc}\" text-anchor=\"end\">{g:+.0}%</text>\
-             <text x=\"{rx}\" y=\"{y}\" font-family=\"monospace\" font-size=\"10\" font-weight=\"600\" fill=\"{tv}\" text-anchor=\"end\">{v}</text>",
+            "<text x=\"25\" y=\"{y}\" font-family=\"{font}\" font-size=\"10\" fill=\"{tl}\">{repo}</text>\
+             <text x=\"{gx}\" y=\"{y}\" font-family=\"{font}\" font-size=\"9\" fill=\"{gc}\" text-anchor=\"end\">{g:+.0}%</text>\
+             <text x=\"{rx}\" y=\"{y}\" font-family=\"{font}\" font-size=\"10\" font-weight=\"600\" fill=\"{tv}\" text-anchor=\"end\">{v}</text>",
             repo = xml_escape(short),
             g = growth_pct,
             v = fmt_num(*views),
@@ -214,7 +216,7 @@ pub fn render_github_visitors(w: &GithubVisitorsWidget, theme: Theme) -> String 
 <rect width="{W}" height="{height}" rx="6" fill="{bg}"/>
 <g clip-path="url(#gvs-clip)">{rain}</g>
 <rect width="{W}" height="{height}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<text x="25" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">GitHub Traffic</text>
+<text x="25" y="35" font-family="{font}" font-size="14" font-weight="600" fill="{title}">GitHub Traffic</text>
 {badge}
 <line x1="25" y1="52" x2="{lx2}" y2="52" stroke="{sep}" stroke-width="1"/>
 {stats}
@@ -247,6 +249,7 @@ pub const ENGAGEMENT_SIZE: (u32, u32) = (
 
 pub fn render_github_engagement(w: &EngagementWidget, theme: Theme) -> String {
     let c = theme.colors();
+    let font = c.font_family;
     let height = ENGAGEMENT_LIST_START_Y + ENGAGEMENT_MAX_ROWS as u32 * ENGAGEMENT_ROW_H + 16;
     let rain = matrix::generate(
         W,
@@ -258,12 +261,12 @@ pub fn render_github_engagement(w: &EngagementWidget, theme: Theme) -> String {
     );
 
     let stats_svg = format!(
-        "<text x=\"25\" y=\"80\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{stars}</text>\
-         <text x=\"25\" y=\"96\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Stars</text>\
-         <text x=\"181\" y=\"80\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{forks}</text>\
-         <text x=\"181\" y=\"96\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Forks</text>\
-         <text x=\"337\" y=\"80\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{watchers}</text>\
-         <text x=\"337\" y=\"96\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Watchers</text>",
+        "<text x=\"25\" y=\"80\" font-family=\"{font}\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{stars}</text>\
+         <text x=\"25\" y=\"96\" font-family=\"{font}\" font-size=\"11\" fill=\"{tl}\">Stars</text>\
+         <text x=\"181\" y=\"80\" font-family=\"{font}\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{forks}</text>\
+         <text x=\"181\" y=\"96\" font-family=\"{font}\" font-size=\"11\" fill=\"{tl}\">Forks</text>\
+         <text x=\"337\" y=\"80\" font-family=\"{font}\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{watchers}</text>\
+         <text x=\"337\" y=\"96\" font-family=\"{font}\" font-size=\"11\" fill=\"{tl}\">Watchers</text>",
         stars = fmt_num(w.total_stars),
         forks = fmt_num(w.total_forks),
         watchers = fmt_num(w.total_watchers),
@@ -280,8 +283,8 @@ pub fn render_github_engagement(w: &EngagementWidget, theme: Theme) -> String {
     {
         let y = ENGAGEMENT_LIST_START_Y + i as u32 * ENGAGEMENT_ROW_H + 5;
         rows_svg.push_str(&format!(
-            "<text x=\"25\" y=\"{y}\" font-family=\"monospace\" font-size=\"10\" fill=\"{tv}\">@{login}</text>\
-             <text x=\"{rx}\" y=\"{y}\" font-family=\"monospace\" font-size=\"10\" fill=\"{tl}\" text-anchor=\"end\">{repo}</text>",
+            "<text x=\"25\" y=\"{y}\" font-family=\"{font}\" font-size=\"10\" fill=\"{tv}\">@{login}</text>\
+             <text x=\"{rx}\" y=\"{y}\" font-family=\"{font}\" font-size=\"10\" fill=\"{tl}\" text-anchor=\"end\">{repo}</text>",
             login = xml_escape(login),
             repo = xml_escape(repo.trim_start_matches('/')),
             rx = W - 15,
@@ -294,7 +297,7 @@ pub fn render_github_engagement(w: &EngagementWidget, theme: Theme) -> String {
         String::new()
     } else {
         format!(
-            "<text x=\"25\" y=\"143\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Recently starred by</text>",
+            "<text x=\"25\" y=\"143\" font-family=\"{font}\" font-size=\"11\" fill=\"{tl}\">Recently starred by</text>",
             tl = c.text_secondary,
         )
     };
@@ -309,7 +312,7 @@ pub fn render_github_engagement(w: &EngagementWidget, theme: Theme) -> String {
 <rect width="{W}" height="{height}" rx="6" fill="{bg}"/>
 <g clip-path="url(#gge-clip)">{rain}</g>
 <rect width="{W}" height="{height}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<text x="25" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">GitHub Engagement</text>
+<text x="25" y="35" font-family="{font}" font-size="14" font-weight="600" fill="{title}">GitHub Engagement</text>
 <line x1="25" y1="52" x2="{lx2}" y2="52" stroke="{sep}" stroke-width="1"/>
 {stats}
 {list_label}
@@ -334,6 +337,7 @@ pub fn render_github_commit_streak(
 ) -> String {
     use crate::helpers::fmt_num;
     let c = theme.colors();
+    let font = c.font_family;
     let rain = matrix::generate(
         495,
         150,
@@ -359,13 +363,13 @@ pub fn render_github_commit_streak(
     };
 
     let stats_svg = format!(
-        "<text x=\"25\" y=\"80\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{tc}</text>\
-         <text x=\"25\" y=\"96\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Total Commits</text>\
-         <text x=\"181\" y=\"80\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{cs}</text>\
-         <text x=\"181\" y=\"96\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Current Streak</text>\
-         <text x=\"337\" y=\"80\" font-family=\"monospace\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{ls}</text>\
-         <text x=\"337\" y=\"96\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">Longest Streak</text>\
-         <text x=\"25\" y=\"128\" font-family=\"monospace\" font-size=\"10\" fill=\"{tl}\">Best streak: {range}</text>",
+        "<text x=\"25\" y=\"80\" font-family=\"{font}\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{tc}</text>\
+         <text x=\"25\" y=\"96\" font-family=\"{font}\" font-size=\"11\" fill=\"{tl}\">Total Commits</text>\
+         <text x=\"181\" y=\"80\" font-family=\"{font}\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{cs}</text>\
+         <text x=\"181\" y=\"96\" font-family=\"{font}\" font-size=\"11\" fill=\"{tl}\">Current Streak</text>\
+         <text x=\"337\" y=\"80\" font-family=\"{font}\" font-size=\"22\" font-weight=\"700\" fill=\"{tv}\">{ls}</text>\
+         <text x=\"337\" y=\"96\" font-family=\"{font}\" font-size=\"11\" fill=\"{tl}\">Longest Streak</text>\
+         <text x=\"25\" y=\"128\" font-family=\"{font}\" font-size=\"10\" fill=\"{tl}\">Best streak: {range}</text>",
         tc = fmt_num(w.total_commits),
         cs = format!("{}d", w.current_streak),
         ls = format!("{}d", w.longest_streak),
@@ -384,7 +388,7 @@ pub fn render_github_commit_streak(
 <rect width="495" height="150" rx="6" fill="{bg}"/>
 <g clip-path="url(#gcs-clip)">{rain}</g>
 <rect width="495" height="150" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<text x="25" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">Commit Streak</text>
+<text x="25" y="35" font-family="{font}" font-size="14" font-weight="600" fill="{title}">Commit Streak</text>
 <line x1="25" y1="48" x2="470" y2="48" stroke="{sep}" stroke-width="1"/>
 {stats}
 </svg>"#,
