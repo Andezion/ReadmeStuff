@@ -15,6 +15,7 @@ fn group_label(g: WidgetGroup) -> &'static str {
         WidgetGroup::Codeforces => "Codeforces",
         WidgetGroup::Codewars => "Codewars",
         WidgetGroup::LeetCode => "LeetCode",
+        WidgetGroup::LinkedIn => "LinkedIn",
         WidgetGroup::Combined => "Combined",
     }
 }
@@ -25,6 +26,7 @@ fn credential_label(c: Credential) -> &'static str {
         Credential::CodeforcesHandle => "Codeforces handle",
         Credential::CodewarsUsername => "Codewars username",
         Credential::LeetcodeUsername => "LeetCode username",
+        Credential::LinkedIn => "LinkedIn name+URL",
     }
 }
 
@@ -77,6 +79,8 @@ fn draw_fields(frame: &mut Frame, app: &App, area: Rect) {
             Constraint::Length(3),
             Constraint::Length(3),
             Constraint::Length(3),
+            Constraint::Length(3),
+            Constraint::Length(3),
             Constraint::Length(2),
             Constraint::Min(0),
         ])
@@ -119,22 +123,36 @@ fn draw_fields(frame: &mut Frame, app: &App, area: Rect) {
     );
     render_field(
         frame,
+        "Linkedin name",
+        &app.linkedin_name,
+        app.focus == Field::LinkedinName,
+        rows[5],
+    );
+    render_field(
+        frame,
+        "Linkedin profile URL",
+        &app.linkedin_url,
+        app.focus == Field::LinkedinUrl,
+        rows[6],
+    );
+    render_field(
+        frame,
         "Greeting text file (optional, text/text.txt)",
         &app.text_card_file,
         app.focus == Field::TextCardFile,
-        rows[5],
+        rows[7],
     );
 
     let help = Paragraph::new(Line::from(
         "Tab/Shift+Tab: move focus   Ctrl+S: save & build   Esc: quit",
     ))
     .style(Style::default().fg(PALETTE.text_secondary));
-    frame.render_widget(help, rows[6]);
+    frame.render_widget(help, rows[8]);
 
     if let Some(status) = &app.status {
         let err =
             Paragraph::new(Line::from(status.as_str())).style(Style::default().fg(PALETTE.accent));
-        frame.render_widget(err, rows[7]);
+        frame.render_widget(err, rows[9]);
     }
 }
 
