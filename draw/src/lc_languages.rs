@@ -38,6 +38,7 @@ fn lc_lang_color(name: &str) -> &'static str {
 
 pub fn render_lc_languages(w: &LcLanguagesWidget, theme: Theme) -> String {
     let c = theme.colors();
+    let font = c.font_family;
     let h: u32 = FIRST_ROW_Y + MAX_ROWS as u32 * ROW_H + 10;
 
     let rain = matrix::generate(W, h, c.matrix_color, c.matrix_opacity, 0x1C00_0003, "lcl");
@@ -58,10 +59,10 @@ pub fn render_lc_languages(w: &LcLanguagesWidget, theme: Theme) -> String {
 
         rows.push_str(&format!(
             "<circle cx=\"{dot_x}\" cy=\"{dot_y}\" r=\"4\" fill=\"{color}\"/>\
-             <text x=\"{name_x}\" y=\"{y}\" font-family=\"monospace\" font-size=\"11\" fill=\"{tv}\">{name}</text>\
+             <text x=\"{name_x}\" y=\"{y}\" font-family=\"{font}\" font-size=\"11\" fill=\"{tv}\">{name}</text>\
              <rect x=\"{BAR_X}\" y=\"{bar_y}\" width=\"{BAR_W}\" height=\"9\" rx=\"4\" fill=\"{bar_bg}\"/>\
              <rect x=\"{BAR_X}\" y=\"{bar_y}\" width=\"{fill_w}\" height=\"9\" rx=\"4\" fill=\"{color}\"/>\
-             <text x=\"{PCT_X}\" y=\"{y}\" text-anchor=\"end\" font-family=\"monospace\" font-size=\"11\" fill=\"{ts}\">{solved}</text>",
+             <text x=\"{PCT_X}\" y=\"{y}\" text-anchor=\"end\" font-family=\"{font}\" font-size=\"11\" fill=\"{ts}\">{solved}</text>",
             dot_x = PAD + 4,
             dot_y = y - 4,
             name_x = PAD + 14,
@@ -83,7 +84,7 @@ pub fn render_lc_languages(w: &LcLanguagesWidget, theme: Theme) -> String {
 <rect width="{W}" height="{h}" rx="6" fill="{bg}"/>
 <g clip-path="url(#lcl-clip)">{rain}</g>
 <rect width="{W}" height="{h}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<text x="25" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">LeetCode Languages</text>
+<text x="25" y="35" font-family="{font}" font-size="14" font-weight="600" fill="{title}">LeetCode Languages</text>
 <line x1="25" y1="48" x2="470" y2="48" stroke="{sep}" stroke-width="1"/>
 {rows}
 </svg>"#,
