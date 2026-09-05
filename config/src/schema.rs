@@ -9,6 +9,8 @@ pub struct ProfileConfig {
     pub codeforces_handle: Option<String>,
     pub codewars_username: Option<String>,
     pub leetcode_username: Option<String>,
+    pub linkedin_name: Option<String>,
+    pub linkedin_url: Option<String>,
 }
 
 impl ProfileConfig {
@@ -27,6 +29,9 @@ impl ProfileConfig {
         if self.leetcode_username.is_some() {
             set.insert(Credential::LeetcodeUsername);
         }
+        if self.linkedin_url.is_some() {
+            set.insert(Credential::LinkedIn);
+        }
         set
     }
 }
@@ -36,6 +41,13 @@ impl ProfileConfig {
 pub enum ThemeChoice {
     #[default]
     Matrix,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum FontChoice {
+    #[default]
+    Monospace,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -85,6 +97,7 @@ pub struct TextCardConfig {
 pub struct Config {
     pub profile: ProfileConfig,
     pub theme: ThemeChoice,
+    pub font: FontChoice,
     pub layout: Layout,
     pub text_card: TextCardConfig,
 }
