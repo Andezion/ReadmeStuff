@@ -3,7 +3,8 @@ use readme_stuff_catalog::BuildOutput;
 use readme_stuff_catalog::registry::{self, WidgetSpec};
 use readme_stuff_catalog::{DiscoveredWidget, Rect as PixelRect};
 use readme_stuff_config::{
-    Config, Credential, Layout, PlacedWidget, ProfileConfig, Row, TextCardConfig, ThemeChoice, io,
+    Config, Credential, FontChoice, Layout, PlacedWidget, ProfileConfig, Row, TextCardConfig,
+    ThemeChoice, io,
 };
 use readme_stuff_draw::{Align, HAlign, PlacedTile, Theme, VAlign};
 use std::collections::{HashMap, HashSet};
@@ -36,17 +37,21 @@ pub enum Field {
     CodeforcesHandle,
     CodewarsUsername,
     LeetcodeUsername,
+    LinkedinName,
+    LinkedinUrl,
     TextCardFile,
     WidgetList,
 }
 
 impl Field {
-    const ORDER: [Field; 7] = [
+    const ORDER: [Field; 9] = [
         Field::GithubLogin,
         Field::GithubTokenEnv,
         Field::CodeforcesHandle,
         Field::CodewarsUsername,
         Field::LeetcodeUsername,
+        Field::LinkedinName,
+        Field::LinkedinUrl,
         Field::TextCardFile,
         Field::WidgetList,
     ];
@@ -219,6 +224,8 @@ pub struct App {
     pub codeforces_handle: TextArea<'static>,
     pub codewars_username: TextArea<'static>,
     pub leetcode_username: TextArea<'static>,
+    pub linkedin_name: TextArea<'static>,
+    pub linkedin_url: TextArea<'static>,
     pub text_card_file: TextArea<'static>,
     pub focus: Field,
 
@@ -261,6 +268,8 @@ impl App {
             codeforces_handle: TextArea::default(),
             codewars_username: TextArea::default(),
             leetcode_username: TextArea::default(),
+            linkedin_name: TextArea::default(),
+            linkedin_url: TextArea::default(),
             text_card_file: TextArea::default(),
             focus: Field::GithubLogin,
             selected: HashSet::new(),
@@ -476,8 +485,11 @@ fn base_config(app: &App, layout: Layout) -> Config {
             codeforces_handle: field_opt(&app.codeforces_handle),
             codewars_username: field_opt(&app.codewars_username),
             leetcode_username: field_opt(&app.leetcode_username),
+            linkedin_name: field_opt(&app.linkedin_name),
+            linkedin_url: field_opt(&app.linkedin_url),
         },
         theme: ThemeChoice::Matrix,
+        font: FontChoice::default(),
         layout,
         text_card: TextCardConfig {
             file: field_opt(&app.text_card_file),
@@ -505,6 +517,8 @@ pub fn load_into(app: &mut App, cfg: &Config) {
     app.codeforces_handle = single_line(cfg.profile.codeforces_handle.as_deref().unwrap_or(""));
     app.codewars_username = single_line(cfg.profile.codewars_username.as_deref().unwrap_or(""));
     app.leetcode_username = single_line(cfg.profile.leetcode_username.as_deref().unwrap_or(""));
+    app.linkedin_name = single_line(cfg.profile.linkedin_name.as_deref().unwrap_or(""));
+    app.linkedin_url = single_line(cfg.profile.linkedin_url.as_deref().unwrap_or(""));
     app.text_card_file = single_line(cfg.text_card.file.as_deref().unwrap_or(""));
     app.selected = cfg
         .layout
@@ -673,6 +687,8 @@ fn handle_questionnaire_key(app: &mut App, key: KeyEvent) {
                 Field::CodeforcesHandle => &mut app.codeforces_handle,
                 Field::CodewarsUsername => &mut app.codewars_username,
                 Field::LeetcodeUsername => &mut app.leetcode_username,
+                Field::LinkedinName => &mut app.linkedin_name,
+                Field::LinkedinUrl => &mut app.linkedin_url,
                 Field::TextCardFile => &mut app.text_card_file,
                 Field::WidgetList => unreachable!(),
             };
@@ -854,7 +870,7 @@ fn generate_text_widget_in(app: &mut App, base: &Path) {
         font_size,
         line_height,
         align,
-        Theme::Dark,
+        Theme::DARK,
         width,
         height,
     );
