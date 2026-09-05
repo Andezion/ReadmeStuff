@@ -214,7 +214,7 @@ mod tests {
         let out = compose(
             200,
             50,
-            Theme::Dark,
+            Theme::DARK,
             &[
                 Tile {
                     svg: &a,
@@ -238,15 +238,12 @@ mod tests {
 
     #[test]
     fn rejects_tiles_that_overlap() {
-        // "b" was generated at the wrong width (990 instead of its assigned
-        // 495-wide slot) and ends up overlapping "a" placed at x=495 - this
-        // is exactly the class of bug a wrong CLI size argument produces.
         let a = widget(990, 100, "aa");
         let b = widget(495, 100, "bb");
         let err = compose(
             990,
             100,
-            Theme::Dark,
+            Theme::DARK,
             &[
                 Tile {
                     svg: &a,
