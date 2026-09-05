@@ -1,4 +1,4 @@
-use crate::models::{CodeforcesData, LeetcodeData, SourceStatus, UserProfile};
+use crate::models::{CodeforcesData, LeetcodeData, LinkedinData, SourceStatus, UserProfile};
 use readme_stuff_api::{
     codeforce::CodeforcesApi,
     codewars::CodewarsApi,
@@ -103,7 +103,19 @@ pub async fn build_profile_selective(
     let cf_handle = cfg.codeforces_handle.clone().unwrap_or_default();
     let cw_username = cfg.codewars_username.clone().unwrap_or_default();
     let lc_username = cfg.leetcode_username.clone().unwrap_or_default();
-    build_profile_gated(&github_login, &cf_handle, &cw_username, &lc_username, gates).await
+    let mut profile =
+        build_profile_gated(&github_login, &cf_handle, &cw_username, &lc_username, gates).await;
+
+    if needed.contains(&Credential::LinkedIn) {
+        if let Some(profile_url) = cfg.linkedin_url.clone() {
+            profile.linkedin = Some(LinkedinData {
+                name: cfg.linkedin_name.clone().unwrap_or_default(),
+                profile_url,
+            });
+        }
+    }
+
+    profile
 }
 
 async fn build_profile_gated(
@@ -333,6 +345,7 @@ async fn build_profile_gated(
         leetcode: lc_res.ok(),
         visitors: visitors_res.ok(),
         engagement: engagement_res.ok(),
+        linkedin: None,
     }
 }
 
