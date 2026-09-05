@@ -13,7 +13,6 @@ mod text_widget;
 
 // GitHub
 mod contribution_grid;
-mod cube_rain;
 mod github_contributions;
 mod github_heatmap;
 mod github_monthly;
