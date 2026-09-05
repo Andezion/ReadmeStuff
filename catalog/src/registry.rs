@@ -9,6 +9,7 @@ pub enum WidgetGroup {
     Codeforces,
     Codewars,
     LeetCode,
+    LinkedIn,
     Combined,
 }
 
@@ -38,6 +39,7 @@ const GITHUB: Requirement = Requirement::All(&[Credential::GitHubToken, Credenti
 const CODEFORCES: Requirement = Requirement::All(&[Credential::CodeforcesHandle]);
 const CODEWARS: Requirement = Requirement::All(&[Credential::CodewarsUsername]);
 const LEETCODE: Requirement = Requirement::All(&[Credential::LeetcodeUsername]);
+const LINKEDIN: Requirement = Requirement::All(&[Credential::LinkedIn]);
 const ANY_COMPETITIVE: Requirement = Requirement::AnyOf(&[
     Credential::CodeforcesHandle,
     Credential::CodewarsUsername,
@@ -232,6 +234,15 @@ static WIDGETS: &[WidgetSpec] = &[
         sizes::GITHUB_COMMIT_STREAK,
         commit_streak_widget,
         render_github_commit_streak
+    ),
+    widget!(
+        "linkedin",
+        "LinkedIn",
+        WidgetGroup::LinkedIn,
+        LINKEDIN,
+        sizes::LINKEDIN,
+        linkedin_widget,
+        render_linkedin
     ),
 ];
 
