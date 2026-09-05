@@ -14,7 +14,7 @@ impl Lcg {
     }
 
     pub fn range(&mut self, lo: u64, hi: u64) -> u64 {
-        lo + self.next() % (hi - lo)
+        lo + (self.next() >> 32) % (hi - lo)
     }
 
     pub fn rangef(&mut self, lo: f64, hi: f64) -> f64 {
