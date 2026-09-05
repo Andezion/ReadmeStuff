@@ -11,6 +11,7 @@ const LABEL_Y: u32 = 181;
 
 pub fn render_github_monthly(w: &GithubMonthlyWidget, theme: Theme) -> String {
     let c = theme.colors();
+    let font = c.font_family;
     let rain = matrix::generate(W, H, c.matrix_color, c.matrix_opacity, 0x9900_CC11, "gmo");
 
     let n = w.months.len().max(1) as u32;
@@ -39,7 +40,7 @@ pub fn render_github_monthly(w: &GithubMonthlyWidget, theme: Theme) -> String {
         let label_x = x + bar_w / 2;
         bars.push_str(&format!(
             "<text x=\"{label_x}\" y=\"{LABEL_Y}\" text-anchor=\"middle\" \
-                font-family=\"monospace\" font-size=\"9\" \
+                font-family=\"{font}\" font-size=\"9\" \
                 fill=\"{ts}\">{label}</text>",
             ts = c.text_secondary,
         ));
@@ -47,7 +48,7 @@ pub fn render_github_monthly(w: &GithubMonthlyWidget, theme: Theme) -> String {
             let val_y = bar_y + 11;
             bars.push_str(&format!(
                 "<text x=\"{label_x}\" y=\"{val_y}\" text-anchor=\"middle\" \
-                    font-family=\"monospace\" font-size=\"9\" \
+                    font-family=\"{font}\" font-size=\"9\" \
                     fill=\"{bg}\">{count}</text>",
                 bg = c.bg,
             ));
@@ -64,7 +65,7 @@ pub fn render_github_monthly(w: &GithubMonthlyWidget, theme: Theme) -> String {
 <rect width="{W}" height="{H}" rx="6" fill="{bg}"/>
 <g clip-path="url(#gmo-clip)">{rain}</g>
 <rect width="{W}" height="{H}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<text x="25" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">Monthly Contributions</text>
+<text x="25" y="35" font-family="{font}" font-size="14" font-weight="600" fill="{title}">Monthly Contributions</text>
 <line x1="25" y1="52" x2="470" y2="52" stroke="{sep}" stroke-width="1"/>
 {bars}
 </svg>"#,
