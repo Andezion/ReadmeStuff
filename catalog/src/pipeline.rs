@@ -1,7 +1,7 @@
 use crate::registry;
-use readme_stuff_config::{Config, ThemeChoice};
+use readme_stuff_config::{Config, FontChoice, ThemeChoice};
 use readme_stuff_draw::{
-    Align, DEFAULT_HEIGHT, Theme, Tile, compose, parse_lines, render_text_card,
+    Align, ColorScheme, DEFAULT_HEIGHT, Font, Theme, Tile, compose, parse_lines, render_text_card,
 };
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -30,9 +30,14 @@ pub struct BuildOutput {
     pub text_card: Option<TextCardOutcome>,
 }
 
-fn draw_theme(theme: ThemeChoice) -> Theme {
-    match theme {
-        ThemeChoice::Matrix => Theme::Dark,
+fn draw_theme(theme: ThemeChoice, font: FontChoice) -> Theme {
+    Theme {
+        scheme: match theme {
+            ThemeChoice::Matrix => ColorScheme::Dark,
+        },
+        font: match font {
+            FontChoice::Monospace => Font::Monospace,
+        },
     }
 }
 
@@ -61,7 +66,7 @@ pub async fn build(cfg: &Config, out_dir: &Path) -> Result<BuildOutput, String> 
     let needed = needed_credentials(cfg);
     let profile =
         readme_stuff_aggregator::profile::build_profile_selective(&cfg.profile, &needed).await;
-    let theme = draw_theme(cfg.theme);
+    let theme = draw_theme(cfg.theme, cfg.font);
 
     let mut outcomes = Vec::new();
     let mut row_svgs: Vec<String> = Vec::new();
@@ -315,6 +320,7 @@ mod tests {
         let cfg = Config {
             profile: ProfileConfig::default(),
             theme: ThemeChoice::Matrix,
+            font: readme_stuff_config::FontChoice::default(),
             layout: Layout {
                 canvas_width: 990,
                 rows: vec![],
@@ -345,6 +351,7 @@ mod tests {
         let cfg = Config {
             profile: ProfileConfig::default(),
             theme: ThemeChoice::Matrix,
+            font: readme_stuff_config::FontChoice::default(),
             layout: Layout {
                 canvas_width: 990,
                 rows: vec![],
