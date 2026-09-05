@@ -308,6 +308,19 @@ pub fn github_social_widget(p: &UserProfile) -> Option<GithubSocialWidget> {
     })
 }
 
+pub struct LinkedinWidget {
+    pub name: String,
+    pub profile_url: String,
+}
+
+pub fn linkedin_widget(p: &UserProfile) -> Option<LinkedinWidget> {
+    let l = p.linkedin.as_ref()?;
+    Some(LinkedinWidget {
+        name: l.name.clone(),
+        profile_url: l.profile_url.clone(),
+    })
+}
+
 pub struct GithubHeatmapWidget {
     pub weekday_distribution: [u32; 7],
 }
