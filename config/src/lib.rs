@@ -4,4 +4,6 @@ pub mod io;
 pub mod schema;
 
 pub use credential::{Credential, Requirement};
-pub use schema::{Config, Layout, PlacedWidget, ProfileConfig, Row, TextCardConfig, ThemeChoice};
+pub use schema::{
+    Config, FontChoice, Layout, PlacedWidget, ProfileConfig, Row, TextCardConfig, ThemeChoice,
+};
