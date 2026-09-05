@@ -7,6 +7,7 @@ pub const SIZE: (u32, u32) = (W, H);
 
 pub fn render_cf_stats(w: &CfStatsWidget, theme: Theme) -> String {
     let c = theme.colors();
+    let font = c.font_family;
     let rain = matrix::generate(W, H, c.matrix_color, c.matrix_opacity, 0xCF_5678, "cfs");
 
     let contribution_str = if w.contribution >= 0 {
@@ -27,8 +28,8 @@ pub fn render_cf_stats(w: &CfStatsWidget, theme: Theme) -> String {
     for (i, (label, value)) in stats.iter().enumerate() {
         let x = col_x[i];
         stat_svg.push_str(&format!(
-            "<text x=\"{x}\" y=\"88\" font-family=\"monospace\" font-size=\"18\" font-weight=\"700\" fill=\"{tv}\">{value}</text>\
-             <text x=\"{x}\" y=\"104\" font-family=\"monospace\" font-size=\"11\" fill=\"{tl}\">{label}</text>",
+            "<text x=\"{x}\" y=\"88\" font-family=\"{font}\" font-size=\"18\" font-weight=\"700\" fill=\"{tv}\">{value}</text>\
+             <text x=\"{x}\" y=\"104\" font-family=\"{font}\" font-size=\"11\" fill=\"{tl}\">{label}</text>",
             tv = c.text_primary, tl = c.text_secondary,
         ));
     }
@@ -43,7 +44,7 @@ pub fn render_cf_stats(w: &CfStatsWidget, theme: Theme) -> String {
 <rect width="{W}" height="{H}" rx="6" fill="{bg}"/>
 <g clip-path="url(#cfs-clip)">{rain}</g>
 <rect width="{W}" height="{H}" rx="6" fill="none" stroke="{border}" stroke-width="1"/>
-<text x="25" y="35" font-family="monospace" font-size="14" font-weight="600" fill="{title}">My Codeforces Stats</text>
+<text x="25" y="35" font-family="{font}" font-size="14" font-weight="600" fill="{title}">My Codeforces Stats</text>
 <line x1="25" y1="52" x2="470" y2="52" stroke="{sep}" stroke-width="1"/>
 <line x1="137" y1="58" x2="137" y2="112" stroke="{sep}" stroke-width="1"/>
 <line x1="211" y1="58" x2="211" y2="112" stroke="{sep}" stroke-width="1"/>
