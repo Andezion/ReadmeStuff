@@ -48,6 +48,15 @@ const ANY_COMPETITIVE: Requirement = Requirement::AnyOf(&[
 
 static WIDGETS: &[WidgetSpec] = &[
     widget!(
+        "contribution-rain",
+        "GitHub Contribution Rain",
+        WidgetGroup::GitHub,
+        GITHUB,
+        sizes::CONTRIBUTION_GRID,
+        contribution_grid_widget,
+        render_contribution_grid
+    ),
+    widget!(
         "github-stats",
         "GitHub Stats",
         WidgetGroup::GitHub,
