@@ -4,7 +4,7 @@ use readme_stuff_api::{
     github_commit_streak::CommitStreakStats,
     github_langs::AggregatedLangStats,
     github_statistic::ProfileStats,
-    github_streak::StreakStats,
+    github_streak::{ContributionCalendar, StreakStats},
     github_visitors::models::{EngagementSummary, VisitorAnalytics},
     leetcode::{BadgesResponse, Language as LeetcodeLanguage, Skill as LeetcodeSkill, Solved},
 };
@@ -32,6 +32,7 @@ pub struct LinkedinData {
 pub struct UserProfile {
     pub github: Option<ProfileStats>,
     pub streak: Option<StreakStats>,
+    pub contribution_grid: Option<ContributionCalendar>,
     pub commit_streak: Option<CommitStreakStats>,
     pub langs: Option<AggregatedLangStats>,
     pub codeforces: Option<CodeforcesData>,
