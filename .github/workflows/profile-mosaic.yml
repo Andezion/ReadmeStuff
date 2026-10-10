@@ -1,0 +1,105 @@
+name: Update profile mosaic
+
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: profile-mosaic
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  OUTPUT_DIR: readme_test
+  TARGET_REPO: Andezion/Andezion
+  TARGET_SVG: stuff/profile-mosaic.svg
+
+jobs:
+  update:
+    # never run in forks
+    if: github.repository == 'Andezion/ReadmeStuff'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout ReadmeStuff
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      # rustup is preinstalled on the runner; just make sure stable is current.
+      - name: Update Rust
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+
+      - name: Build
+        run: cargo build --release -p readme-stuff-cli
+
+      - name: Generate SVGs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_STATS_TOKEN }}
+        run: ./target/release/readmestuff
+
+      - name: Commit to ReadmeStuff
+        env:
+          PUSH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$OUTPUT_DIR" data/
+          if git diff --cached --quiet; then
+            echo "No changes in ReadmeStuff"
+            exit 0
+          fi
+          git commit -m "chore: regenerate profile mosaic [skip ci]"
+          git remote set-url origin "https://x-access-token:${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Checkout profile repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: ${{ env.TARGET_REPO }}
+          token: ${{ secrets.PROFILE_PUSH_TOKEN }}
+          path: target-repo
+
+      - name: Sync mosaic and README
+        run: |
+          mkdir -p "target-repo/$(dirname "$TARGET_SVG")"
+          cp "$OUTPUT_DIR/profile-mosaic.svg" "target-repo/$TARGET_SVG"
+          cd target-repo
+
+          git add "$TARGET_SVG"
+          if git diff --cached --quiet; then
+            echo "Mosaic unchanged, nothing to push"
+            exit 0
+          fi
+
+          # Point the README at the local copy and bust GitHub's image cache.
+          stamp="$(date -u +'%Y-%m-%d %H:%M UTC')"
+          ver="$(date -u +%s)"
+          block="<!-- MOSAIC:START -->
+          ![profile mosaic](./${TARGET_SVG}?v=${ver})
+
+          <sub>Last updated: ${stamp}</sub>
+          <!-- MOSAIC:END -->"
+          export BLOCK="$block"
+
+          if grep -q '<!-- MOSAIC:START -->' README.md; then
+            perl -0pi -e 's/<!-- MOSAIC:START -->.*?<!-- MOSAIC:END -->/$ENV{BLOCK}/s' README.md
+          else
+            # First run: replace the old image line that points at the mosaic.
+            perl -pi -e 'if (/profile-mosaic\.svg/) { $_ = "$ENV{BLOCK}\n" }' README.md
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md "$TARGET_SVG"
+          git commit -m "chore: sync profile-mosaic.svg from ReadmeStuff"
+          git push
