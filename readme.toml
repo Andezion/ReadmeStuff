@@ -1,0 +1,149 @@
+theme = "matrix"
+font = "monospace"
+
+[profile]
+github_login = "Andezion"
+github_token_env = "GITHUB_TOKEN"
+codeforces_handle = "Andezion"
+codewars_username = "Andezion"
+leetcode_username = "Andezion"
+
+[layout]
+canvas_width = 990
+
+[[layout.rows]]
+
+[[layout.rows.widgets]]
+id = "contribution-rain"
+x = 0
+y = 0
+
+[[layout.rows]]
+
+[[layout.rows.widgets]]
+id = "github-stats"
+x = 0
+y = 0
+
+[[layout.rows.widgets]]
+id = "github-repos"
+x = 495
+y = 0
+
+[[layout.rows]]
+
+[[layout.rows.widgets]]
+id = "github-contributions"
+x = 0
+y = 0
+
+[[layout.rows.widgets]]
+id = "github-social"
+x = 495
+y = 0
+
+[[layout.rows]]
+
+[[layout.rows.widgets]]
+id = "github-heatmap"
+x = 0
+y = 0
+
+[[layout.rows.widgets]]
+id = "github-monthly"
+x = 495
+y = 0
+
+[[layout.rows]]
+
+[[layout.rows.widgets]]
+id = "streak"
+x = 0
+y = 0
+
+[[layout.rows.widgets]]
+id = "langs"
+x = 495
+y = 0
+
+[[layout.rows]]
+
+[[layout.rows.widgets]]
+id = "cf-rating"
+x = 0
+y = 0
+
+[[layout.rows.widgets]]
+id = "cf-stats"
+x = 495
+y = 0
+
+[[layout.rows]]
+
+[[layout.rows.widgets]]
+id = "cw-rank"
+x = 0
+y = 0
+
+[[layout.rows.widgets]]
+id = "cw-kata"
+x = 495
+y = 0
+
+[[layout.rows]]
+
+[[layout.rows.widgets]]
+id = "cw-languages"
+x = 0
+y = 0
+
+[[layout.rows.widgets]]
+id = "lc-solved"
+x = 495
+y = 0
+
+[[layout.rows]]
+
+[[layout.rows.widgets]]
+id = "lc-skills"
+x = 0
+y = 0
+
+[[layout.rows.widgets]]
+id = "lc-languages"
+x = 495
+y = 0
+
+[[layout.rows]]
+
+[[layout.rows.widgets]]
+id = "lc-badges"
+x = 0
+y = 0
+
+[[layout.rows.widgets]]
+id = "competitive"
+x = 495
+y = 0
+
+[[layout.rows]]
+
+[[layout.rows.widgets]]
+id = "github-visitors"
+x = 0
+y = 0
+
+[[layout.rows.widgets]]
+id = "github-engagement"
+x = 495
+y = 0
+
+[[layout.rows]]
+
+[[layout.rows.widgets]]
+id = "github-commit-streak"
+x = 0
+y = 0
+
+[text_card]
+centered = false
