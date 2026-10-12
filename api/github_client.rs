@@ -107,8 +107,6 @@ impl GitHubClient {
             return Err(err);
         }
 
-        // Decode `data` only after checking `errors`: on failure GitHub returns
-        // partial data with nulls that would mask the real error message.
         let gql: GraphQLResponse<Value> = resp.error_for_status()?.json().await?;
 
         if let Some(errors) = gql.errors {
