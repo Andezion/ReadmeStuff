@@ -29,6 +29,21 @@ pub struct BuildOutput {
     pub mosaic_path: Option<PathBuf>,
     pub text_card: Option<TextCardOutcome>,
     pub source_errors: Vec<(&'static str, String)>,
+    /// Short diagnostics worth printing (counts only - CI logs are public).
+    pub notes: Vec<String>,
+}
+
+fn notes(p: &readme_stuff_aggregator::models::UserProfile) -> Vec<String> {
+    let mut out = Vec::new();
+    if let Some(g) = &p.github {
+        let c = &g.contributions;
+        let visible: u32 = c.commits_by_language.values().sum();
+        out.push(format!(
+            "github commits: {} total, {} in visible repos, {} restricted (private, not visible to token)",
+            c.total_commits, visible, c.restricted_contributions
+        ));
+    }
+    out
 }
 
 fn source_errors(s: &readme_stuff_aggregator::models::SourceStatus) -> Vec<(&'static str, String)> {
@@ -176,6 +191,7 @@ pub async fn build(cfg: &Config, out_dir: &Path) -> Result<BuildOutput, String> 
         mosaic_path,
         text_card,
         source_errors: source_errors(&profile.sources),
+        notes: notes(&profile),
     })
 }
 

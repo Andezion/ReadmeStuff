@@ -72,6 +72,9 @@ fn env_fallback_config() -> Config {
 }
 
 fn report_build(output: &BuildOutput) {
+    for note in &output.notes {
+        eprintln!("  note: {note}");
+    }
     for (source, err) in &output.source_errors {
         eprintln!("  source {source} FAILED: {err}");
     }
