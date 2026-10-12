@@ -72,6 +72,9 @@ fn env_fallback_config() -> Config {
 }
 
 fn report_build(output: &BuildOutput) {
+    for (source, err) in &output.source_errors {
+        eprintln!("  source {source} FAILED: {err}");
+    }
     for outcome in &output.widgets {
         match outcome {
             WidgetOutcome::Written { id, path } => eprintln!("  {id} OK -> {}", path.display()),
