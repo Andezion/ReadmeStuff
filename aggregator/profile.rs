@@ -14,7 +14,7 @@ use readme_stuff_config::{Credential, ProfileConfig};
 use std::collections::HashSet;
 use std::path::PathBuf;
 
-const NOT_SELECTED: &str = "not selected - no placed widget needs this source";
+pub const NOT_SELECTED: &str = "not selected - no placed widget needs this source";
 
 #[derive(Clone, Copy)]
 struct SourceGates {
