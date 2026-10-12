@@ -96,7 +96,6 @@ struct GqlProfile {
     followers: TotalCount,
     following: TotalCount,
     repositories: TotalCount,
-    gists: TotalCount,
     organizations: OrgConnection,
     #[serde(rename = "contributionsCollection")]
     contributions_collection: GqlContribs,
@@ -214,7 +213,6 @@ query($login: String!) {
     followers     { totalCount }
     following     { totalCount }
     repositories(ownerAffiliations: OWNER) { totalCount }
-    gists         { totalCount }
     organizations(first: 20) {
       nodes { login name avatarUrl }
     }
@@ -233,6 +231,26 @@ query($login: String!) {
   }
 }
 "#;
+
+// Fetched separately: fine-grained tokens need the "Gists" permission for this
+// field, and a failure inside `user` would otherwise null out the whole profile.
+const GISTS_QUERY: &str = r#"
+query($login: String!) {
+  user(login: $login) {
+    gists { totalCount }
+  }
+}
+"#;
+
+#[derive(Deserialize)]
+struct GistsRoot {
+    user: GistsUser,
+}
+
+#[derive(Deserialize)]
+struct GistsUser {
+    gists: TotalCount,
+}
 
 const REPO_STATS_QUERY: &str = r#"
 query($login: String!, $after: String) {
@@ -270,8 +288,11 @@ impl GitHubStatisticApi {
     }
 
     pub async fn fetch_profile_stats(&self, login: &str) -> Result<ProfileStats> {
-        let (profile, repo_nodes) =
-            tokio::try_join!(self.fetch_profile(login), self.paginate_repos(login))?;
+        let (profile, repo_nodes, public_gists) = tokio::try_join!(
+            self.fetch_profile(login),
+            self.paginate_repos(login),
+            async { Ok(self.fetch_gist_count(login).await.unwrap_or(0)) },
+        )?;
 
         let metadata = ProfileMetadata {
             login: profile.login,
@@ -285,7 +306,7 @@ impl GitHubStatisticApi {
             followers: profile.followers.total_count,
             following: profile.following.total_count,
             public_repos: profile.repositories.total_count,
-            public_gists: profile.gists.total_count,
+            public_gists,
         };
 
         let organizations = profile
@@ -335,6 +356,14 @@ impl GitHubStatisticApi {
             .graphql(PROFILE_QUERY, json!({ "login": login }))
             .await?;
         Ok(root.user)
+    }
+
+    async fn fetch_gist_count(&self, login: &str) -> Result<u32> {
+        let root: GistsRoot = self
+            .client
+            .graphql(GISTS_QUERY, json!({ "login": login }))
+            .await?;
+        Ok(root.user.gists.total_count)
     }
 
     async fn paginate_repos(&self, login: &str) -> Result<Vec<RepoStatsNode>> {

@@ -146,6 +146,10 @@ impl EngagementFetcher {
                 {
                     tracing::debug!("no access to stargazers for {repo_name} - skipping");
                 }
+                // Fine-grained tokens without the "Starring" permission.
+                Err(GitHubError::GraphQL(ref msg)) if msg.contains("Resource not accessible") => {
+                    tracing::debug!("no access to stargazers for {repo_name} - skipping");
+                }
                 Err(e) => return Err(e),
             }
         }
