@@ -46,6 +46,23 @@ struct GraphQLResponse<T> {
 #[derive(Debug, Deserialize)]
 struct GqlError {
     message: String,
+    #[serde(default)]
+    path: Vec<Value>,
+}
+
+impl GqlError {
+    fn describe(&self) -> String {
+        if self.path.is_empty() {
+            return self.message.clone();
+        }
+        let path = self
+            .path
+            .iter()
+            .map(|p| p.as_str().map(str::to_owned).unwrap_or_else(|| p.to_string()))
+            .collect::<Vec<_>>()
+            .join(".");
+        format!("{} (at {path})", self.message)
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -97,7 +114,7 @@ impl GitHubClient {
         if let Some(errors) = gql.errors {
             let msg = errors
                 .iter()
-                .map(|e| e.message.as_str())
+                .map(GqlError::describe)
                 .collect::<Vec<_>>()
                 .join("; ");
             return Err(GitHubError::GraphQL(msg));
