@@ -90,7 +90,9 @@ impl GitHubClient {
             return Err(err);
         }
 
-        let gql: GraphQLResponse<T> = resp.error_for_status()?.json().await?;
+        // Decode `data` only after checking `errors`: on failure GitHub returns
+        // partial data with nulls that would mask the real error message.
+        let gql: GraphQLResponse<Value> = resp.error_for_status()?.json().await?;
 
         if let Some(errors) = gql.errors {
             let msg = errors
@@ -101,8 +103,10 @@ impl GitHubClient {
             return Err(GitHubError::GraphQL(msg));
         }
 
-        gql.data
-            .ok_or_else(|| GitHubError::GraphQL("response contained no data".to_string()))
+        let data = gql
+            .data
+            .ok_or_else(|| GitHubError::GraphQL("response contained no data".to_string()))?;
+        Ok(serde_json::from_value(data)?)
     }
 
     pub async fn rest_get<T: DeserializeOwned>(&self, path: &str) -> Result<T> {
