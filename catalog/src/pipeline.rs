@@ -28,6 +28,25 @@ pub struct BuildOutput {
     pub widgets: Vec<WidgetOutcome>,
     pub mosaic_path: Option<PathBuf>,
     pub text_card: Option<TextCardOutcome>,
+    pub source_errors: Vec<(&'static str, String)>,
+}
+
+fn source_errors(s: &readme_stuff_aggregator::models::SourceStatus) -> Vec<(&'static str, String)> {
+    [
+        ("github", &s.github),
+        ("codeforces", &s.codeforces),
+        ("codewars", &s.codewars),
+        ("leetcode", &s.leetcode),
+        ("visitors", &s.visitors),
+        ("commit_streak", &s.commit_streak),
+        ("engagement", &s.engagement),
+    ]
+    .into_iter()
+    .filter_map(|(name, r)| match r {
+        Err(e) if e != readme_stuff_aggregator::profile::NOT_SELECTED => Some((name, e.clone())),
+        _ => None,
+    })
+    .collect()
 }
 
 fn draw_theme(theme: ThemeChoice, font: FontChoice) -> Theme {
@@ -156,6 +175,7 @@ pub async fn build(cfg: &Config, out_dir: &Path) -> Result<BuildOutput, String> 
         widgets: outcomes,
         mosaic_path,
         text_card,
+        source_errors: source_errors(&profile.sources),
     })
 }
 
