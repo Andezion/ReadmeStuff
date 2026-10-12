@@ -26,7 +26,15 @@ async fn main() {
     eprintln!("Fetching profile for {login}...");
 
     match build_pipeline(&cfg, &out_dir).await {
-        Ok(output) => report_build(&output),
+        Ok(output) => {
+            report_build(&output);
+            // Fail loudly so CI keeps the last good mosaic instead of
+            // publishing one with half the widgets missing.
+            if !output.source_errors.is_empty() {
+                eprintln!("build INCOMPLETE: some data sources failed");
+                std::process::exit(2);
+            }
+        }
         Err(e) => {
             eprintln!("build FAILED: {e}");
             std::process::exit(1);
