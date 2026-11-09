@@ -1,7 +1,8 @@
 use crate::registry;
-use readme_stuff_config::{Config, FontChoice, ThemeChoice};
+use readme_stuff_config::{ColorChoice, Config, FontChoice, ThemeChoice, mosaic_file_name};
 use readme_stuff_draw::{
-    Align, ColorScheme, DEFAULT_HEIGHT, Font, Theme, Tile, compose, parse_lines, render_text_card,
+    Align, ColorScheme, DEFAULT_HEIGHT, Font, Theme, Tile, Tint, compose, parse_lines,
+    render_text_card,
 };
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -29,7 +30,6 @@ pub struct BuildOutput {
     pub mosaic_path: Option<PathBuf>,
     pub text_card: Option<TextCardOutcome>,
     pub source_errors: Vec<(&'static str, String)>,
-    /// Short diagnostics worth printing (counts only - CI logs are public).
     pub notes: Vec<String>,
 }
 
@@ -64,13 +64,25 @@ fn source_errors(s: &readme_stuff_aggregator::models::SourceStatus) -> Vec<(&'st
     .collect()
 }
 
-fn draw_theme(theme: ThemeChoice, font: FontChoice) -> Theme {
+pub fn draw_theme(theme: ThemeChoice, color: ColorChoice, font: FontChoice) -> Theme {
     Theme {
         scheme: match theme {
-            ThemeChoice::Matrix => ColorScheme::Dark,
+            ThemeChoice::Matrix => ColorScheme::Matrix,
         },
         font: match font {
             FontChoice::Monospace => Font::Monospace,
+        },
+        tint: match color {
+            ColorChoice::Green => Tint::Green,
+            ColorChoice::Cyan => Tint::Cyan,
+            ColorChoice::Blue => Tint::Blue,
+            ColorChoice::Purple => Tint::Purple,
+            ColorChoice::Pink => Tint::Pink,
+            ColorChoice::Red => Tint::Red,
+            ColorChoice::Orange => Tint::Orange,
+            ColorChoice::Yellow => Tint::Yellow,
+            ColorChoice::White => Tint::White,
+            ColorChoice::Rainbow => Tint::Rainbow,
         },
     }
 }
@@ -100,7 +112,7 @@ pub async fn build(cfg: &Config, out_dir: &Path) -> Result<BuildOutput, String> 
     let needed = needed_credentials(cfg);
     let profile =
         readme_stuff_aggregator::profile::build_profile_selective(&cfg.profile, &needed).await;
-    let theme = draw_theme(cfg.theme, cfg.font);
+    let theme = draw_theme(cfg.theme, cfg.color, cfg.font);
 
     let mut outcomes = Vec::new();
     let mut row_svgs: Vec<String> = Vec::new();
@@ -182,7 +194,8 @@ pub async fn build(cfg: &Config, out_dir: &Path) -> Result<BuildOutput, String> 
         }
 
         let mosaic = compose(cfg.layout.canvas_width, y, theme, &mosaic_tiles)?;
-        Some(write_svg(out_dir, "profile-mosaic.svg", &mosaic)?)
+        let name = mosaic_file_name(cfg.theme, cfg.color);
+        Some(write_svg(out_dir, &name, &mosaic)?)
     };
 
     Ok(BuildOutput {
@@ -356,6 +369,7 @@ mod tests {
         let cfg = Config {
             profile: ProfileConfig::default(),
             theme: ThemeChoice::Matrix,
+            color: ColorChoice::Green,
             font: readme_stuff_config::FontChoice::default(),
             layout: Layout {
                 canvas_width: 990,
@@ -374,9 +388,12 @@ mod tests {
             }
             other => panic!("expected a written text card, got {other:?}"),
         }
-        assert!(
-            out.mosaic_path.is_some(),
-            "a lone text card should still produce a mosaic"
+        let mosaic = out
+            .mosaic_path
+            .expect("a lone text card should still produce a mosaic");
+        assert_eq!(
+            mosaic.file_name().unwrap(),
+            "profile-mosaic_matrix_green.svg"
         );
         std::fs::remove_dir_all(&dir).ok();
     }
@@ -387,6 +404,7 @@ mod tests {
         let cfg = Config {
             profile: ProfileConfig::default(),
             theme: ThemeChoice::Matrix,
+            color: ColorChoice::Green,
             font: readme_stuff_config::FontChoice::default(),
             layout: Layout {
                 canvas_width: 990,
