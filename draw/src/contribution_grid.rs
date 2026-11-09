@@ -30,6 +30,7 @@ fn darken(hex: &str, factor: f64) -> String {
 
 pub fn render_contribution_grid(w: &ContributionGridWidget, theme: Theme) -> String {
     let c = theme.colors();
+    let tint = c.matrix_color;
     let font = c.font_family;
     let ambient_rain = matrix::generate(W, H, c.matrix_color, c.matrix_opacity, 0x6161_4e21, "cr");
 
@@ -67,7 +68,7 @@ pub fn render_contribution_grid(w: &ContributionGridWidget, theme: Theme) -> Str
             let y = GRID_TOP + row * PITCH;
             grid.push_str(&format!(
                 "<rect x=\"{x}\" y=\"{y}\" width=\"{CELL}\" height=\"{CELL}\" rx=\"2\" fill=\"{fill}\"/>",
-                fill = darken(&day.color, BASE_DARKEN),
+                fill = tint.recolor(&darken(&day.color, BASE_DARKEN), x as u32, W),
             ));
         }
     }
@@ -112,11 +113,11 @@ pub fn render_contribution_grid(w: &ContributionGridWidget, theme: Theme) -> Str
             let y = GRID_TOP + day.weekday as i32 * PITCH;
             let name = format!("cpulse{col_idx}_{row_idx}");
             let delay = base_delay + (row_idx - start_row) as f64 * row_step;
-            let base = darken(&day.color, BASE_DARKEN);
+            let base = tint.recolor(&darken(&day.color, BASE_DARKEN), x as u32, W);
+            let flash = tint.recolor(FLASH_COLOR, x as u32, W);
 
             pulse_css.push_str(&format!(
                 "@keyframes {name}{{0%{{fill:{base}}}5%{{fill:{flash}}}18%{{fill:{base}}}100%{{fill:{base}}}}}",
-                flash = FLASH_COLOR,
             ));
             pulse_rects.push_str(&format!(
                 "<rect x=\"{x}\" y=\"{y}\" width=\"{CELL}\" height=\"{CELL}\" rx=\"2\" fill=\"{base}\" style=\"animation:{name} {duration:.2}s ease-in-out {delay:.2}s infinite\"/>",
