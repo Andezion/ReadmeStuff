@@ -94,7 +94,10 @@ fn report_build(output: &BuildOutput) {
         }
     }
     match &output.mosaic_path {
-        Some(p) => eprintln!("  compose OK -> {}", p.display()),
+        Some(p) => {
+            eprintln!("  compose OK -> {}", p.display());
+            export_github_output("mosaic_path", &p.display().to_string());
+        }
         None => eprintln!("  compose SKIP (no rows produced output)"),
     }
     match &output.text_card {
@@ -102,6 +105,21 @@ fn report_build(output: &BuildOutput) {
         Some(TextCardOutcome::Skipped(reason)) => eprintln!("  text-card SKIP ({reason})"),
         Some(TextCardOutcome::Error(reason)) => eprintln!("  text-card ERROR ({reason})"),
         None => {}
+    }
+}
+
+fn export_github_output(key: &str, value: &str) {
+    use std::io::Write;
+    let Ok(path) = std::env::var("GITHUB_OUTPUT") else {
+        return;
+    };
+    let res = std::fs::OpenOptions::new()
+        .append(true)
+        .create(true)
+        .open(&path)
+        .and_then(|mut f| writeln!(f, "{key}={value}"));
+    if let Err(e) = res {
+        eprintln!("  warning: cannot write GITHUB_OUTPUT ({e})");
     }
 }
 

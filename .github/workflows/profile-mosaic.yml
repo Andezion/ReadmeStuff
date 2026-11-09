@@ -15,7 +15,6 @@ env:
   CARGO_TERM_COLOR: always
   OUTPUT_DIR: readme_test
   TARGET_REPO: Andezion/Andezion
-  SOURCE_SVG: profile-mosaic_matrix_green.svg
   TARGET_SVG: stuff/profile-mosaic.svg
 
 jobs:
@@ -41,6 +40,7 @@ jobs:
         run: cargo build --release -p readme-stuff-cli
 
       - name: Generate SVGs
+        id: generate
         env:
           GITHUB_TOKEN: ${{ secrets.GH_STATS_TOKEN }}
         run: ./target/release/readmestuff
@@ -69,9 +69,16 @@ jobs:
           path: target-repo
 
       - name: Sync mosaic and README
+        env:
+          SOURCE_SVG: ${{ steps.generate.outputs.mosaic_path }}
         run: |
+          if [ -z "$SOURCE_SVG" ] || [ ! -f "$SOURCE_SVG" ]; then
+            echo "::error::CLI did not report a mosaic path (got '$SOURCE_SVG')"
+            exit 1
+          fi
+          echo "Using mosaic: $SOURCE_SVG"
           mkdir -p "target-repo/$(dirname "$TARGET_SVG")"
-          cp "$OUTPUT_DIR/$SOURCE_SVG" "target-repo/$TARGET_SVG"
+          cp "$SOURCE_SVG" "target-repo/$TARGET_SVG"
           cd target-repo
 
           git add "$TARGET_SVG"
