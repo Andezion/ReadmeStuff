@@ -16,6 +16,11 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         Line::from("[G] Generate graphical widgets"),
         Line::from("[T] Create text widget"),
         Line::from("[W] Select widgets & build README"),
+        Line::from(format!(
+            "[S] Style: {} / {}",
+            app.theme.slug(),
+            app.color.slug()
+        )),
         Line::from(""),
         Line::from("[Esc] Quit"),
     ];
