@@ -44,7 +44,7 @@ mod streak;
 
 pub use canvas::{PlacedTile, compose_freeform, svg_size};
 pub use compose::{Tile, compose};
-pub use theme::{ColorScheme, Font, Theme};
+pub use theme::{ColorScheme, Font, Theme, Tint};
 
 pub mod sizes {
     pub const CONTRIBUTION_GRID: (u32, u32) = crate::contribution_grid::SIZE;
