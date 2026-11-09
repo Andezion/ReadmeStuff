@@ -1,4 +1,5 @@
 theme = "matrix"
+color = "red"
 font = "monospace"
 
 [profile]
