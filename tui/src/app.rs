@@ -3,10 +3,10 @@ use readme_stuff_catalog::BuildOutput;
 use readme_stuff_catalog::registry::{self, WidgetSpec};
 use readme_stuff_catalog::{DiscoveredWidget, Rect as PixelRect};
 use readme_stuff_config::{
-    Config, Credential, FontChoice, Layout, PlacedWidget, ProfileConfig, Row, TextCardConfig,
-    ThemeChoice, io,
+    ColorChoice, Config, Credential, FontChoice, Layout, PlacedWidget, ProfileConfig, Row,
+    TextCardConfig, ThemeChoice, io,
 };
-use readme_stuff_draw::{Align, HAlign, PlacedTile, Theme, VAlign};
+use readme_stuff_draw::{Align, HAlign, PlacedTile, VAlign};
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use tui_textarea::TextArea;
@@ -28,6 +28,13 @@ pub enum Screen {
     TextWidgetGen,
     WidgetSelect,
     ReadmeEditor,
+    Style,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StyleField {
+    Theme,
+    Color,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -247,6 +254,10 @@ pub struct App {
     pub discovered_rows: Vec<(usize, ScreenRect)>,
 
     pub editor: EditorState,
+
+    pub theme: ThemeChoice,
+    pub color: ColorChoice,
+    pub style_focus: StyleField,
 }
 
 fn single_line(text: &str) -> TextArea<'static> {
@@ -285,6 +296,9 @@ impl App {
             discovered_scroll: 0,
             discovered_rows: Vec::new(),
             editor: EditorState::new(),
+            theme: ThemeChoice::default(),
+            color: ColorChoice::default(),
+            style_focus: StyleField::Theme,
         };
         if let Some((path, cfg)) = existing {
             app.found_config_path = Some(path);
@@ -488,7 +502,8 @@ fn base_config(app: &App, layout: Layout) -> Config {
             linkedin_name: field_opt(&app.linkedin_name),
             linkedin_url: field_opt(&app.linkedin_url),
         },
-        theme: ThemeChoice::Matrix,
+        theme: app.theme,
+        color: app.color,
         font: FontChoice::default(),
         layout,
         text_card: TextCardConfig {
@@ -520,6 +535,8 @@ pub fn load_into(app: &mut App, cfg: &Config) {
     app.linkedin_name = single_line(cfg.profile.linkedin_name.as_deref().unwrap_or(""));
     app.linkedin_url = single_line(cfg.profile.linkedin_url.as_deref().unwrap_or(""));
     app.text_card_file = single_line(cfg.text_card.file.as_deref().unwrap_or(""));
+    app.theme = cfg.theme;
+    app.color = cfg.color;
     app.selected = cfg
         .layout
         .rows
@@ -581,6 +598,7 @@ pub fn handle_key(app: &mut App, key: KeyEvent) {
         Screen::TextWidgetGen => handle_text_widget_key(app, key),
         Screen::WidgetSelect => handle_widget_select_key(app, key),
         Screen::ReadmeEditor => handle_readme_editor_key(app, key),
+        Screen::Style => handle_style_key(app, key),
     }
 }
 
@@ -600,7 +618,46 @@ fn handle_main_menu_key(app: &mut App, key: KeyEvent) {
             app.status = None;
             app.screen = Screen::WidgetSelect;
         }
+        KeyCode::Char('s') | KeyCode::Char('S') => {
+            app.status = None;
+            app.style_focus = StyleField::Theme;
+            app.screen = Screen::Style;
+        }
         KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('Q') => app.should_quit = true,
+        _ => {}
+    }
+}
+
+pub fn current_theme(app: &App) -> readme_stuff_draw::Theme {
+    readme_stuff_catalog::draw_theme(app.theme, app.color, FontChoice::default())
+}
+
+fn step<T: Copy + PartialEq>(all: &[T], current: T, delta: i32) -> T {
+    let len = all.len() as i32;
+    let idx = all.iter().position(|v| *v == current).unwrap_or(0) as i32;
+    all[(idx + delta).rem_euclid(len) as usize]
+}
+
+fn handle_style_key(app: &mut App, key: KeyEvent) {
+    match key.code {
+        KeyCode::Esc | KeyCode::Enter => app.screen = Screen::MainMenu,
+        KeyCode::Tab | KeyCode::BackTab | KeyCode::Left | KeyCode::Right => {
+            app.style_focus = match app.style_focus {
+                StyleField::Theme => StyleField::Color,
+                StyleField::Color => StyleField::Theme,
+            };
+        }
+        KeyCode::Up | KeyCode::Char('k') | KeyCode::Down | KeyCode::Char('j') => {
+            let delta = if matches!(key.code, KeyCode::Up | KeyCode::Char('k')) {
+                -1
+            } else {
+                1
+            };
+            match app.style_focus {
+                StyleField::Theme => app.theme = step(&ThemeChoice::ALL, app.theme, delta),
+                StyleField::Color => app.color = step(&ColorChoice::ALL, app.color, delta),
+            }
+        }
         _ => {}
     }
 }
@@ -870,7 +927,7 @@ fn generate_text_widget_in(app: &mut App, base: &Path) {
         font_size,
         line_height,
         align,
-        Theme::DARK,
+        current_theme(app),
         width,
         height,
     );
@@ -1613,6 +1670,40 @@ mod tests {
         handle_key(&mut app, KeyEvent::from(KeyCode::Char('t')));
         assert_eq!(app.screen, Screen::TextWidgetGen);
         assert_eq!(field_text(&app.text_widget.filename), "");
+    }
+
+    #[test]
+    fn main_menu_s_opens_style_screen_and_choices_reach_the_config() {
+        let mut app = App::new(None);
+        handle_key(&mut app, KeyEvent::from(KeyCode::Char('s')));
+        assert_eq!(app.screen, Screen::Style);
+
+        handle_key(&mut app, KeyEvent::from(KeyCode::Tab));
+        assert_eq!(app.style_focus, StyleField::Color);
+        handle_key(&mut app, KeyEvent::from(KeyCode::Down));
+        assert_eq!(app.color, ColorChoice::Cyan);
+        handle_key(&mut app, KeyEvent::from(KeyCode::Up));
+        handle_key(&mut app, KeyEvent::from(KeyCode::Up));
+        assert_eq!(app.color, ColorChoice::Rainbow, "list wraps around");
+
+        handle_key(&mut app, KeyEvent::from(KeyCode::Esc));
+        assert_eq!(app.screen, Screen::MainMenu);
+
+        let cfg = to_config(&app);
+        assert_eq!(cfg.theme, ThemeChoice::Matrix);
+        assert_eq!(cfg.color, ColorChoice::Rainbow);
+    }
+
+    #[test]
+    fn resumed_config_restores_style() {
+        let cfg = Config {
+            color: ColorChoice::Purple,
+            ..Default::default()
+        };
+        let mut app = App::new(None);
+        load_into(&mut app, &cfg);
+        assert_eq!(app.color, ColorChoice::Purple);
+        assert_eq!(current_theme(&app).tint, readme_stuff_draw::Tint::Purple);
     }
 
     #[test]
