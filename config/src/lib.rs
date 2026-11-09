@@ -5,5 +5,6 @@ pub mod schema;
 
 pub use credential::{Credential, Requirement};
 pub use schema::{
-    Config, FontChoice, Layout, PlacedWidget, ProfileConfig, Row, TextCardConfig, ThemeChoice,
+    ColorChoice, Config, FontChoice, Layout, PlacedWidget, ProfileConfig, Row, TextCardConfig,
+    ThemeChoice, mosaic_file_name,
 };
