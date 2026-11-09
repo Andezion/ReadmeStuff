@@ -1,5 +1,5 @@
 use crate::schema::{
-    Config, FontChoice, Layout, PlacedWidget, ProfileConfig, Row, TextCardConfig, ThemeChoice,
+    ColorChoice, Config, FontChoice, Layout, PlacedWidget, ProfileConfig, Row, TextCardConfig, ThemeChoice,
 };
 
 pub fn default_config() -> Config {
@@ -14,6 +14,7 @@ pub fn default_config() -> Config {
             linkedin_url: None,
         },
         theme: ThemeChoice::Matrix,
+        color: ColorChoice::Green,
         font: FontChoice::Monospace,
         layout: Layout {
             canvas_width: 990,
