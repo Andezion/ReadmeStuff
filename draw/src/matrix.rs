@@ -1,4 +1,5 @@
 use crate::rng::Lcg;
+use crate::theme::Tint;
 
 const CHARS: &[char] = &[
     'ｦ', 'ｧ', 'ｨ', 'ｩ', 'ｪ', 'ｫ', 'ｬ', 'ｭ', 'ｮ', 'ｯ', 'ｱ', 'ｲ', 'ｳ', 'ｴ', 'ｵ', 'ｶ', 'ｷ', 'ｸ', 'ｹ',
@@ -20,7 +21,7 @@ impl PickChar for Lcg {
 pub fn generate(
     width: u32,
     height: u32,
-    color: &str,
+    tint: Tint,
     opacity: f64,
     seed: u64,
     prefix: &str,
@@ -34,6 +35,7 @@ pub fn generate(
 
     for i in 0..num_drops {
         let x = rng.range(8, (width - 8) as u64) as i32;
+        let color = tint.color_at(x as u32, width);
         let trail = rng.range(3, 7) as i32;
         let duration = rng.rangef(1.5, 3.2);
         let delay = -rng.rangef(0.0, duration);
