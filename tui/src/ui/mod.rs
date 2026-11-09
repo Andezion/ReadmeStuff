@@ -6,6 +6,7 @@ mod main_menu;
 mod questionnaire;
 mod readme_editor;
 mod report;
+mod style;
 mod text_widget;
 mod welcome;
 mod widget_select;
@@ -24,5 +25,6 @@ pub fn draw(frame: &mut Frame, app: &mut App) {
         Screen::TextWidgetGen => text_widget::draw(frame, app),
         Screen::WidgetSelect => widget_select::draw(frame, app),
         Screen::ReadmeEditor => readme_editor::draw(frame, app),
+        Screen::Style => style::draw(frame, app),
     }
 }
