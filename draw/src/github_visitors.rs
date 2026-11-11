@@ -124,9 +124,10 @@ pub fn render_github_visitors(w: &GithubVisitorsWidget, theme: Theme) -> String 
     let trend_text = format!("Trend: {arrow} {:+.1}%{peak}", w.growth_rate_pct);
 
     let highlight_badge = match &w.highlight {
-        Some(TrendHighlight::RecordDay { value, .. }) => {
-            Some((format!("New record: {} views", fmt_num(*value)), c.accent))
-        }
+        Some(TrendHighlight::RecordDay { value, .. }) => Some((
+            format!("New record: {} views", fmt_num(*value)),
+            c.accent.as_str(),
+        )),
         Some(TrendHighlight::Spike {
             value, baseline, ..
         }) => {
@@ -135,7 +136,7 @@ pub fn render_github_visitors(w: &GithubVisitorsWidget, theme: Theme) -> String 
             } else {
                 0.0
             };
-            Some((format!("Spike: {ratio:.1}x normal"), c.title))
+            Some((format!("Spike: {ratio:.1}x normal"), c.title.as_str()))
         }
         None => None,
     };
@@ -187,9 +188,9 @@ pub fn render_github_visitors(w: &GithubVisitorsWidget, theme: Theme) -> String 
         let y = REPO_LIST_START_Y + i as u32 * REPO_ROW_H + 5;
         let short = repo.trim_start_matches('/');
         let growth_color = if *growth_pct > 0.0 {
-            c.accent
+            &c.accent
         } else {
-            c.text_secondary
+            &c.text_secondary
         };
         repos_svg.push_str(&format!(
             "<text x=\"25\" y=\"{y}\" font-family=\"{font}\" font-size=\"10\" fill=\"{tl}\">{repo}</text>\
