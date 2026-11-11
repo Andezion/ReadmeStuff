@@ -138,12 +138,12 @@ impl Theme {
 
 pub(crate) struct Colors {
     pub bg: &'static str,
-    pub border: &'static str,
-    pub separator: &'static str,
-    pub title: &'static str,
+    pub border: String,
+    pub separator: String,
+    pub title: String,
     pub text_primary: &'static str,
-    pub text_secondary: &'static str,
-    pub accent: &'static str,
+    pub text_secondary: String,
+    pub accent: String,
     pub matrix_color: Tint,
     pub matrix_opacity: f64,
     pub font_family: &'static str,
@@ -155,22 +155,87 @@ fn font_family(font: Font) -> &'static str {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
+struct Palette {
+    hue: f64,
+    chroma: f64,
+}
+
+impl Palette {
+    fn from_tint(tint: Tint) -> Option<Palette> {
+        match tint {
+            Tint::Rainbow => None,
+            Tint::White => Some(Palette {
+                hue: 0.0,
+                chroma: 0.0,
+            }),
+            _ => {
+                let (hue, _, _) = tint.hex().and_then(hex_to_hsl)?;
+                Some(Palette { hue, chroma: 1.0 })
+            }
+        }
+    }
+
+    fn hsl(self, hue_shift: f64, s: f64, l: f64) -> String {
+        hsl_to_hex((self.hue + hue_shift).rem_euclid(360.0), s * self.chroma, l)
+    }
+
+    fn series(self, i: usize, n: usize) -> String {
+        let n = n.max(1);
+        let t = if n == 1 {
+            0.0
+        } else {
+            i.min(n - 1) as f64 / (n - 1) as f64
+        };
+        let drift = if i.is_multiple_of(2) { -1.0 } else { 1.0 } * 10.0 * t;
+        self.hsl(drift, 0.95 - 0.35 * t, 0.80 - 0.40 * t)
+    }
+
+    fn level(self, t: f64) -> String {
+        let t = t.clamp(0.0, 1.0);
+        self.hsl(0.0, 0.25 + 0.75 * t, 0.50 + 0.25 * t)
+    }
+}
+
+impl Colors {
+    pub fn series(&self, i: usize, n: usize, original: &str) -> String {
+        match Palette::from_tint(self.matrix_color) {
+            Some(p) => p.series(i, n),
+            None => original.to_string(),
+        }
+    }
+
+    pub fn ranked(&self, t: f64, original: &str) -> String {
+        match Palette::from_tint(self.matrix_color) {
+            Some(p) => p.level(t),
+            None => original.to_string(),
+        }
+    }
+}
+
 impl Theme {
     pub(crate) fn colors(self) -> Colors {
         let font_family = font_family(self.font);
         match self.scheme {
-            ColorScheme::Matrix => Colors {
-                bg: "#0d1117",
-                border: "#30363d",
-                separator: "#21262d",
-                title: "#58a6ff",
-                text_primary: "#e6edf3",
-                text_secondary: "#8b949e",
-                accent: self.tint.hex().unwrap_or("#00ff41"),
-                matrix_color: self.tint,
-                matrix_opacity: 0.22,
-                font_family,
-            },
+            ColorScheme::Matrix => {
+                let accent = self.tint.hex().unwrap_or("#00ff41").to_string();
+                let tinted = |s: f64, l: f64, fallback: &str| match Palette::from_tint(self.tint) {
+                    Some(p) => p.hsl(0.0, s, l),
+                    None => fallback.to_string(),
+                };
+                Colors {
+                    bg: "#0d1117",
+                    border: tinted(0.30, 0.22, "#30363d"),
+                    separator: tinted(0.30, 0.15, "#21262d"),
+                    title: tinted(0.95, 0.70, "#58a6ff"),
+                    text_primary: "#e6edf3",
+                    text_secondary: tinted(0.20, 0.62, "#8b949e"),
+                    accent,
+                    matrix_color: self.tint,
+                    matrix_opacity: 0.22,
+                    font_family,
+                }
+            }
         }
     }
 }
@@ -239,5 +304,72 @@ mod tests {
             ..Theme::DARK
         };
         assert_eq!(rainbow.colors().accent, "#00ff41");
+    }
+
+    fn themed(tint: Tint) -> Colors {
+        Theme {
+            tint,
+            ..Theme::DARK
+        }
+        .colors()
+    }
+
+    #[test]
+    fn series_shades_share_the_tint_hue_and_stay_distinct() {
+        let c = themed(Tint::Pink);
+        let (target, _, _) = hex_to_hsl(Tint::Pink.hex().unwrap()).unwrap();
+        let shades: Vec<String> = (0..6).map(|i| c.series(i, 6, "#555555")).collect();
+        for s in &shades {
+            let (h, _, _) = hex_to_hsl(s).unwrap();
+            let d = (h - target).abs().min(360.0 - (h - target).abs());
+            assert!(d < 15.0, "{s} hue {h} drifted from {target}");
+        }
+        let unique: std::collections::HashSet<_> = shades.iter().collect();
+        assert_eq!(unique.len(), shades.len());
+    }
+
+    #[test]
+    fn series_goes_from_bright_to_dim() {
+        let c = themed(Tint::Blue);
+        let (_, _, first) = hex_to_hsl(&c.series(0, 5, "")).unwrap();
+        let (_, _, last) = hex_to_hsl(&c.series(4, 5, "")).unwrap();
+        assert!(first > last);
+    }
+
+    #[test]
+    fn ranked_gets_brighter_with_level() {
+        let c = themed(Tint::Red);
+        let (_, s_lo, l_lo) = hex_to_hsl(&c.ranked(0.0, "")).unwrap();
+        let (_, s_hi, l_hi) = hex_to_hsl(&c.ranked(1.0, "")).unwrap();
+        assert!(s_hi > s_lo && l_hi > l_lo);
+    }
+
+    #[test]
+    fn rainbow_keeps_original_widget_colors() {
+        let c = themed(Tint::Rainbow);
+        assert_eq!(c.series(1, 3, "#dea584"), "#dea584");
+        assert_eq!(c.ranked(0.5, "#42a5f5"), "#42a5f5");
+        assert_eq!(c.title, "#58a6ff");
+    }
+
+    #[test]
+    fn white_tint_uses_greys_everywhere() {
+        let c = themed(Tint::White);
+        for hex in [
+            c.series(2, 4, "#f34b7d"),
+            c.ranked(1.0, "#f44336"),
+            c.title.clone(),
+        ] {
+            assert_eq!(&hex[1..3], &hex[3..5], "{hex} is not grey");
+            assert_eq!(&hex[3..5], &hex[5..7], "{hex} is not grey");
+        }
+    }
+
+    #[test]
+    fn title_follows_the_tint() {
+        let c = themed(Tint::Orange);
+        let (h, _, _) = hex_to_hsl(&c.title).unwrap();
+        let (target, _, _) = hex_to_hsl(Tint::Orange.hex().unwrap()).unwrap();
+        assert!((h - target).abs() < 2.0);
     }
 }
