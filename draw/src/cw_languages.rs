@@ -35,7 +35,7 @@ pub fn render_cw_languages(w: &CwLanguagesWidget, theme: Theme) -> String {
         let y = FIRST_ROW_Y + i as u32 * ROW_H + ROW_H - 5;
         let bar_y = y - 11;
         let fill_w = (entry.score as f64 / max_score as f64 * BAR_MAX_W as f64).round() as u32;
-        let kyu_css = cw_color(&entry.rank_color);
+        let kyu_css = cw_color(&c, &entry.rank_color);
 
         rows.push_str(&format!(
             "<text x=\"25\" y=\"{y}\" font-family=\"{font}\" font-size=\"12\" fill=\"{tv}\">{lang}</text>\
