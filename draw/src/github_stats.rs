@@ -13,7 +13,7 @@ pub fn render_github_stats(w: &GithubStatsWidget, theme: Theme) -> String {
     let c = theme.colors();
     let font = c.font_family;
     let rain = matrix::generate(W, H, c.matrix_color, c.matrix_opacity, 0x1337_DEAD, "gs");
-    let rcolor = rank_color(&w.rank);
+    let rcolor = rank_color(&c, &w.rank);
     let display_name = w.name.as_deref().unwrap_or(&w.login);
 
     let col_x = [25u32, 181, 337];
