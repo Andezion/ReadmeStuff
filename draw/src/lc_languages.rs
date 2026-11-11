@@ -50,12 +50,13 @@ pub fn render_lc_languages(w: &LcLanguagesWidget, theme: Theme) -> String {
         .unwrap_or(1)
         .max(1);
 
+    let shown = w.languages.len().min(MAX_ROWS);
     let mut rows = String::new();
     for (i, entry) in w.languages.iter().take(MAX_ROWS).enumerate() {
         let y = FIRST_ROW_Y + i as u32 * ROW_H + ROW_H - 5;
         let bar_y = y - 11;
         let fill_w = (entry.solved as f64 / max_solved as f64 * BAR_W as f64).round() as u32;
-        let color = lc_lang_color(&entry.name);
+        let color = c.series(i, shown, lc_lang_color(&entry.name));
 
         rows.push_str(&format!(
             "<circle cx=\"{dot_x}\" cy=\"{dot_y}\" r=\"4\" fill=\"{color}\"/>\
