@@ -22,10 +22,13 @@ pub fn render_lc_solved(w: &LcSolvedWidget, theme: Theme) -> String {
     let med_w = (w.medium as f64 / total_shown as f64 * bar_total_w as f64) as u32;
     let hard_w = bar_total_w.saturating_sub(easy_w + med_w);
 
+    let lc_easy = c.series(2, 3, LC_EASY);
+    let lc_medium = c.series(1, 3, LC_MEDIUM);
+    let lc_hard = c.series(0, 3, LC_HARD);
     let stats = [
-        ("Easy", w.easy, LC_EASY),
-        ("Medium", w.medium, LC_MEDIUM),
-        ("Hard", w.hard, LC_HARD),
+        ("Easy", w.easy, lc_easy.as_str()),
+        ("Medium", w.medium, lc_medium.as_str()),
+        ("Hard", w.hard, lc_hard.as_str()),
     ];
     let col_x = [25u32, 185, 345];
 
@@ -74,8 +77,5 @@ pub fn render_lc_solved(w: &LcSolvedWidget, theme: Theme) -> String {
         med_w = med_w,
         hard_x = 25 + easy_w + med_w,
         hard_w = hard_w,
-        lc_easy = LC_EASY,
-        lc_medium = LC_MEDIUM,
-        lc_hard = LC_HARD,
     )
 }
