@@ -1,6 +1,7 @@
 pub mod theme;
 
 mod building;
+mod canvas;
 mod layout;
 mod main_menu;
 mod questionnaire;

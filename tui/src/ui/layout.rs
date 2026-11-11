@@ -1,4 +1,5 @@
 use crate::app::App;
+use crate::ui::canvas;
 use crate::ui::theme::{self, PALETTE};
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Direction, Layout as RatatuiLayout, Rect};
@@ -46,27 +47,25 @@ fn draw_canvas(frame: &mut Frame, app: &App, area: Rect) {
             continue;
         };
 
-        let rx = inner.x + (x as f64 * scale_x).round() as u16;
-        let ry = inner.y + (y as f64 * scale_y).round() as u16;
-        if rx >= inner.x + inner.width || ry >= inner.y + inner.height {
+        let Some(cell) = canvas::project(
+            inner,
+            scale_x,
+            scale_y,
+            0,
+            x as i32,
+            y as i32,
+            spec.size.0,
+            spec.size.1,
+        ) else {
             continue;
-        }
-
-        let rw = ((spec.size.0 as f64 * scale_x).round() as u16)
-            .max(3)
-            .min(inner.x + inner.width - rx);
-        let rh = ((spec.size.1 as f64 * scale_y).round() as u16)
-            .max(3)
-            .min(inner.y + inner.height - ry);
-
-        let rect = Rect {
-            x: rx,
-            y: ry,
-            width: rw,
-            height: rh,
         };
-        let focused = idx == app.layout_cursor;
-        frame.render_widget(theme::focusable_block(spec.label, focused), rect);
+        let (border, fill) = if idx == app.layout_cursor {
+            (PALETTE.accent, None)
+        } else {
+            let (b, f) = canvas::tile_colors(id);
+            (b, Some(f))
+        };
+        canvas::draw_tile(frame, cell, spec.label, border, fill);
     }
 }
 
