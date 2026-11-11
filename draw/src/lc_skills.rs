@@ -1,4 +1,8 @@
-use crate::{helpers::xml_escape, matrix, theme::Theme};
+use crate::{
+    helpers::xml_escape,
+    matrix,
+    theme::{Colors, Theme},
+};
 use readme_stuff_aggregator::widgets::LcSkillsWidget;
 
 const W: u32 = 495;
@@ -13,12 +17,11 @@ pub const SIZE: (u32, u32) = (W, FIRST_Y + MAX_ROWS as u32 * ROW_H + 15);
 
 const CAT_COLORS: [(&str, &str); 3] = [("adv", "#ff6e96"), ("int", "#58a6ff"), ("fun", "#3fb950")];
 
-fn cat_color(cat: &str) -> &'static str {
-    CAT_COLORS
-        .iter()
-        .find(|(c, _)| *c == cat)
-        .map(|(_, col)| *col)
-        .unwrap_or("#8b949e")
+fn cat_color(c: &Colors, cat: &str) -> String {
+    match CAT_COLORS.iter().position(|(name, _)| *name == cat) {
+        Some(i) => c.series(i, CAT_COLORS.len(), CAT_COLORS[i].1),
+        None => c.text_secondary.clone(),
+    }
 }
 
 pub fn render_lc_skills(w: &LcSkillsWidget, theme: Theme) -> String {
@@ -34,7 +37,7 @@ pub fn render_lc_skills(w: &LcSkillsWidget, theme: Theme) -> String {
         let y = FIRST_Y + i as u32 * ROW_H + ROW_H - 4;
         let bar_y = y - 8;
         let fill_w = (skill.amount as f64 / max_amount as f64 * BAR_MAX_W as f64).round() as u32;
-        let color = cat_color(skill.category);
+        let color = cat_color(&c, skill.category);
 
         rows.push_str(&format!(
             "<text x=\"{PAD_X}\" y=\"{y}\" font-family=\"{font}\" font-size=\"11\" fill=\"{tv}\">{name}</text>\
@@ -52,7 +55,8 @@ pub fn render_lc_skills(w: &LcSkillsWidget, theme: Theme) -> String {
         ));
     }
 
-    let legend = CAT_COLORS.iter().enumerate().map(|(i, (cat, color))| {
+    let legend = CAT_COLORS.iter().enumerate().map(|(i, (cat, _))| {
+        let color = cat_color(&c, cat);
         let lx = 25 + i as u32 * 110;
         let label = match *cat { "adv" => "Advanced", "int" => "Intermediate", _ => "Fundamental" };
         format!(
