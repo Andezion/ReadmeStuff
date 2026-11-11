@@ -23,14 +23,19 @@ pub fn render_lc_badges(w: &LcBadgesWidget, theme: Theme) -> String {
     let mut rows = String::new();
     for (i, badge) in w.badges.iter().take(MAX_ROWS).enumerate() {
         let y = FIRST_ROW_Y + i as u32 * ROW_H + ROW_H - 5;
-        let stripe_color = if i % 2 == 1 { c.separator } else { "none" };
+        let stripe_color = if i % 2 == 1 {
+            c.separator.as_str()
+        } else {
+            "none"
+        };
 
         rows.push_str(&format!(
             "<rect x=\"20\" y=\"{row_y}\" width=\"455\" height=\"{ROW_H}\" fill=\"{stripe_color}\" rx=\"2\"/>\
-             <circle cx=\"32\" cy=\"{dot_y}\" r=\"3\" fill=\"#2fde1b\"/>\
+             <circle cx=\"32\" cy=\"{dot_y}\" r=\"3\" fill=\"{dot}\"/>\
              <text x=\"44\" y=\"{y}\" font-family=\"{font}\" font-size=\"12\" fill=\"{tv}\">{name}</text>\
              <text x=\"440\" y=\"{y}\" text-anchor=\"end\" font-family=\"{font}\" font-size=\"11\" fill=\"{ts}\">{date}</text>",
             row_y = FIRST_ROW_Y + i as u32 * ROW_H,
+            dot = c.accent,
             dot_y = FIRST_ROW_Y + i as u32 * ROW_H + ROW_H / 2 + 1,
             name = xml_escape(&badge.name),
             date = xml_escape(&badge.date),
