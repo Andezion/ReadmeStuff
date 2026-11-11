@@ -6,8 +6,12 @@ const H: u32 = 210;
 pub const SIZE: (u32, u32) = (W, H);
 const LABEL_X: u32 = 25;
 const BAR_X: u32 = 65;
-const BAR_MAX_W: u32 = 350;
-const COUNT_X: u32 = 445;
+/// Right edge of the content area (matches the separator line end).
+const RIGHT_X: u32 = 470;
+/// Gap between the end of the bar track and the start of the number.
+const COUNT_GAP: u32 = 10;
+/// Conservative per-character width for 11px text (covers monospace fonts).
+const CHAR_W: f64 = 7.0;
 const ROW_H: u32 = 19;
 const FIRST_Y: u32 = 70;
 
@@ -19,22 +23,23 @@ pub fn render_github_heatmap(w: &GithubHeatmapWidget, theme: Theme) -> String {
     let rain = matrix::generate(W, H, c.matrix_color, c.matrix_opacity, 0x7788_EEFF, "ghm");
 
     let max_val = *w.weekday_distribution.iter().max().unwrap_or(&1).max(&1);
+    let (bar_max_w, count_x) = layout(&w.weekday_distribution);
 
     let mut bars = String::new();
     for (i, &count) in w.weekday_distribution.iter().enumerate() {
         let y = FIRST_Y + i as u32 * ROW_H - 1;
-        let fill_w = (count as f64 / max_val as f64 * BAR_MAX_W as f64).round() as u32;
+        let fill_w = (count as f64 / max_val as f64 * bar_max_w as f64).round() as u32;
         let bar_y = y - 11 + 2;
 
         bars.push_str(&format!(
             "<text x=\"{LABEL_X}\" y=\"{y}\" \
                 font-family=\"{font}\" font-size=\"11\" \
                 fill=\"{tl}\">{day}</text>\
-             <rect x=\"{BAR_X}\" y=\"{bar_y}\" width=\"{BAR_MAX_W}\" height=\"10\" rx=\"5\" \
+             <rect x=\"{BAR_X}\" y=\"{bar_y}\" width=\"{bar_max_w}\" height=\"10\" rx=\"5\" \
                 fill=\"{bar_bg}\"/>\
              <rect x=\"{BAR_X}\" y=\"{bar_y}\" width=\"{fill_w}\" height=\"10\" rx=\"5\" \
                 fill=\"{accent}\"/>\
-             <text x=\"{COUNT_X}\" y=\"{y}\" text-anchor=\"end\" \
+             <text x=\"{count_x}\" y=\"{y}\" text-anchor=\"end\" \
                 font-family=\"{font}\" font-size=\"11\" \
                 fill=\"{tv}\">{count}</text>",
             day = DAYS[i],
@@ -66,4 +71,37 @@ pub fn render_github_heatmap(w: &GithubHeatmapWidget, theme: Theme) -> String {
         rain = rain,
         bars = bars,
     )
+}
+
+fn layout<T: ToString>(values: &[T]) -> (u32, u32) {
+    let max_chars = values
+        .iter()
+        .map(|v| v.to_string().chars().count())
+        .max()
+        .unwrap_or(1)
+        .max(1);
+    let text_w = (max_chars as f64 * CHAR_W).ceil() as u32;
+    let bar_max_w = RIGHT_X.saturating_sub(BAR_X + COUNT_GAP + text_w).max(50);
+    (bar_max_w, RIGHT_X)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn layout_leaves_room_for_wide_numbers() {
+        for vals in [vec![5u32], vec![123], vec![12_345], vec![1_234_567]] {
+            let (bar_w, count_x) = layout(&vals);
+            let text_w = (vals[0].to_string().len() as f64 * CHAR_W).ceil() as u32;
+            assert!(BAR_X + bar_w + COUNT_GAP + text_w <= count_x, "{vals:?}");
+        }
+    }
+
+    #[test]
+    fn layout_shrinks_bar_as_numbers_grow() {
+        let (small, _) = layout(&[99u32]);
+        let (big, _) = layout(&[99_999u32]);
+        assert!(big < small);
+    }
 }
