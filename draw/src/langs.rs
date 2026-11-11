@@ -17,9 +17,10 @@ pub fn render_langs(w: &LangsWidget, theme: Theme) -> String {
     let row_y: [u32; 5] = [75, 99, 123, 147, 171];
 
     let mut bars = String::new();
+    let shown = w.top.len().min(5);
     for (i, lang) in w.top.iter().take(5).enumerate() {
         let y = row_y[i];
-        let color = lang.color.as_deref().unwrap_or(c.accent);
+        let color = c.series(i, shown, lang.color.as_deref().unwrap_or(&c.accent));
         let fill_w = ((lang.percentage / 100.0) * BAR_W as f64).round() as u32;
         let bar_y = y - 9;
 
