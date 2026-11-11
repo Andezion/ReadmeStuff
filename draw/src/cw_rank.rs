@@ -14,7 +14,7 @@ pub fn render_cw_rank(w: &CwRankWidget, theme: Theme) -> String {
     let font = c.font_family;
     let rain = matrix::generate(W, H, c.matrix_color, c.matrix_opacity, 0xCCCC_0101, "cwr");
 
-    let kyu_css_color = cw_color(&w.rank_color);
+    let kyu_css_color = cw_color(&c, &w.rank_color);
 
     let stats: [(&str, String); 3] = [
         ("Honor", fmt_num(w.honor as u64)),
