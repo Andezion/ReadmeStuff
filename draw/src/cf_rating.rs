@@ -14,15 +14,15 @@ pub fn render_cf_rating(w: &CfRatingWidget, theme: Theme) -> String {
     let font = c.font_family;
     let rain = matrix::generate(W, H, c.matrix_color, c.matrix_opacity, 0xCF_1234, "cfr");
 
-    let rank_color = cf_rank_color(&w.rank);
-    let max_rank_color = cf_rank_color(&w.max_rank);
+    let rank_color = cf_rank_color(&c, &w.rank);
+    let max_rank_color = cf_rank_color(&c, &w.max_rank);
 
     let rating_str = fmt_num(w.rating.unsigned_abs() as u64);
     let max_rating_str = fmt_num(w.max_rating.unsigned_abs() as u64);
 
     let stats: [(&str, String, &str); 3] = [
-        ("Current Rating", rating_str.clone(), rank_color),
-        ("Max Rating", max_rating_str, max_rank_color),
+        ("Current Rating", rating_str.clone(), rank_color.as_str()),
+        ("Max Rating", max_rating_str, max_rank_color.as_str()),
         ("Contests", w.contest_count.to_string(), c.text_primary),
     ];
     let col_x = [25u32, 185, 345];
