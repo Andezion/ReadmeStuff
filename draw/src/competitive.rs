@@ -64,7 +64,15 @@ fn platform_label(x: u32, label: &str, color: &str, font: &str) -> String {
     )
 }
 
-fn stat_line(x: u32, y: u32, text: &str, size: u32, weight: &str, color: &str, font: &str) -> String {
+fn stat_line(
+    x: u32,
+    y: u32,
+    text: &str,
+    size: u32,
+    weight: &str,
+    color: &str,
+    font: &str,
+) -> String {
     format!(
         "<text x=\"{x}\" y=\"{y}\" \
             font-family=\"{font}\" font-size=\"{size}\" font-weight=\"{weight}\" \
@@ -76,14 +84,14 @@ fn stat_line(x: u32, y: u32, text: &str, size: u32, weight: &str, color: &str, f
 fn render_cf(w: &CompetitiveWidget, c: &crate::theme::Colors) -> String {
     let font = c.font_family;
     let Some(rating) = w.cf_rating else {
-        return platform_label(CF_X, "codeforces", c.text_secondary, font)
-            + &stat_line(CF_X, 105, "—", 18, "400", c.text_secondary, font);
+        return platform_label(CF_X, "codeforces", &c.text_secondary, font)
+            + &stat_line(CF_X, 105, "—", 18, "400", &c.text_secondary, font);
     };
 
     let rank = w.cf_rank.as_deref().unwrap_or("unrated");
-    let rcolor = cf_rank_color(rank);
+    let rcolor = cf_rank_color(c, rank);
 
-    platform_label(CF_X, "codeforces", rcolor, font)
+    platform_label(CF_X, "codeforces", &rcolor, font)
         + &stat_line(
             CF_X,
             105,
@@ -93,23 +101,23 @@ fn render_cf(w: &CompetitiveWidget, c: &crate::theme::Colors) -> String {
             c.text_primary,
             font,
         )
-        + &stat_line(CF_X, 123, rank, 11, "400", rcolor, font)
+        + &stat_line(CF_X, 123, rank, 11, "400", &rcolor, font)
 }
 
 fn render_cw(w: &CompetitiveWidget, c: &crate::theme::Colors) -> String {
     let font = c.font_family;
     let Some(ref rank) = w.cw_rank else {
-        return platform_label(CW_X, "codewars", c.text_secondary, font)
-            + &stat_line(CW_X, 105, "—", 18, "400", c.text_secondary, font);
+        return platform_label(CW_X, "codewars", &c.text_secondary, font)
+            + &stat_line(CW_X, 105, "—", 18, "400", &c.text_secondary, font);
     };
 
     // Codewars kyu colors (1-8, lower = better)
     let kyu_color = if rank.contains('1') || rank.contains('2') {
-        "#ff6e96" // red/pink for 1-2 kyu
+        c.ranked(1.0, "#ff6e96") // 1-2 kyu
     } else if rank.contains('3') || rank.contains('4') {
-        "#9b59b6" // purple for 3-4 kyu
+        c.ranked(0.6, "#9b59b6") // 3-4 kyu
     } else {
-        "#8b949e" // gray for 5-8 kyu
+        c.ranked(0.2, "#8b949e") // 5-8 kyu
     };
 
     let honor_str = w
@@ -117,16 +125,16 @@ fn render_cw(w: &CompetitiveWidget, c: &crate::theme::Colors) -> String {
         .map(|h| format!("honor {}", fmt_num(h as u64)))
         .unwrap_or_default();
 
-    platform_label(CW_X, "codewars", kyu_color, font)
+    platform_label(CW_X, "codewars", &kyu_color, font)
         + &stat_line(CW_X, 105, rank, 20, "700", c.text_primary, font)
-        + &stat_line(CW_X, 123, &honor_str, 11, "400", c.text_secondary, font)
+        + &stat_line(CW_X, 123, &honor_str, 11, "400", &c.text_secondary, font)
 }
 
 fn render_lc(w: &CompetitiveWidget, c: &crate::theme::Colors) -> String {
     let font = c.font_family;
     let Some(solved) = w.lc_solved else {
-        return platform_label(LC_X, "leetcode", c.text_secondary, font)
-            + &stat_line(LC_X, 105, "—", 18, "400", c.text_secondary, font);
+        return platform_label(LC_X, "leetcode", &c.text_secondary, font)
+            + &stat_line(LC_X, 105, "—", 18, "400", &c.text_secondary, font);
     };
 
     let solved_str = format!("{solved} solved");
@@ -135,7 +143,7 @@ fn render_lc(w: &CompetitiveWidget, c: &crate::theme::Colors) -> String {
         _ => String::new(),
     };
 
-    platform_label(LC_X, "leetcode", "#ffa116", font)
+    platform_label(LC_X, "leetcode", &c.ranked(0.8, "#ffa116"), font)
         + &stat_line(LC_X, 105, &solved_str, 18, "700", c.text_primary, font)
-        + &stat_line(LC_X, 123, &breakdown, 11, "400", c.text_secondary, font)
+        + &stat_line(LC_X, 123, &breakdown, 11, "400", &c.text_secondary, font)
 }
