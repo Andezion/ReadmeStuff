@@ -183,6 +183,9 @@ pub struct DragState {
     pub valid: bool,
     pub moved: bool,
     pub original: Option<(i32, i32)>,
+    pub over_canvas: bool,
+    pub collisions: Vec<String>,
+    pub too_wide: bool,
 }
 
 pub struct EditorState {
@@ -1047,9 +1050,29 @@ pub fn cell_to_pixel(app: &App, col: u16, row: u16) -> Option<(i32, i32)> {
     if scale_x <= 0.0 || scale_y <= 0.0 {
         return None;
     }
-    let px = (col - area.x) as f64 / scale_x;
-    let py = (row - area.y) as f64 / scale_y + app.editor.scroll_y as f64;
-    Some((px.round() as i32, py.round() as i32))
+    let px = ((col - area.x) as f64 + 0.5) / scale_x;
+    let py = ((row - area.y) as f64 + 0.5) / scale_y + app.editor.scroll_y as f64;
+    Some((px.floor() as i32, py.floor() as i32))
+}
+
+pub fn max_scroll_y(app: &App) -> u32 {
+    let placed = app
+        .editor
+        .placed
+        .iter()
+        .map(|p| (p.y + p.h as i32).max(0) as u32);
+    let dragged = app
+        .editor
+        .drag
+        .as_ref()
+        .filter(|d| d.over_canvas)
+        .map(|d| (d.current.1 + d.h as i32).max(0) as u32);
+    placed.chain(dragged).max().unwrap_or(0)
+}
+
+fn scroll_canvas_by(app: &mut App, delta: i64) {
+    let next = (app.editor.scroll_y as i64 + delta).clamp(0, max_scroll_y(app) as i64);
+    app.editor.scroll_y = next as u32;
 }
 
 fn point_in(p: &PlacedItem, px: i32, py: i32) -> bool {
@@ -1077,20 +1100,53 @@ fn hit_sidebar(app: &App, col: u16, row: u16) -> Option<String> {
         .map(|(id, _)| id.clone())
 }
 
-fn snap_and_validate(app: &App, raw: PixelRect) -> ((i32, i32), bool) {
+struct DropCheck {
+    pos: (i32, i32),
+    collisions: Vec<String>,
+    too_wide: bool,
+}
+
+impl DropCheck {
+    fn valid(&self) -> bool {
+        !self.too_wide && self.collisions.is_empty()
+    }
+}
+
+fn clamp_into_canvas(r: PixelRect, canvas_w: u32) -> PixelRect {
+    let max_x = canvas_w.saturating_sub(r.w) as i32;
+    PixelRect {
+        x: r.x.clamp(0, max_x),
+        y: r.y.max(0),
+        ..r
+    }
+}
+
+fn snap_and_validate(app: &App, raw: PixelRect) -> DropCheck {
+    let canvas_w = app.editor.canvas_width;
     let others = other_rects(app);
-    let (sx, sy) = readme_stuff_catalog::snap(raw, &others, app.editor.canvas_width);
-    let candidate = PixelRect {
-        x: sx,
-        y: sy,
-        w: raw.w,
-        h: raw.h,
-    };
-    let valid = readme_stuff_catalog::fits_canvas(candidate, app.editor.canvas_width)
-        && !others
-            .iter()
-            .any(|o| readme_stuff_catalog::overlaps(candidate, *o));
-    ((sx, sy), valid)
+    let clamped = clamp_into_canvas(raw, canvas_w);
+    let (sx, sy) = readme_stuff_catalog::snap(clamped, &others, canvas_w);
+    let candidate = clamp_into_canvas(
+        PixelRect {
+            x: sx,
+            y: sy,
+            ..raw
+        },
+        canvas_w,
+    );
+    let collisions = app
+        .editor
+        .placed
+        .iter()
+        .zip(&others)
+        .filter(|(_, o)| readme_stuff_catalog::overlaps(candidate, **o))
+        .map(|(p, _)| p.id.clone())
+        .collect();
+    DropCheck {
+        pos: (candidate.x, candidate.y),
+        collisions,
+        too_wide: !readme_stuff_catalog::fits_canvas(candidate, canvas_w),
+    }
 }
 
 fn start_drag(app: &mut App, col: u16, row: u16) {
@@ -1103,7 +1159,6 @@ fn start_drag(app: &mut App, col: u16, row: u16) {
             return;
         };
         let (w, h) = item.size;
-        
         app.editor.drag = Some(DragState {
             id,
             from_sidebar: true,
@@ -1115,6 +1170,9 @@ fn start_drag(app: &mut App, col: u16, row: u16) {
             valid: false,
             moved: false,
             original: None,
+            over_canvas: false,
+            collisions: Vec::new(),
+            too_wide: false,
         });
         return;
     }
@@ -1140,29 +1198,66 @@ fn start_drag(app: &mut App, col: u16, row: u16) {
         valid: true,
         moved: false,
         original: Some(original),
+        over_canvas: true,
+        collisions: Vec::new(),
+        too_wide: false,
     });
 }
 
+fn autoscroll_while_dragging(app: &mut App, row: u16) {
+    let area = app.editor.canvas_area;
+    if area.h < 3 {
+        return;
+    }
+    if row == area.y {
+        app.editor.scroll_y = app.editor.scroll_y.saturating_sub(SCROLL_STEP);
+    } else if row == area.y + area.h - 1 {
+        app.editor.scroll_y += SCROLL_STEP;
+    }
+}
+
 fn update_drag(app: &mut App, col: u16, row: u16) {
+    if app.editor.drag.is_none() {
+        return;
+    }
+    if cell_to_pixel(app, col, row).is_none() {
+        if let Some(drag) = app.editor.drag.as_mut() {
+            drag.over_canvas = false;
+        }
+        return;
+    }
+    autoscroll_while_dragging(app, row);
     let Some((px, py)) = cell_to_pixel(app, col, row) else {
         return;
     };
     let Some(drag) = &app.editor.drag else {
         return;
     };
-    let (grab_dx, grab_dy, w, h) = (drag.grab_dx, drag.grab_dy, drag.w, drag.h);
     let raw = PixelRect {
-        x: px - grab_dx,
-        y: py - grab_dy,
-        w,
-        h,
+        x: px - drag.grab_dx,
+        y: py - drag.grab_dy,
+        w: drag.w,
+        h: drag.h,
     };
-    let (current, valid) = snap_and_validate(app, raw);
+    let check = snap_and_validate(app, raw);
 
     if let Some(drag) = app.editor.drag.as_mut() {
-        drag.current = current;
-        drag.valid = valid;
+        drag.valid = check.valid();
+        drag.current = check.pos;
+        drag.collisions = check.collisions;
+        drag.too_wide = check.too_wide;
+        drag.over_canvas = true;
         drag.moved = true;
+    }
+}
+
+fn drop_failure_reason(drag: &DragState, canvas_w: u32) -> String {
+    if !drag.over_canvas {
+        "released outside the canvas".to_string()
+    } else if drag.too_wide {
+        format!("{}px wide, canvas is {canvas_w}px", drag.w)
+    } else {
+        format!("would overlap {}", drag.collisions.join(", "))
     }
 }
 
@@ -1170,7 +1265,11 @@ fn end_drag(app: &mut App) {
     let Some(drag) = app.editor.drag.take() else {
         return;
     };
-    if drag.valid && drag.moved {
+    if drag.moved && drag.over_canvas && drag.valid {
+        app.status = Some(format!(
+            "placed {} at {},{}",
+            drag.id, drag.current.0, drag.current.1
+        ));
         app.editor.placed.push(PlacedItem {
             id: drag.id.clone(),
             x: drag.current.0,
@@ -1179,21 +1278,28 @@ fn end_drag(app: &mut App) {
             h: drag.h,
         });
         app.editor.sidebar.retain(|id| id != &drag.id);
-    } else if !drag.from_sidebar {
+    } else if drag.from_sidebar {
         if drag.moved {
-            if let Some((ox, oy)) = drag.original {
-                app.editor.placed.push(PlacedItem {
-                    id: drag.id,
-                    x: ox,
-                    y: oy,
-                    w: drag.w,
-                    h: drag.h,
-                });
-            }
-        } else {
-            app.editor.sidebar.push(drag.id);
+            let reason = drop_failure_reason(&drag, app.editor.canvas_width);
+            app.status = Some(format!("{} not placed: {reason}", drag.id));
         }
+    } else if drag.moved {
+        let reason = drop_failure_reason(&drag, app.editor.canvas_width);
+        app.status = Some(format!("{} kept in place: {reason}", drag.id));
+        if let Some((ox, oy)) = drag.original {
+            app.editor.placed.push(PlacedItem {
+                id: drag.id,
+                x: ox,
+                y: oy,
+                w: drag.w,
+                h: drag.h,
+            });
+        }
+    } else {
+        app.status = Some(format!("{} returned to the sidebar", drag.id));
+        app.editor.sidebar.push(drag.id);
     }
+    scroll_canvas_by(app, 0);
 }
 
 pub fn handle_mouse(app: &mut App, mouse: MouseEvent) {
@@ -1222,10 +1328,8 @@ fn handle_readme_editor_mouse(app: &mut App, mouse: MouseEvent) {
 fn scroll_editor(app: &mut App, col: u16, row: u16, dir: i32) {
     if app.editor.sidebar_area.contains(col, row) {
         app.editor.sidebar_scroll = (app.editor.sidebar_scroll as i32 + dir).max(0) as usize;
-    } else if dir < 0 {
-        app.editor.scroll_y = app.editor.scroll_y.saturating_sub(SCROLL_STEP);
     } else {
-        app.editor.scroll_y += SCROLL_STEP;
+        scroll_canvas_by(app, dir as i64 * SCROLL_STEP as i64);
     }
 }
 
@@ -1305,10 +1409,10 @@ fn handle_readme_editor_key(app: &mut App, key: KeyEvent) {
     }
     match key.code {
         KeyCode::Esc => app.screen = Screen::MainMenu,
-        KeyCode::PageUp => {
-            app.editor.scroll_y = app.editor.scroll_y.saturating_sub(SCROLL_STEP * 5);
-        }
-        KeyCode::PageDown => app.editor.scroll_y += SCROLL_STEP * 5,
+        KeyCode::PageUp => scroll_canvas_by(app, -(SCROLL_STEP as i64) * 5),
+        KeyCode::PageDown => scroll_canvas_by(app, SCROLL_STEP as i64 * 5),
+        KeyCode::Home => app.editor.scroll_y = 0,
+        KeyCode::End => scroll_canvas_by(app, i64::MAX / 2),
         _ => {}
     }
 }
@@ -1813,9 +1917,33 @@ mod tests {
         let mut app = discovered_app(&["a", "b", "c"]);
         app.discovered_cursor = 0;
         app.discovered_rows = vec![
-            (0, ScreenRect { x: 0, y: 0, w: 20, h: 1 }),
-            (1, ScreenRect { x: 0, y: 1, w: 20, h: 1 }),
-            (2, ScreenRect { x: 0, y: 2, w: 20, h: 1 }),
+            (
+                0,
+                ScreenRect {
+                    x: 0,
+                    y: 0,
+                    w: 20,
+                    h: 1,
+                },
+            ),
+            (
+                1,
+                ScreenRect {
+                    x: 0,
+                    y: 1,
+                    w: 20,
+                    h: 1,
+                },
+            ),
+            (
+                2,
+                ScreenRect {
+                    x: 0,
+                    y: 2,
+                    w: 20,
+                    h: 1,
+                },
+            ),
         ];
 
         handle_mouse(
@@ -2005,6 +2133,13 @@ mod tests {
     fn wheel_scrolls_the_sidebar_or_the_canvas_depending_on_where_the_pointer_is() {
         let mut app = editor_test_app(&[]);
         app.screen = Screen::ReadmeEditor;
+        app.editor.placed.push(PlacedItem {
+            id: "tall".to_string(),
+            x: 0,
+            y: 0,
+            w: 100,
+            h: 500,
+        });
         app.editor.sidebar_area = ScreenRect {
             x: 0,
             y: 0,
@@ -2044,8 +2179,122 @@ mod tests {
     }
 
     #[test]
+    fn canvas_scroll_stops_at_the_bottom_of_the_lowest_widget() {
+        let mut app = editor_test_app(&[]);
+        app.editor.placed.push(PlacedItem {
+            id: "w1".to_string(),
+            x: 0,
+            y: 0,
+            w: 100,
+            h: 70,
+        });
+
+        for _ in 0..10 {
+            scroll_canvas_by(&mut app, SCROLL_STEP as i64);
+        }
+        assert_eq!(app.editor.scroll_y, 70);
+
+        scroll_canvas_by(&mut app, -1000);
+        assert_eq!(app.editor.scroll_y, 0);
+    }
+
+    #[test]
+    fn pressing_a_sidebar_widget_shows_no_preview_until_the_pointer_reaches_the_canvas() {
+        let mut app = editor_test_app(&[("w1", 100, 50)]);
+        app.editor.canvas_area = ScreenRect {
+            x: 50,
+            y: 0,
+            w: CANVAS_WIDTH as u16,
+            h: 2000,
+        };
+        app.editor.sidebar_items = vec![(
+            "w1".to_string(),
+            ScreenRect {
+                x: 0,
+                y: 0,
+                w: 5,
+                h: 2,
+            },
+        )];
+
+        start_drag(&mut app, 2, 1);
+        assert!(!app.editor.drag.as_ref().unwrap().over_canvas);
+
+        update_drag(&mut app, 300, 100);
+        assert!(app.editor.drag.as_ref().unwrap().over_canvas);
+
+        update_drag(&mut app, 10, 100);
+        assert!(!app.editor.drag.as_ref().unwrap().over_canvas);
+
+        end_drag(&mut app);
+        assert!(app.editor.placed.is_empty(), "release off-canvas cancels");
+        assert!(app.editor.sidebar.contains(&"w1".to_string()));
+        assert!(
+            app.status
+                .as_deref()
+                .unwrap()
+                .contains("outside the canvas")
+        );
+    }
+
+    #[test]
+    fn dragging_past_the_canvas_edge_is_clamped_instead_of_rejected() {
+        let mut app = editor_test_app(&[("w1", 100, 50)]);
+        app.editor.sidebar_items = vec![(
+            "w1".to_string(),
+            ScreenRect {
+                x: 0,
+                y: 0,
+                w: 5,
+                h: 2,
+            },
+        )];
+
+        start_drag(&mut app, 2, 1);
+        update_drag(&mut app, (CANVAS_WIDTH - 1) as u16, 100);
+        let drag = app.editor.drag.as_ref().unwrap();
+        assert!(drag.valid);
+        assert_eq!(drag.current.0, CANVAS_WIDTH as i32 - 100);
+    }
+
+    #[test]
+    fn an_overlapping_preview_names_the_widgets_it_collides_with() {
+        let mut app = editor_test_app(&[("w1", 100, 50)]);
+        app.editor.placed.push(PlacedItem {
+            id: "busy".to_string(),
+            x: 400,
+            y: 200,
+            w: 200,
+            h: 100,
+        });
+        app.editor.sidebar_items = vec![(
+            "w1".to_string(),
+            ScreenRect {
+                x: 0,
+                y: 0,
+                w: 5,
+                h: 2,
+            },
+        )];
+
+        start_drag(&mut app, 2, 1);
+        update_drag(&mut app, 500, 125);
+        let drag = app.editor.drag.as_ref().unwrap();
+        assert!(!drag.valid);
+        assert_eq!(drag.collisions, vec!["busy".to_string()]);
+
+        end_drag(&mut app);
+        assert!(
+            app.status
+                .as_deref()
+                .unwrap()
+                .contains("would overlap busy")
+        );
+        assert!(app.editor.sidebar.contains(&"w1".to_string()));
+    }
+
+    #[test]
     fn a_right_button_drag_still_commits_when_the_release_is_reported_as_the_wrong_button() {
-        
         let mut app = editor_test_app(&[("w1", 100, 50)]);
         app.screen = Screen::ReadmeEditor;
         app.editor.sidebar_items = vec![(
@@ -2069,7 +2318,6 @@ mod tests {
         );
         assert!(app.editor.drag.is_some());
 
-        // move onto the canvas, away from any edge, so the drop position is valid
         handle_mouse(
             &mut app,
             MouseEvent {
